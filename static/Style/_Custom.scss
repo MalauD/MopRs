@@ -1,0 +1,25 @@
+.ScrollerDiv {
+    overflow-y: scroll;
+}
+
+.card-deck {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fit, minmax(286px, 1fr)) !important;
+    grid-gap: 1rem !important;
+}
+
+.table td.text {
+    max-width: 120px;
+}
+.table td.text span {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: inline-block;
+    max-width: 100%;
+}
+
+.PointerCursor {
+    cursor: pointer;
+}
+

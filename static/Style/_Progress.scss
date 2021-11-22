@@ -1,0 +1,56 @@
+@import 'Colors';
+
+$ProgressBallSize: 15px; 
+
+#Progress-container .Progress-bar {
+    -webkit-transition: width .5s ease-in-out,height .5s ease-in-out,left .5s ease-in-out;
+    -moz-transition: width .5s ease-in-out,height .5s ease-in-out,left .5s ease-in-out;
+    -o-transition: width .5s ease-in-out,height .5s ease-in-out,left .5s ease-in-out;
+    transition: width .5s ease-in-out,height .5s ease-in-out,left .5s ease-in-out;
+    background-color: $AccentColor;
+}
+
+
+@media only screen and (max-width: 768px) {
+    .Progress-ball{
+        transform: scale(1) !important;
+    }
+}
+
+.Progress-drag {
+    margin-left: -($ProgressBallSize / 2);
+    top: -($ProgressBallSize / 2);
+    position: absolute;
+
+    -webkit-transition: width .5s ease-in-out,height .5s ease-in-out,left .5s ease-in-out, transform .25s ease-in-out;
+    -moz-transition: width .5s ease-in-out,height .5s ease-in-out,left .5s ease-in-out, transform .25s ease-in-out;
+    -o-transition: width .5s ease-in-out,height .5s ease-in-out,left .5s ease-in-out, transform .25s ease-in-out;
+    transition: width .5s ease-in-out,height .5s ease-in-out,left .5s ease-in-out, transform .25s ease-in-out;
+}
+
+
+#Progress-container .Progress-ball {
+    position: absolute;
+    transform: scale(0);
+    border-radius: 50%;
+    width: $ProgressBallSize;
+    height: $ProgressBallSize;
+    background-color: $AccentColor;
+
+    -webkit-transition: transform .25s ease-in-out;
+    -moz-transition: transform .25s ease-in-out;
+    -o-transition: transform .25s ease-in-out;
+    transition: transform .25s ease-in-out;
+
+}
+
+#Player:hover .Progress-ball{
+    transform: scale(1);
+}
+
+#Progress-container .noTransition {
+    -moz-transition: none !important;
+    -webkit-transition: none !important;
+    -o-transition: color 0 ease-in !important;
+    transition: none !important;
+}

@@ -1,0 +1,22 @@
+.MusicItemRow .Accessory {
+    transform: scale(0);
+
+    -webkit-transition: transform .1s ease-in-out;
+    -moz-transition: transform .1s ease-in-out;
+    -o-transition: transform .1s ease-in-out;
+    transition: transform .1s ease-in-out;
+}
+
+.MusicItemRow:hover .Accessory {
+    transform: scale(1);
+}
+
+.LikeButton {
+    color: #CC506C !important;
+}
+
+@media only screen and (max-width: 768px) {
+    .MusicItemRow .Accessory {
+        transform: scale(1);
+    }
+}

@@ -1,0 +1,18 @@
+.ButtonIcon {
+    background-color: transparent;
+    color: lighten(#fff, 0%);
+    padding: 16px 16px;
+    font-size: 16px;
+    cursor: pointer;
+    border: none !important;
+
+    
+}
+
+.ButtonIcon:hover {
+    color: darken(#fff, 25%);
+}
+
+.ButtonIcon:active svg {
+    color: darken(#fff, 50%);
+}

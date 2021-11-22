@@ -1,0 +1,7 @@
+@import '../Colors';
+
+$dropdown-bg: $PrimaryColor3;
+$dropdown-divider-bg: lighten($PrimaryColor3, 12%);
+$dropdown-link-color: #fff;
+$dropdown-link-hover-color: #fff;
+$dropdown-link-hover-bg: $AccentColor;

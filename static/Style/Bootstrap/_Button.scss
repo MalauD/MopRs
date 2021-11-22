@@ -1,0 +1,16 @@
+$btn-font-weight:                normal;
+
+$btn-default-color:                transparent;
+$btn-default-bg:                 transparent;
+$btn-default-border:             transparent;
+
+$btn-primary-color:              #fff;
+$btn-primary-bg:                 $AccentColor;
+$btn-primary-border:             darken($btn-primary-bg, 5%);
+
+$btn-link-disabled-color:        darken($btn-primary-bg, 25%);
+
+// Allows for customizing button radius independently from global border radius
+$btn-border-radius-base:         4px;
+$btn-border-radius-large:        6px;
+$btn-border-radius-small:        3px;

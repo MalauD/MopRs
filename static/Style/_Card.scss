@@ -1,0 +1,21 @@
+.MoreIconButton {
+    position: absolute;
+    top: 13px;
+    right: 13px;
+    transform: scale(0);
+
+    -webkit-transition: transform .1s ease-in-out;
+    -moz-transition: transform .1s ease-in-out;
+    -o-transition: transform .1s ease-in-out;
+    transition: transform .1s ease-in-out;
+}
+
+.AlbumItemCard:hover .MoreIconButton{
+    transform: scale(1);
+}
+
+@media only screen and (max-width: 768px) {
+    .AlbumItemCard .MoreIconButton {
+        transform: scale(1);
+    }
+}
