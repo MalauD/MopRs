@@ -5,13 +5,6 @@ use crate::{
 use mongodb::{bson::doc, error::Result};
 use serde::Deserialize;
 
-#[derive(Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct PaginationOptions {
-    page: usize,
-    max_results: u32,
-}
-
 impl MongoClient {
     pub async fn get_user(&self, user: &UserReq) -> Result<Option<User>> {
         let coll = self._database.collection::<User>("User");

@@ -1,5 +1,5 @@
 use crate::{
-    db::get_mongo,
+    db::{get_mongo, PaginationOptions},
     deezer::DeezerClient,
     models::{Album, Artist, Music},
     tools::MusicError,
@@ -19,9 +19,10 @@ pub fn config_music(cfg: &mut web::ServiceConfig) {
 pub async fn search_music(
     req: web::Path<String>,
     deezer_api: web::Data<DeezerClient>,
+    pagination: web::Query<PaginationOptions>,
 ) -> MusicResponse {
     let db = get_mongo().await;
-    let res = deezer_api.search_music(req.into_inner()).await.unwrap();
+    let res = deezer_api.search_music(req.clone()).await.unwrap();
     let artists: Vec<Artist> = res
         .data
         .clone()
@@ -62,6 +63,6 @@ pub async fn search_music(
 
     actix_rt::spawn(lazy_update);
     //musics.group_by()
-
-    Ok(HttpResponse::Ok().finish())
+    let searched_musics = db.search_music(req.into_inner(), &pagination).await;
+    Ok(HttpResponse::Ok().json(searched_musics.unwrap().unwrap()))
 }

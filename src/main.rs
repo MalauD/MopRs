@@ -15,7 +15,7 @@ mod models;
 mod routes;
 mod tools;
 
-async fn index(req: HttpRequest) -> Result<NamedFile> {
+async fn index(_req: HttpRequest) -> Result<NamedFile> {
     Ok(NamedFile::open("./static/index.html")?)
 }
 

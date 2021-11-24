@@ -1,3 +1,5 @@
+use std::cmp::Ordering;
+
 use mongodb::bson::{oid::ObjectId, DateTime};
 use serde::{Deserialize, Serialize};
 
@@ -20,6 +22,12 @@ pub struct Music {
     likes: i32,
     rank: i32,
     last_view: DateTime,
+}
+
+impl Music {
+    pub fn get_rank(&self) -> &i32 {
+        &self.rank
+    }
 }
 
 #[derive(Deserialize, Serialize, Clone)]
