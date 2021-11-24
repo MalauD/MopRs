@@ -1,0 +1,11 @@
+---
+
+concurrency: 4
+base: 'http://localhost:8080'
+iterations: 50
+rampup: 2
+
+plan:
+  - name: Fetch users
+    request:
+      url: /Music/Search/Music/Name/kendrick

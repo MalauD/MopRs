@@ -4,7 +4,7 @@ use crate::{
     models::{Album, Artist, Music},
     tools::MusicError,
 };
-use actix_web::{get, web, HttpResponse};
+use actix_web::{get, rt::Arbiter, web, HttpResponse};
 use itertools::Itertools;
 
 type MusicResponse = Result<HttpResponse, MusicError>;
@@ -27,24 +27,40 @@ pub async fn search_music(
         .clone()
         .into_iter()
         .map(|x| Artist::from(x))
-        .collect();
-    let albums: Vec<Album> = res
+        .unique_by(|x| x.id)
+        .collect_vec();
+    let albums: Vec<(i32, Album)> = res
         .data
         .clone()
         .into_iter()
-        .map(|x| Album::from(x))
-        .collect();
-    let musics: Vec<Music> = res
+        .map(|x| (x.artist.id, Album::from(x)))
+        .unique_by(|x| x.1.id)
+        .collect_vec();
+    let musics: Vec<(i32, Music)> = res
         .data
         .clone()
         .into_iter()
-        .map(|x| Music::from(x))
+        .map(|x| (x.album.id, Music::from(x)))
         .collect();
 
-    let _ = db.bulk_insert_musics(musics).await;
-    let _ = db.bulk_insert_albums(albums).await;
+    let _ = db
+        .bulk_insert_musics(musics.clone().into_iter().map(|x| x.1).collect())
+        .await;
+    let _ = db
+        .bulk_insert_albums(albums.clone().into_iter().map(|x| x.1).collect())
+        .await;
     let _ = db.bulk_insert_artists(artists).await;
 
+    let lazy_update = async move {
+        for val in musics.clone().iter() {
+            let _ = db.append_to_album(val.1.id, val.0).await;
+        }
+        for val in albums.clone().iter() {
+            let _ = db.append_to_artist(val.1.id, val.0).await;
+        }
+    };
+
+    actix_rt::spawn(lazy_update);
     //musics.group_by()
 
     Ok(HttpResponse::Ok().finish())

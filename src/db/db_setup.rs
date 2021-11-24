@@ -82,4 +82,26 @@ impl MongoClient {
             .await;
         Ok(())
     }
+
+    pub async fn append_to_album(&self, music_id: i32, album_id: i32) -> Result<()> {
+        let coll = self._database.collection::<Album>("Album");
+        coll.update_one(
+            doc! {"_id": album_id },
+            doc! {"$addToSet": {"musics": music_id}},
+            None,
+        )
+        .await?;
+        Ok(())
+    }
+
+    pub async fn append_to_artist(&self, album_id: i32, artist_id: i32) -> Result<()> {
+        let coll = self._database.collection::<Artist>("Artist");
+        coll.update_one(
+            doc! {"_id": artist_id },
+            doc! {"$addToSet": {"albums": album_id}},
+            None,
+        )
+        .await?;
+        Ok(())
+    }
 }
