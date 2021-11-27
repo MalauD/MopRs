@@ -1,7 +1,9 @@
 mod db_setup;
-mod user_db;
+mod music;
+mod user;
 
 pub use self::{
     db_setup::{get_mongo, MongoClient, PaginationOptions},
-    user_db::*,
+    music::*,
+    user::*,
 };

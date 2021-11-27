@@ -3,7 +3,6 @@ use crate::{
     models::{User, UserReq},
 };
 use mongodb::{bson::doc, error::Result};
-use serde::Deserialize;
 
 impl MongoClient {
     pub async fn get_user(&self, user: &UserReq) -> Result<Option<User>> {

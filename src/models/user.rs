@@ -37,6 +37,7 @@ pub struct User {
     pub username: String,
     #[serde(with = "serde_bytes")]
     pub credential: Vec<u8>,
+    liked_musics: Vec<i32>,
 }
 
 impl User {
@@ -71,6 +72,7 @@ impl User {
             id: None,
             username: req.username.clone(),
             credential: cred.to_vec(),
+            liked_musics: Vec::new(),
         }
     }
 

@@ -8,88 +8,80 @@ import AlbumItemCard from '../Items/AlbumItemCard';
 import { AddMultipleMusics, ClearPlaylist as ClearPlaylistRedux } from '../../Actions/Action';
 
 const mapDispatchToProps = (dispatch) => ({
-	ClearPlaylist: () => {
-		dispatch(ClearPlaylistRedux());
-	},
-	AddMusics: (Musics) => {
-		dispatch(AddMultipleMusics(Musics));
-	},
+    ClearPlaylist: () => {
+        dispatch(ClearPlaylistRedux());
+    },
+    AddMusics: (Musics) => {
+        dispatch(AddMultipleMusics(Musics));
+    },
 });
 
 class AlbumElementConnected extends React.Component {
-	static propTypes = {
-		history: PropTypes.shape({
-			push: PropTypes.func.isRequired,
-		}).isRequired,
-		Album: PropTypes.shape({
-			_id: PropTypes.string,
-			Name: PropTypes.string,
-			Image: PropTypes.string,
-			ImageFormat: PropTypes.string,
-			ImagePathDeezer: PropTypes.string,
-			MusicsId: PropTypes.arrayOf(PropTypes.any),
-			IsComplete: PropTypes.bool,
-		}).isRequired,
-		ClearPlaylist: PropTypes.func.isRequired,
-		AddMusics: PropTypes.func.isRequired,
-	}
+    static propTypes = {
+        history: PropTypes.shape({
+            push: PropTypes.func.isRequired,
+        }).isRequired,
+        Album: PropTypes.shape({
+            _id: PropTypes.number,
+            name: PropTypes.string,
+            cover: PropTypes.string,
+            musics: PropTypes.arrayOf(PropTypes.any),
+            is_complete: PropTypes.bool,
+        }).isRequired,
+        ClearPlaylist: PropTypes.func.isRequired,
+        AddMusics: PropTypes.func.isRequired,
+    };
 
-	onClick = () => {
-		const { history, Album } = this.props;
-		history.push(`/Album/${Album._id}`);
-	};
+    onClick = () => {
+        const { history, Album } = this.props;
+        history.push(`/Album/${Album._id}`);
+    };
 
+    componentWillUnmount = () => {
+        this.setState = () => {};
+    };
 
-	componentWillUnmount = () => {
-		this.setState = () => {
+    GetAlbumMusics = () => {
+        const { Album } = this.props;
+        const { MusicsId } = Album;
 
-		};
-	}
+        MusicsId.forEach((value, index, arr) => {
+            /* eslint no-param-reassign: "off" */
+            arr[index].AlbumId = Album;
+        }, MusicsId);
 
-	GetAlbumMusics = () => {
-		const { Album } = this.props;
-		const { MusicsId } = Album;
+        return MusicsId;
+    };
 
-		MusicsId.forEach((value, index, arr) => {
-			/* eslint no-param-reassign: "off" */
-			arr[index].AlbumId = Album;
-		}, MusicsId);
+    OnAdd = () => {
+        const { AddMusics } = this.props;
+        AddMusics(this.GetAlbumMusics());
+    };
 
-		return MusicsId;
-	}
+    OnPlay = () => {
+        const { AddMusics, ClearPlaylist } = this.props;
+        ClearPlaylist();
+        AddMusics(this.GetAlbumMusics());
+    };
 
-	OnAdd = () => {
-		const { AddMusics } = this.props;
-		AddMusics(this.GetAlbumMusics());
-	}
+    render() {
+        const { Album } = this.props;
 
-	OnPlay = () => {
-		const { AddMusics, ClearPlaylist } = this.props;
-		ClearPlaylist();
-		AddMusics(this.GetAlbumMusics());
-	}
-
-	render() {
-		const { Album } = this.props;
-
-		return (
-			<LazyLoad>
-				<AlbumItemCard
-					Image={Album.Image}
-					ImageFormat={Album.ImageFormat}
-					ImageDz={Album.ImagePathDeezer}
-					Name={Album.Name}
-					IsComplete={Album.IsComplete}
-					onClick={this.onClick}
-					MoreOptions
-				>
-					<Dropdown.Item onClick={this.OnPlay}>Play</Dropdown.Item>
-					<Dropdown.Item onClick={this.OnAdd}>Add to current playlist</Dropdown.Item>
-				</AlbumItemCard>
-			</LazyLoad>
-
-		);
-	}
+        return (
+            <LazyLoad>
+                <AlbumItemCard
+                    ImageDz={Album.cover}
+                    Name={Album.name}
+                    IsComplete={Album.is_complete}
+                    onClick={this.onClick}
+                    MoreOptions
+                >
+                    <Dropdown.Item onClick={this.OnPlay}>Play</Dropdown.Item>
+                    <Dropdown.Item onClick={this.OnAdd}>Add to current playlist</Dropdown.Item>
+                </AlbumItemCard>
+            </LazyLoad>
+        );
+    }
 }
 
 const AlbumElement = connect(null, mapDispatchToProps)(AlbumElementConnected);

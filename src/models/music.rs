@@ -1,6 +1,4 @@
-use std::cmp::Ordering;
-
-use mongodb::bson::{oid::ObjectId, DateTime};
+use mongodb::bson::DateTime;
 use serde::{Deserialize, Serialize};
 
 use crate::deezer::SearchMusicsResultItem;
@@ -18,6 +16,7 @@ pub struct Music {
     disc_number: Option<i32>,
     #[serde(skip_serializing_if = "Option::is_none")]
     file_path: Option<String>,
+    image_url: String,
     views: i32,
     likes: i32,
     rank: i32,
@@ -38,7 +37,7 @@ pub struct Album {
     cover: String,
     is_complete: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
-    musics: Option<Vec<Music>>,
+    musics: Option<Vec<i32>>,
 }
 
 #[derive(Deserialize, Serialize, Clone)]
@@ -48,7 +47,7 @@ pub struct Artist {
     name: String,
     picture: String,
     #[serde(skip_serializing_if = "Option::is_none")]
-    albums: Option<Vec<Album>>,
+    albums: Option<Vec<i32>>,
 }
 
 impl From<SearchMusicsResultItem> for Music {
@@ -61,6 +60,7 @@ impl From<SearchMusicsResultItem> for Music {
             track_number: None,
             disc_number: None,
             file_path: None,
+            image_url: music_search_result.album.cover_big,
             views: 0,
             likes: 0,
             rank: music_search_result.rank,

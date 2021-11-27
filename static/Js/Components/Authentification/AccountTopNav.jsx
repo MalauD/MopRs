@@ -22,7 +22,9 @@ class AccountTopNavConnected extends React.Component {
     static propTypes = {
         Account: PropTypes.shape({
             username: PropTypes.string.isRequired,
-            _id: PropTypes.string.isRequired,
+            _id: PropTypes.shape({
+                $oid: PropTypes.string,
+            }).isRequired,
         }),
         AddMyAccount: PropTypes.func.isRequired,
         history: PropTypes.shape({

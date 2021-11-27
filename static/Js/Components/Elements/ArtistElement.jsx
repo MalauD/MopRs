@@ -7,9 +7,9 @@ import ArtistItemCard from '../Items/ArtistItemCard';
 class ArtistElement extends React.Component {
 	static propTypes = {
 		Artist: PropTypes.shape({
-			_id: PropTypes.string,
-			Name: PropTypes.string,
-			ImagePath: PropTypes.string,
+			_id: PropTypes.number,
+			name: PropTypes.string,
+			picture: PropTypes.string,
 		}).isRequired,
 		history: PropTypes.shape({
 			push: PropTypes.func.isRequired,
@@ -27,8 +27,8 @@ class ArtistElement extends React.Component {
 		return (
 			<LazyLoad>
 				<ArtistItemCard
-					Name={Artist.Name}
-					ImagePath={Artist.ImagePath || '/Ressources/noMusic.jpg'}
+					Name={Artist.name}
+					ImagePath={Artist.picture || '/Ressources/noMusic.jpg'}
 					onClick={this.onCardClick}
 				/>
 			</LazyLoad>
