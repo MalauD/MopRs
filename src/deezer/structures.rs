@@ -28,3 +28,25 @@ pub struct SearchMusicsResultItemAlbum {
     pub title: String,
     pub cover_big: String,
 }
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct AlbumTracksResult {
+    pub data: Vec<AlbumTracksResultItem>,
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct AlbumTracksResultItem {
+    pub id: i32,
+    pub title: String,
+    pub rank: i32,
+    pub duration: i32,
+    pub track_position: i32,
+    pub disk_number: i32,
+    pub artist: AlbumTracksResultArtist,
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct AlbumTracksResultArtist {
+    pub id: i32,
+    pub name: String,
+}

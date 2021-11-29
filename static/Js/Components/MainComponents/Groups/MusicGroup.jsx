@@ -26,7 +26,6 @@ class MusicGroupConnected extends React.Component {
 		IsFetching: PropTypes.bool,
 		ContextType: PropTypes.string.isRequired,
 		ContextPlaylistId: PropTypes.string,
-		CommonImage: PropTypes.string,
 		CommonImageDz: PropTypes.string,
 		MoreButton: PropTypes.bool,
 		OnMoreClick: PropTypes.func,
@@ -35,7 +34,6 @@ class MusicGroupConnected extends React.Component {
 	static defaultProps = {
 		IsFetching: false,
 		ContextPlaylistId: undefined,
-		CommonImage: undefined,
 		CommonImageDz: undefined,
 		MoreButton: false,
 		OnMoreClick: () => {},
@@ -62,18 +60,10 @@ class MusicGroupConnected extends React.Component {
 
 		const MusicItems = Musics
 			.map((m) => {
-				const Music = m;
-				if (CommonImage || CommonImageDz) {
-					Music.AlbumId = {
-						Image: CommonImage,
-						ImagePathDeezer: CommonImageDz,
-					};
-				}
-
 				return (
 					<MusicElement
-						key={Music._id}
-						Music={Music}
+						key={m._id}
+						Music={m}
 						ContextType={ContextType}
 						ContextPlaylistId={ContextPlaylistId}
 					/>

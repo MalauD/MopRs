@@ -1,10 +1,10 @@
+use futures::StreamExt;
 use mongodb::{
     bson::doc,
     error::Result,
     options::{FindOptions, IndexOptions, InsertManyOptions},
     IndexModel,
 };
-use tokio_stream::StreamExt;
 
 use crate::{
     db::{MongoClient, PaginationOptions},
@@ -70,5 +70,17 @@ impl MongoClient {
         }
         result.sort_by(|x, y| x.get_rank().cmp(y.get_rank()));
         Ok(Some(result))
+    }
+
+    pub async fn get_musics(&self, music_ids: &Vec<i32>) -> Result<Option<Vec<Music>>> {
+        let coll = self._database.collection::<Music>("Music");
+        let mut cursor = coll.find(doc! {"_id": {"$in": music_ids}}, None).await?;
+        let mut result = Vec::<Music>::with_capacity(20);
+        while let Some(value) = cursor.next().await {
+            if let Ok(res) = value {
+                result.push(res);
+            }
+        }
+        return Ok(Some(result));
     }
 }

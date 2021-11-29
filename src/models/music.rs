@@ -1,26 +1,27 @@
 use mongodb::bson::DateTime;
 use serde::{Deserialize, Serialize};
 
-use crate::deezer::SearchMusicsResultItem;
+use crate::deezer::{AlbumTracksResultItem, SearchMusicsResultItem};
 
 #[derive(Deserialize, Serialize, Clone)]
 pub struct Music {
     #[serde(rename = "_id")]
     pub id: i32,
-    title: String,
-    artist_name: String,
-    published_date: DateTime,
+    pub title: String,
+    pub artist_name: String,
+    pub published_date: DateTime,
     #[serde(skip_serializing_if = "Option::is_none")]
-    track_number: Option<i32>,
+    pub track_number: Option<i32>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    disc_number: Option<i32>,
+    pub disc_number: Option<i32>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    file_path: Option<String>,
-    image_url: String,
-    views: i32,
-    likes: i32,
-    rank: i32,
-    last_view: DateTime,
+    pub file_path: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub image_url: Option<String>,
+    pub views: i32,
+    pub likes: i32,
+    pub rank: i32,
+    pub last_view: DateTime,
 }
 
 impl Music {
@@ -34,10 +35,33 @@ pub struct Album {
     #[serde(rename = "_id")]
     pub id: i32,
     name: String,
-    cover: String,
+    pub cover: String,
     is_complete: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
-    musics: Option<Vec<i32>>,
+    pub musics: Option<Vec<i32>>,
+}
+
+#[derive(Deserialize, Serialize, Clone)]
+pub struct PopulatedAlbum {
+    #[serde(rename = "_id")]
+    pub id: i32,
+    name: String,
+    pub cover: String,
+    is_complete: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub musics: Option<Vec<Music>>,
+}
+
+impl From<Album> for PopulatedAlbum {
+    fn from(al: Album) -> Self {
+        PopulatedAlbum {
+            id: al.id,
+            name: al.name,
+            cover: al.cover,
+            is_complete: al.is_complete,
+            musics: None,
+        }
+    }
 }
 
 #[derive(Deserialize, Serialize, Clone)]
@@ -60,10 +84,29 @@ impl From<SearchMusicsResultItem> for Music {
             track_number: None,
             disc_number: None,
             file_path: None,
-            image_url: music_search_result.album.cover_big,
+            image_url: Some(music_search_result.album.cover_big),
             views: 0,
             likes: 0,
             rank: music_search_result.rank,
+            last_view: DateTime::now(),
+        }
+    }
+}
+
+impl From<AlbumTracksResultItem> for Music {
+    fn from(album_track: AlbumTracksResultItem) -> Self {
+        Music {
+            id: album_track.id,
+            title: album_track.title,
+            artist_name: album_track.artist.name,
+            published_date: DateTime::now(),
+            track_number: Some(album_track.track_position),
+            disc_number: Some(album_track.disk_number),
+            file_path: None,
+            image_url: None,
+            views: 0,
+            likes: 0,
+            rank: album_track.rank,
             last_view: DateTime::now(),
         }
     }

@@ -55,6 +55,21 @@ impl MongoClient {
         Ok(())
     }
 
+    pub async fn append_multiple_to_an_album(
+        &self,
+        music_ids: Vec<i32>,
+        album_id: i32,
+    ) -> Result<()> {
+        let coll = self._database.collection::<Album>("Album");
+        coll.update_one(
+            doc! {"_id": album_id },
+            doc! {"$addToSet": {"musics": {"$each": music_ids}}},
+            None,
+        )
+        .await?;
+        Ok(())
+    }
+
     pub async fn search_album(
         &self,
         search: String,
@@ -78,5 +93,10 @@ impl MongoClient {
             }
         }
         Ok(Some(result))
+    }
+
+    pub async fn get_album(&self, album_id: i32) -> Result<Option<Album>> {
+        let coll = self._database.collection::<Album>("Album");
+        Ok(coll.find_one(doc! {"_id": album_id}, None).await?)
     }
 }
