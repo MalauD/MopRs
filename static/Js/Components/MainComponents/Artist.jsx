@@ -25,8 +25,8 @@ class Artist extends React.Component {
 		const { match } = this.props;
 		Axios.get(`/Music/Artist/id/${match.params.id}`).then((res) => {
 			this.setState({
-				ArtistName: res.data.Name,
-				AlbumsId: res.data.AlbumsId,
+				ArtistName: res.data.name,
+				AlbumsId: res.data.albums,
 			});
 		});
 	}

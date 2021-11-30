@@ -29,9 +29,10 @@ pub struct SearchMusicsResultItemAlbum {
     pub cover_big: String,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct AlbumTracksResult {
     pub data: Vec<AlbumTracksResultItem>,
+    pub next: Option<String>,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -49,4 +50,17 @@ pub struct AlbumTracksResultItem {
 pub struct AlbumTracksResultArtist {
     pub id: i32,
     pub name: String,
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct ArtistAlbumsResult {
+    pub data: Vec<ArtistAlbumsResultItem>,
+    pub next: Option<String>,
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct ArtistAlbumsResultItem {
+    pub id: i32,
+    pub title: String,
+    pub cover_big: String,
 }

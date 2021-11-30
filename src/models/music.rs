@@ -1,7 +1,7 @@
 use mongodb::bson::DateTime;
 use serde::{Deserialize, Serialize};
 
-use crate::deezer::{AlbumTracksResultItem, SearchMusicsResultItem};
+use crate::deezer::{AlbumTracksResultItem, ArtistAlbumsResultItem, SearchMusicsResultItem};
 
 #[derive(Deserialize, Serialize, Clone)]
 pub struct Music {
@@ -71,7 +71,28 @@ pub struct Artist {
     name: String,
     picture: String,
     #[serde(skip_serializing_if = "Option::is_none")]
-    albums: Option<Vec<i32>>,
+    pub albums: Option<Vec<i32>>,
+}
+
+#[derive(Deserialize, Serialize, Clone)]
+pub struct PopulatedArtist {
+    #[serde(rename = "_id")]
+    pub id: i32,
+    name: String,
+    pub picture: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub albums: Option<Vec<Album>>,
+}
+
+impl From<Artist> for PopulatedArtist {
+    fn from(al: Artist) -> Self {
+        PopulatedArtist {
+            id: al.id,
+            name: al.name,
+            picture: al.picture,
+            albums: None,
+        }
+    }
 }
 
 impl From<SearchMusicsResultItem> for Music {
@@ -118,6 +139,18 @@ impl From<SearchMusicsResultItem> for Album {
             id: music.album.id,
             name: music.album.title,
             cover: music.album.cover_big,
+            is_complete: false,
+            musics: None,
+        }
+    }
+}
+
+impl From<ArtistAlbumsResultItem> for Album {
+    fn from(album: ArtistAlbumsResultItem) -> Self {
+        Album {
+            id: album.id,
+            name: album.title,
+            cover: album.cover_big,
             is_complete: false,
             musics: None,
         }

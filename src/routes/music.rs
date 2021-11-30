@@ -1,7 +1,7 @@
 use crate::{
     db::{get_mongo, PaginationOptions},
     deezer::DeezerClient,
-    models::{Album, Artist, Music, PopulatedAlbum},
+    models::{Album, Artist, Music, PopulatedAlbum, PopulatedArtist},
     tools::MusicError,
 };
 use actix_web::{web, HttpResponse};
@@ -24,7 +24,8 @@ pub fn config_music(cfg: &mut web::ServiceConfig) {
                 "/Search/Artist/Name/{search_req}",
                 web::get().to(search_artist),
             )
-            .route("/Album/id/{id}", web::get().to(get_album)),
+            .route("/Album/id/{id}", web::get().to(get_album))
+            .route("/Artist/id/{id}", web::get().to(get_artist)),
     );
 }
 
@@ -167,4 +168,30 @@ pub async fn get_album(req: web::Path<i32>, deezer_api: web::Data<DeezerClient>)
     let mut pop_album = PopulatedAlbum::from(compl_album);
     pop_album.musics = Some(musics_of_album);
     Ok(HttpResponse::Ok().json(pop_album))
+}
+
+pub async fn get_artist(req: web::Path<i32>, deezer_api: web::Data<DeezerClient>) -> MusicResponse {
+    let db = get_mongo().await;
+    let res = deezer_api.get_artist_albums(&req).await.unwrap();
+    let artist = db.get_artist(&req).await.unwrap().unwrap();
+    let albums: Vec<Album> = res
+        .data
+        .clone()
+        .into_iter()
+        .map(|x| Album::from(x))
+        .unique_by(|x| x.id)
+        .collect_vec();
+    let albums_id = albums.clone().into_iter().map(|x| x.id).collect_vec();
+    let _ = db.bulk_insert_albums(albums).await;
+    let _ = db.append_multiple_to_an_artist(albums_id, &req).await;
+    //musics.group_by()
+    let compl_artist = db.get_artist(&req).await.unwrap().unwrap();
+    let albums_of_artist = db
+        .get_albums(&compl_artist.albums.as_ref().unwrap())
+        .await
+        .unwrap()
+        .unwrap();
+    let mut pop_artist = PopulatedArtist::from(compl_artist);
+    pop_artist.albums = Some(albums_of_artist);
+    Ok(HttpResponse::Ok().json(pop_artist))
 }

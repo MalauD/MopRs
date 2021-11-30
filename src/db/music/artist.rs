@@ -78,4 +78,24 @@ impl MongoClient {
         }
         Ok(Some(result))
     }
+
+    pub async fn get_artist(&self, artist_id: &i32) -> Result<Option<Artist>> {
+        let coll = self._database.collection::<Artist>("Artist");
+        Ok(coll.find_one(doc! {"_id": artist_id}, None).await?)
+    }
+
+    pub async fn append_multiple_to_an_artist(
+        &self,
+        album_ids: Vec<i32>,
+        artist_id: &i32,
+    ) -> Result<()> {
+        let coll = self._database.collection::<Artist>("Artist");
+        coll.update_one(
+            doc! {"_id": artist_id },
+            doc! {"$addToSet": {"musics": {"$each": album_ids}}},
+            None,
+        )
+        .await?;
+        Ok(())
+    }
 }
