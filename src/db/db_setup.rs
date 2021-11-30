@@ -55,7 +55,7 @@ impl PaginationOptions {
     pub fn get_page(&self) -> usize {
         self.page
     }
-    pub fn get_max_results(&self) -> u32 {
-        self.max_results
+    pub fn get_max_results(&self) -> usize {
+        self.max_results as usize
     }
 }

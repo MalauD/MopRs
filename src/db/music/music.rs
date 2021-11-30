@@ -55,14 +55,13 @@ impl MongoClient {
         let find_option = FindOptions::builder()
             .limit(pagination.get_max_results() as i64)
             .skip(Some(
-                (pagination.get_page() as u32 * pagination.get_max_results()) as u64,
+                (pagination.get_page() * pagination.get_max_results()) as u64,
             ))
             .build();
         let mut cursor = coll
             .find(doc! { "$text": { "$search": search } }, find_option)
             .await?;
-        let mut result =
-            Vec::<Music>::with_capacity(pagination.get_max_results().max(20).try_into().unwrap());
+        let mut result = Vec::<Music>::with_capacity(pagination.get_max_results().max(20));
         while let Some(value) = cursor.next().await {
             if let Ok(res) = value {
                 result.push(res);

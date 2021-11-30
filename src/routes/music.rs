@@ -66,10 +66,10 @@ pub async fn search_music(
 
     let lazy_update = async move {
         for val in musics.clone().iter() {
-            let _ = db.append_to_album(val.1.id, val.0).await;
+            let _ = db.append_to_album(&val.1.id, &val.0).await;
         }
         for val in albums.clone().iter() {
-            let _ = db.append_to_artist(val.1.id, val.0).await;
+            let _ = db.append_to_artist(&val.1.id, &val.0).await;
         }
     };
 
@@ -108,7 +108,7 @@ pub async fn search_album(
 
     let lazy_update = async move {
         for val in albums.clone().iter() {
-            let _ = db.append_to_artist(val.1.id, val.0).await;
+            let _ = db.append_to_artist(&val.1.id, &val.0).await;
         }
     };
 
@@ -143,7 +143,7 @@ pub async fn search_artist(
 pub async fn get_album(req: web::Path<i32>, deezer_api: web::Data<DeezerClient>) -> MusicResponse {
     let db = get_mongo().await;
     let res = deezer_api.get_album_musics(req.clone()).await.unwrap();
-    let album = db.get_album(req.clone()).await.unwrap().unwrap();
+    let album = db.get_album(&req).await.unwrap().unwrap();
     let musics: Vec<Music> = res
         .data
         .clone()
@@ -156,9 +156,9 @@ pub async fn get_album(req: web::Path<i32>, deezer_api: web::Data<DeezerClient>)
         .collect_vec();
     let music_ids = musics.clone().into_iter().map(|x| x.id).collect_vec();
     let _ = db.bulk_insert_musics(musics).await;
-    let _ = db.append_multiple_to_an_album(music_ids, req.clone()).await;
+    let _ = db.append_multiple_to_an_album(music_ids, &req).await;
     //musics.group_by()
-    let compl_album = db.get_album(req.clone()).await.unwrap().unwrap();
+    let compl_album = db.get_album(&req).await.unwrap().unwrap();
     let musics_of_album = db
         .get_musics(&compl_album.musics.as_ref().unwrap())
         .await

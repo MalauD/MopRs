@@ -44,7 +44,7 @@ impl MongoClient {
         Ok(())
     }
 
-    pub async fn append_to_album(&self, music_id: i32, album_id: i32) -> Result<()> {
+    pub async fn append_to_album(&self, music_id: &i32, album_id: &i32) -> Result<()> {
         let coll = self._database.collection::<Album>("Album");
         coll.update_one(
             doc! {"_id": album_id },
@@ -58,7 +58,7 @@ impl MongoClient {
     pub async fn append_multiple_to_an_album(
         &self,
         music_ids: Vec<i32>,
-        album_id: i32,
+        album_id: &i32,
     ) -> Result<()> {
         let coll = self._database.collection::<Album>("Album");
         coll.update_one(
@@ -79,14 +79,13 @@ impl MongoClient {
         let find_option = FindOptions::builder()
             .limit(pagination.get_max_results() as i64)
             .skip(Some(
-                (pagination.get_page() as u32 * pagination.get_max_results()) as u64,
+                (pagination.get_page() * pagination.get_max_results()) as u64,
             ))
             .build();
         let mut cursor = coll
             .find(doc! { "$text": { "$search": search } }, find_option)
             .await?;
-        let mut result =
-            Vec::<Album>::with_capacity(pagination.get_max_results().max(20).try_into().unwrap());
+        let mut result = Vec::<Album>::with_capacity(pagination.get_max_results().max(20));
         while let Some(value) = cursor.next().await {
             if let Ok(res) = value {
                 result.push(res);
@@ -95,7 +94,7 @@ impl MongoClient {
         Ok(Some(result))
     }
 
-    pub async fn get_album(&self, album_id: i32) -> Result<Option<Album>> {
+    pub async fn get_album(&self, album_id: &i32) -> Result<Option<Album>> {
         let coll = self._database.collection::<Album>("Album");
         Ok(coll.find_one(doc! {"_id": album_id}, None).await?)
     }
