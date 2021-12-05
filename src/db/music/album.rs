@@ -32,12 +32,12 @@ impl MongoClient {
         Ok(())
     }
 
-    pub async fn bulk_insert_albums(&self, musics: Vec<Album>) -> Result<()> {
+    pub async fn bulk_insert_albums(&self, albums: Vec<Album>) -> Result<()> {
         let coll = self._database.collection::<Album>("Album");
 
         let _ = coll
             .insert_many(
-                musics,
+                albums,
                 Some(InsertManyOptions::builder().ordered(false).build()),
             )
             .await;

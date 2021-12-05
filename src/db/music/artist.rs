@@ -92,7 +92,7 @@ impl MongoClient {
         let coll = self._database.collection::<Artist>("Artist");
         coll.update_one(
             doc! {"_id": artist_id },
-            doc! {"$addToSet": {"musics": {"$each": album_ids}}},
+            doc! {"$addToSet": {"albums": {"$each": album_ids}}},
             None,
         )
         .await?;

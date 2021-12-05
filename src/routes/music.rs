@@ -173,7 +173,6 @@ pub async fn get_album(req: web::Path<i32>, deezer_api: web::Data<DeezerClient>)
 pub async fn get_artist(req: web::Path<i32>, deezer_api: web::Data<DeezerClient>) -> MusicResponse {
     let db = get_mongo().await;
     let res = deezer_api.get_artist_albums(&req).await.unwrap();
-    let artist = db.get_artist(&req).await.unwrap().unwrap();
     let albums: Vec<Album> = res
         .data
         .clone()
