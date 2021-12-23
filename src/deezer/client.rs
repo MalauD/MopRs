@@ -1,20 +1,125 @@
+use std::{fs, io::Write, path::Path};
+
+use blowfish;
+use openssl::symm::{decrypt, Cipher};
 use reqwest::Client;
+use serde_json::json;
 
 use crate::deezer::SearchMusicsResult;
 
-use super::{AlbumTracksResult, ArtistAlbumsResult};
+use super::{
+    AlbumTracksResult, ArtistAlbumsResult, InitSessionResult, StreamMusic, StreamingCredentials,
+    UnofficialMusicResult,
+};
 
 pub struct DeezerClient {
     http_client: Client,
     base_url: String,
+    pub cred: StreamingCredentials,
 }
 
 impl DeezerClient {
-    pub fn new(base_url: String) -> Self {
+    pub fn new(base_url: String, arl: String) -> Self {
         Self {
             http_client: Client::new(),
             base_url,
+            cred: StreamingCredentials::new(arl),
         }
+    }
+
+    fn get_cookie(&self) -> String {
+        if self.cred.sid.is_empty() {
+            return format!("arl={}", self.cred.arl);
+        }
+        format!("arl={};sid={}", self.cred.arl, self.cred.sid)
+    }
+
+    pub async fn init_session(&mut self) -> Result<(), String> {
+        let response: InitSessionResult = self
+            .http_client
+            .get("http://www.deezer.com/ajax/gw-light.php?method=deezer.ping&api_version=1.0&api_token")
+            .header("cookie", self.get_cookie())
+            .send()
+            .await
+            .expect("Failed to init session")
+            .json()
+            .await
+            .expect("Failed to parse session");
+
+        self.cred.set_sid(response.results.SESSION);
+        Ok(())
+    }
+
+    pub async fn init_user(&mut self) -> Result<(), String> {
+        let response : serde_json::Value = self
+            .http_client
+            .get("http://www.deezer.com/ajax/gw-light.php?api_token=null&method=deezer.getUserData&api_version=1.0&input=3") 
+            .header("cookie", self.get_cookie())
+            .send()
+            .await
+            .expect("Failed to init session")
+            .json()
+            .await
+            .expect("Failed to parse session");
+        let res = response.get("results").unwrap();
+        self.cred
+            .set_token(res.get("checkForm").unwrap().as_str().unwrap().to_string());
+        Ok(())
+    }
+
+    pub async fn get_music_by_id_unofficial(&self, id: i32) -> Result<StreamMusic, String> {
+        let url = format!(
+            "http://www.deezer.com/ajax/gw-light.php?api_token={}&api_version=1.0&input=3&method=song.getData",
+            self.cred.token
+        );
+        let response: UnofficialMusicResult = self
+            .http_client
+            .post(url)
+            .json(&json!({ "sng_id": id }))
+            .header("cookie", self.get_cookie())
+            .send()
+            .await
+            .expect("Failed to get music")
+            .json()
+            .await
+            .expect("Failed to parse music");
+
+        Ok(response.results)
+    }
+
+    pub async fn download_music(&self, id: i32, dir: &Path) -> Result<String, String> {
+        let m = self.get_music_by_id_unofficial(id).await.unwrap();
+        let response = self
+            .http_client
+            .post(m.get_url())
+            .header("cookie", self.get_cookie())
+            .send()
+            .await
+            .expect("Failed to get music")
+            .bytes()
+            .await
+            .expect("Failed to get music");
+        let path = dir.join(format!("{}.mp3", id.to_string()));
+        println!("{:?}", path);
+        let mut f = fs::File::create(&path).unwrap();
+
+        let chunks = response.chunks(2048);
+        let mut decrypted_file: Vec<u8> = Vec::with_capacity(chunks.len());
+        let bf_key = m.get_bf_key();
+        let cipher = Cipher::bf_cbc();
+        for ch in chunks {
+            let mut decrypted_buf = decrypt(
+                cipher,
+                bf_key.as_bytes(),
+                Some(&[0, 1, 2, 3, 4, 5, 6, 7]),
+                ch,
+            )
+            .unwrap();
+
+            decrypted_file.append(&mut decrypted_buf);
+        }
+        let _ = f.write_all(&decrypted_file);
+        Ok(path.into_os_string().into_string().unwrap())
     }
 
     pub async fn search_music(&self, search: String) -> Result<SearchMusicsResult, String> {

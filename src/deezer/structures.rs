@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
 
+use super::StreamMusic;
+
 #[derive(Debug, Deserialize, Serialize)]
 pub struct SearchMusicsResult {
     pub data: Vec<SearchMusicsResultItem>,
@@ -63,4 +65,19 @@ pub struct ArtistAlbumsResultItem {
     pub id: i32,
     pub title: String,
     pub cover_big: String,
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct InitSessionResult {
+    pub results: Session,
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct Session {
+    pub SESSION: String,
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct UnofficialMusicResult {
+    pub results: StreamMusic,
 }
