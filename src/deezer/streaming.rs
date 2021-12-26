@@ -1,7 +1,6 @@
-use openssl::{
-    hash::{hash, MessageDigest},
-    symm::{encrypt, Cipher},
-};
+use aes::Aes128;
+use block_modes::block_padding::Pkcs7;
+use block_modes::{BlockMode, Ecb};
 use serde::{Deserialize, Serialize};
 
 pub struct StreamingCredentials {
@@ -51,22 +50,18 @@ impl StreamMusic {
         .join("¤");
         let data_ascii = to_vec_u8_ascii(&data);
 
-        let data_md5 = hash(MessageDigest::md5(), &data_ascii).unwrap();
-        let mut joined_data = format!("{}¤{}¤", hex::encode(data_md5), data);
+        let data_md5 = md5::compute(&data_ascii);
+        let mut joined_data = format!("{}¤{}¤", hex::encode(data_md5.0), data);
         while joined_data.chars().count() % 16 > 0 {
             //Slow chars is o(n)
             joined_data.push(' ');
         }
+        println!("Joined data {}", joined_data);
+        type Aes128Ecb = Ecb<Aes128, Pkcs7>;
+        let cipher =
+            Aes128Ecb::new_from_slices("jo6aey6haid2Teih".to_string().as_bytes(), &[]).unwrap();
 
-        hex::encode(
-            encrypt(
-                Cipher::aes_128_ecb(),
-                "jo6aey6haid2Teih".to_string().as_bytes(),
-                None,
-                &to_vec_u8_ascii(&joined_data),
-            )
-            .unwrap(),
-        )
+        hex::encode(cipher.encrypt_vec(&to_vec_u8_ascii(&joined_data)))
     }
 
     pub fn get_url(&self) -> String {
@@ -80,8 +75,7 @@ impl StreamMusic {
 
     pub fn get_bf_key(&self) -> String {
         let secret = "g4el58wc0zvf9na1";
-        let md5_music_id =
-            hex::encode(hash(MessageDigest::md5(), self.id.to_string().as_bytes()).unwrap());
+        let md5_music_id = hex::encode(&md5::compute(self.id.to_string().as_bytes()).0);
         let mut blowfish_key = String::new();
         for i in 0..16 {
             blowfish_key.push_str(

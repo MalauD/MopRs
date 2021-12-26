@@ -5,7 +5,12 @@ use actix_web::{
     App, HttpRequest, HttpServer, Result,
 };
 use routes::{config_music, config_user};
-use std::{path::Path, sync::RwLock, time::Instant};
+use std::{
+    fs,
+    path::{Path, PathBuf},
+    sync::RwLock,
+    time::Instant,
+};
 
 use crate::{deezer::DeezerClient, models::Sessions};
 
@@ -22,9 +27,10 @@ async fn index(_req: HttpRequest) -> Result<NamedFile> {
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     const PORT: i32 = 8080;
-    println!("{}", openssl::version::dir());
     let mut settings = config::Config::default();
     settings.merge(config::File::with_name("Settings")).unwrap();
+
+    fs::create_dir_all(settings.get_str("music_path").unwrap());
 
     let arl = settings.get_str("arl").unwrap();
 
@@ -43,7 +49,11 @@ async fn main() -> std::io::Result<()> {
         println!("Music: {}", m.get_url());
         println!("Bf key {}", m.get_bf_key());
         let start = Instant::now();
-        cl.download_music(350171311, Path::new("./Musics")).await;
+        cl.download_music(
+            350171311,
+            Path::new(&settings.get_str("music_path").unwrap()),
+        )
+        .await;
         println!("Elapsed : {:?}", start.elapsed());
     }
 

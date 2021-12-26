@@ -5,7 +5,6 @@ use block_modes::{
     BlockMode, Cbc,
 };
 use blowfish::Blowfish;
-use openssl::symm::{decrypt, Cipher};
 use reqwest::Client;
 use serde_json::json;
 
