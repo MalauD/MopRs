@@ -133,7 +133,7 @@ impl DeezerClient {
             iter = iter + 1;
         }
         let _ = f.write_all(&decrypted_file);
-
+        info!(target: "mop-rs::deezer","Downloaded music");
         Ok(path.into_os_string().into_string().unwrap())
     }
 

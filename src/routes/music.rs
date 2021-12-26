@@ -1,13 +1,19 @@
-use std::sync::RwLock;
+use std::{path::PathBuf, sync::RwLock};
 
 use crate::{
+    app_settings::AppSettings,
     db::{get_mongo, PaginationOptions},
     deezer::DeezerClient,
     models::{Album, Artist, Music, PopulatedAlbum, PopulatedArtist},
     tools::MusicError,
 };
-use actix_web::{web, HttpResponse};
+use actix_files::NamedFile;
+use actix_web::{
+    http::header::{ContentDisposition, DispositionType},
+    web, HttpResponse,
+};
 use itertools::Itertools;
+use mime::Mime;
 
 type MusicResponse = Result<HttpResponse, MusicError>;
 
@@ -27,7 +33,8 @@ pub fn config_music(cfg: &mut web::ServiceConfig) {
                 web::get().to(search_artist),
             )
             .route("/Album/id/{id}", web::get().to(get_album))
-            .route("/Artist/id/{id}", web::get().to(get_artist)),
+            .route("/Artist/id/{id}", web::get().to(get_artist))
+            .route("/cdn/{id}", web::get().to(get_music)),
     );
 }
 
@@ -206,4 +213,25 @@ pub async fn get_artist(
     let mut pop_artist = PopulatedArtist::from(compl_artist);
     pop_artist.albums = Some(albums_of_artist);
     Ok(HttpResponse::Ok().json(pop_artist))
+}
+
+pub async fn get_music(
+    req: web::Path<i32>,
+    deezer_api: web::Data<RwLock<DeezerClient>>,
+    settings: web::Data<AppSettings>,
+) -> actix_web::Result<NamedFile> {
+    let path = format!("./Musics/{}.mp3", &req);
+    let path: PathBuf = path.parse().unwrap();
+    let f = NamedFile::open(path);
+    let f = match f {
+        Ok(file) => file,
+        Err(_) => {
+            let dz = deezer_api.read().unwrap();
+            let path_dir: PathBuf = settings.music_path().parse().unwrap();
+            NamedFile::open(dz.download_music(*req, &path_dir).await.unwrap()).unwrap()
+        }
+    };
+
+    Ok(f.use_last_modified(true)
+        .set_content_type("audio/mpeg".parse().unwrap()))
 }

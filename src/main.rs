@@ -15,6 +15,7 @@ use std::{
 
 use crate::{deezer::DeezerClient, models::Sessions};
 
+mod app_settings;
 mod db;
 mod deezer;
 mod models;
@@ -53,9 +54,9 @@ async fn main() -> std::io::Result<()> {
         App::new()
             .app_data(sessions.clone())
             .app_data(deezer_client.clone())
-            .wrap(actix_web::middleware::Compress::new(
-                actix_web::http::ContentEncoding::Auto,
-            ))
+            .app_data(Data::new(app_settings::AppSettings::new(
+                settings.get_str("music_path").unwrap(),
+            )))
             .wrap(IdentityService::new(
                 CookieIdentityPolicy::new(&[0; 32])
                     .name("mop-id")

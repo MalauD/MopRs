@@ -51,14 +51,9 @@ class PlayerConnected extends React.Component {
         MusicFilePath: PropTypes.string,
         PlayingMusic: PropTypes.shape({
             _id: PropTypes.string.isRequired,
-            Title: PropTypes.string.isRequired,
-            Album: PropTypes.string.isRequired,
-            Artist: PropTypes.string.isRequired,
-            FilePath: PropTypes.string.isRequired,
-            AlbumId: PropTypes.shape({
-                Image: PropTypes.string,
-                ImagePathDeezer: PropTypes.string,
-            }).isRequired,
+            title: PropTypes.string.isRequired,
+            artist_name: PropTypes.string.isRequired,
+            image_url: PropTypes.string.isRequired,
         }),
         NextMusic: PropTypes.shape({
             Title: PropTypes.string.isRequired,
@@ -189,34 +184,19 @@ class PlayerConnected extends React.Component {
                                     EndTime={this.GetSliderMaxValue()}
                                     OnSliderChange={this.HandleSliderChange}
                                 />
-                                {PlayingMusic.AlbumId.ImagePathDeezer ? (
-                                    <Image
-                                        className="PlayerImage my-auto"
-                                        rounded
-                                        height="75em"
-                                        src={PlayingMusic.AlbumId.ImagePathDeezer}
-                                    />
-                                ) : (
-                                    <Image
-                                        className="PlayerImage my-auto"
-                                        rounded
-                                        height="75em"
-                                        src={
-                                            PlayingMusic.AlbumId.Image
-                                                ? `data:image/jpeg;base64,${PlayingMusic.AlbumId.Image.toString(
-                                                      'base64'
-                                                  )}`
-                                                : '/Ressources/noMusic.jpg'
-                                        }
-                                    />
-                                )}
+                                <Image
+                                    className="PlayerImage my-auto"
+                                    rounded
+                                    height="75em"
+                                    src={PlayingMusic.image_url}
+                                />
 
                                 <Col
                                     className="my-1 mt-0 col-md-auto  text-truncate"
                                     onClick={this.HandleOpenPlaylist}
                                 >
-                                    <h6>{PlayingMusic.Title}</h6>
-                                    <p>{PlayingMusic.Artist}</p>
+                                    <h6>{PlayingMusic.title}</h6>
+                                    <p>{PlayingMusic.artist_name}</p>
                                 </Col>
                                 <ButtonIcon
                                     buttonClass="my-auto mx-2 ml-auto p-0"
