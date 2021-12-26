@@ -56,7 +56,7 @@ impl StreamMusic {
             //Slow chars is o(n)
             joined_data.push(' ');
         }
-        println!("Joined data {}", joined_data);
+
         type Aes128Ecb = Ecb<Aes128, Pkcs7>;
         let cipher =
             Aes128Ecb::new_from_slices("jo6aey6haid2Teih".to_string().as_bytes(), &[]).unwrap();

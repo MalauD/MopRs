@@ -5,6 +5,7 @@ use block_modes::{
     BlockMode, Cbc,
 };
 use blowfish::Blowfish;
+use log::info;
 use reqwest::Client;
 use serde_json::json;
 
@@ -103,7 +104,7 @@ impl DeezerClient {
             .await
             .expect("Failed to get music");
         let path = dir.join(format!("{}.mp3", id.to_string()));
-        println!("{:?}", path);
+
         let mut f = fs::File::create(&path).unwrap();
 
         let chunks = response.chunks(2048);
@@ -132,7 +133,7 @@ impl DeezerClient {
             iter = iter + 1;
         }
         let _ = f.write_all(&decrypted_file);
-        println!("ok");
+
         Ok(path.into_os_string().into_string().unwrap())
     }
 

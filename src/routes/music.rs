@@ -1,3 +1,5 @@
+use std::sync::RwLock;
+
 use crate::{
     db::{get_mongo, PaginationOptions},
     deezer::DeezerClient,
@@ -31,11 +33,12 @@ pub fn config_music(cfg: &mut web::ServiceConfig) {
 
 pub async fn search_music(
     req: web::Path<String>,
-    deezer_api: web::Data<DeezerClient>,
+    deezer_api: web::Data<RwLock<DeezerClient>>,
     pagination: web::Query<PaginationOptions>,
 ) -> MusicResponse {
     let db = get_mongo().await;
-    let res = deezer_api.search_music(req.clone()).await.unwrap();
+    let dz = deezer_api.read().unwrap();
+    let res = dz.search_music(req.clone()).await.unwrap();
     let artists: Vec<Artist> = res
         .data
         .clone()
@@ -82,11 +85,12 @@ pub async fn search_music(
 
 pub async fn search_album(
     req: web::Path<String>,
-    deezer_api: web::Data<DeezerClient>,
+    deezer_api: web::Data<RwLock<DeezerClient>>,
     pagination: web::Query<PaginationOptions>,
 ) -> MusicResponse {
     let db = get_mongo().await;
-    let res = deezer_api.search_music(req.clone()).await.unwrap();
+    let dz = deezer_api.read().unwrap();
+    let res = dz.search_music(req.clone()).await.unwrap();
     let artists: Vec<Artist> = res
         .data
         .clone()
@@ -121,11 +125,12 @@ pub async fn search_album(
 
 pub async fn search_artist(
     req: web::Path<String>,
-    deezer_api: web::Data<DeezerClient>,
+    deezer_api: web::Data<RwLock<DeezerClient>>,
     pagination: web::Query<PaginationOptions>,
 ) -> MusicResponse {
     let db = get_mongo().await;
-    let res = deezer_api.search_music(req.clone()).await.unwrap();
+    let dz = deezer_api.read().unwrap();
+    let res = dz.search_music(req.clone()).await.unwrap();
     let artists: Vec<Artist> = res
         .data
         .clone()
@@ -141,9 +146,13 @@ pub async fn search_artist(
     Ok(HttpResponse::Ok().json(searched_artists.unwrap().unwrap()))
 }
 
-pub async fn get_album(req: web::Path<i32>, deezer_api: web::Data<DeezerClient>) -> MusicResponse {
+pub async fn get_album(
+    req: web::Path<i32>,
+    deezer_api: web::Data<RwLock<DeezerClient>>,
+) -> MusicResponse {
     let db = get_mongo().await;
-    let res = deezer_api.get_album_musics(req.clone()).await.unwrap();
+    let dz = deezer_api.read().unwrap();
+    let res = dz.get_album_musics(req.clone()).await.unwrap();
     let album = db.get_album(&req).await.unwrap().unwrap();
     let musics: Vec<Music> = res
         .data
@@ -170,9 +179,13 @@ pub async fn get_album(req: web::Path<i32>, deezer_api: web::Data<DeezerClient>)
     Ok(HttpResponse::Ok().json(pop_album))
 }
 
-pub async fn get_artist(req: web::Path<i32>, deezer_api: web::Data<DeezerClient>) -> MusicResponse {
+pub async fn get_artist(
+    req: web::Path<i32>,
+    deezer_api: web::Data<RwLock<DeezerClient>>,
+) -> MusicResponse {
     let db = get_mongo().await;
-    let res = deezer_api.get_artist_albums(&req).await.unwrap();
+    let dz = deezer_api.read().unwrap();
+    let res = dz.get_artist_albums(&req).await.unwrap();
     let albums: Vec<Album> = res
         .data
         .clone()

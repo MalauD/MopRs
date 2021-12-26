@@ -1,3 +1,4 @@
+use log::info;
 use mongodb::{options::ClientOptions, Client, Database};
 use once_cell::sync::OnceCell;
 use serde::Deserialize;
@@ -14,7 +15,7 @@ pub async fn get_mongo() -> &'static MongoClient {
     if let Some(c) = MONGO.get() {
         return c;
     }
-
+    info!(target: "mop-rs::mongodb", "Connecting to database");
     let initializing_mutex = MONGO_INITIALIZED.get_or_init(|| tokio::sync::Mutex::new(false));
 
     let mut initialized = initializing_mutex.lock().await;
@@ -36,6 +37,7 @@ pub async fn get_mongo() -> &'static MongoClient {
         }
     }
     if let Some(c) = MONGO.get() {
+        info!(target: "mop-rs::mongodb", "Creating indexes");
         let _ = c.create_music_text_indexes().await;
         let _ = c.create_album_text_indexes().await;
         let _ = c.create_artist_text_indexes().await;

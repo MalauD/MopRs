@@ -4,6 +4,7 @@ use actix_web::{
     web::{self, Data},
     App, HttpRequest, HttpServer, Result,
 };
+use log::{info, trace, warn};
 use routes::{config_music, config_user};
 use std::{
     fs,
@@ -26,6 +27,8 @@ async fn index(_req: HttpRequest) -> Result<NamedFile> {
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
+    env_logger::init();
+    info!(target:"mop-rs::main","Starting MopRs");
     const PORT: i32 = 8080;
     let mut settings = config::Config::default();
     settings.merge(config::File::with_name("Settings")).unwrap();
@@ -40,21 +43,10 @@ async fn main() -> std::io::Result<()> {
         arl,
     )));
     {
+        info!(target:"mop-rs::deezer","Initializing deezer client");
         let mut cl = deezer_client.write().unwrap();
         let _ = cl.init_session().await;
-        println!("Sid: {}", cl.cred.sid);
         let _ = cl.init_user().await;
-        println!("Token: {}", cl.cred.token);
-        let m = cl.get_music_by_id_unofficial(350171311).await.unwrap();
-        println!("Music: {}", m.get_url());
-        println!("Bf key {}", m.get_bf_key());
-        let start = Instant::now();
-        cl.download_music(
-            350171311,
-            Path::new(&settings.get_str("music_path").unwrap()),
-        )
-        .await;
-        println!("Elapsed : {:?}", start.elapsed());
     }
 
     HttpServer::new(move || {
