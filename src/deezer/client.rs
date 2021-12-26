@@ -1,6 +1,10 @@
 use std::{fs, io::Write, path::Path};
 
-use blowfish;
+use block_modes::{
+    block_padding::{NoPadding, ZeroPadding},
+    BlockMode, Cbc,
+};
+use blowfish::Blowfish;
 use openssl::symm::{decrypt, Cipher};
 use reqwest::Client;
 use serde_json::json;
@@ -91,7 +95,7 @@ impl DeezerClient {
         let m = self.get_music_by_id_unofficial(id).await.unwrap();
         let response = self
             .http_client
-            .post(m.get_url())
+            .get(m.get_url())
             .header("cookie", self.get_cookie())
             .send()
             .await
@@ -106,19 +110,30 @@ impl DeezerClient {
         let chunks = response.chunks(2048);
         let mut decrypted_file: Vec<u8> = Vec::with_capacity(chunks.len());
         let bf_key = m.get_bf_key();
-        let cipher = Cipher::bf_cbc();
-        for ch in chunks {
-            let mut decrypted_buf = decrypt(
-                cipher,
-                bf_key.as_bytes(),
-                Some(&[0, 1, 2, 3, 4, 5, 6, 7]),
-                ch,
-            )
-            .unwrap();
+        type BfCBC = Cbc<Blowfish, NoPadding>;
 
-            decrypted_file.append(&mut decrypted_buf);
+        let cipher = BfCBC::new_from_slices(bf_key.as_bytes(), &[0, 1, 2, 3, 4, 5, 6, 7]).unwrap();
+
+        let mut iter = 0;
+
+        for ch in chunks {
+            if iter % 3 > 0 || ch.len() != 2048 {
+                decrypted_file.extend_from_slice(ch);
+            } else {
+                decrypted_file.append(&mut cipher.clone().decrypt_vec(ch).unwrap());
+            }
+            // let mut decrypted_buf = decrypt(
+            //     cipher,
+            //     bf_key.as_bytes(),
+            //     Some(&[0, 1, 2, 3, 4, 5, 6, 7]),
+            //     ch,
+            // )
+            // .unwrap();
+
+            iter = iter + 1;
         }
         let _ = f.write_all(&decrypted_file);
+        println!("ok");
         Ok(path.into_os_string().into_string().unwrap())
     }
 
