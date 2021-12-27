@@ -12,8 +12,8 @@ use serde_json::json;
 use crate::deezer::SearchMusicsResult;
 
 use super::{
-    AlbumTracksResult, ArtistAlbumsResult, InitSessionResult, StreamMusic, StreamingCredentials,
-    UnofficialMusicResult,
+    AlbumTracksResult, ArtistAlbumsResult, ChartResult, InitSessionResult, StreamMusic,
+    StreamingCredentials, UnofficialMusicResult,
 };
 
 pub struct DeezerClient {
@@ -195,5 +195,19 @@ impl DeezerClient {
             .await
             .expect("Failed to parse albums from Deezer Api");
         response
+    }
+
+    pub async fn get_most_popular(&self) -> Result<ChartResult, String> {
+        let url = format!("{}/chart?limit=100", self.base_url);
+        let response: ChartResult = self
+            .http_client
+            .get(url)
+            .send()
+            .await
+            .expect("Failed to get chart from Deezer Api")
+            .json()
+            .await
+            .expect("Failed to parse charts from Deezer Api");
+        Ok(response)
     }
 }

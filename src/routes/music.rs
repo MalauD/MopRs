@@ -3,8 +3,8 @@ use std::{path::PathBuf, sync::RwLock};
 use crate::{
     app_settings::AppSettings,
     db::{get_mongo, PaginationOptions},
-    deezer::DeezerClient,
-    models::{Album, Artist, Music, PopulatedAlbum, PopulatedArtist},
+    deezer::{self, DeezerClient, SearchMusicsResult},
+    models::{Album, Artist, Chart, Music, PopulatedAlbum, PopulatedArtist},
     tools::MusicError,
 };
 use actix_files::NamedFile;
@@ -32,6 +32,7 @@ pub fn config_music(cfg: &mut web::ServiceConfig) {
                 "/Search/Artist/Name/{search_req}",
                 web::get().to(search_artist),
             )
+            .route("/Trending/Musics", web::get().to(trending_musics))
             .route("/Album/id/{id}", web::get().to(get_album))
             .route("/Artist/id/{id}", web::get().to(get_artist))
             .route("/cdn/{id}", web::get().to(get_music)),
@@ -46,45 +47,7 @@ pub async fn search_music(
     let db = get_mongo().await;
     let dz = deezer_api.read().unwrap();
     let res = dz.search_music(req.clone()).await.unwrap();
-    let artists: Vec<Artist> = res
-        .data
-        .clone()
-        .into_iter()
-        .map(|x| Artist::from(x))
-        .unique_by(|x| x.id)
-        .collect_vec();
-    let albums: Vec<(i32, Album)> = res
-        .data
-        .clone()
-        .into_iter()
-        .map(|x| (x.artist.id, Album::from(x)))
-        .unique_by(|x| x.1.id)
-        .collect_vec();
-    let musics: Vec<(i32, Music)> = res
-        .data
-        .clone()
-        .into_iter()
-        .map(|x| (x.album.id, Music::from(x)))
-        .collect();
-
-    let _ = db
-        .bulk_insert_musics(musics.clone().into_iter().map(|x| x.1).collect())
-        .await;
-    let _ = db
-        .bulk_insert_albums(albums.clone().into_iter().map(|x| x.1).collect())
-        .await;
-    let _ = db.bulk_insert_artists(artists).await;
-
-    let lazy_update = async move {
-        for val in musics.clone().iter() {
-            let _ = db.append_to_album(&val.1.id, &val.0).await;
-        }
-        for val in albums.clone().iter() {
-            let _ = db.append_to_artist(&val.1.id, &val.0).await;
-        }
-    };
-
-    actix_rt::spawn(lazy_update);
+    index_search_musics_result(&res).await;
     //musics.group_by()
     let searched_musics = db.search_music(req.into_inner(), &pagination).await;
     Ok(HttpResponse::Ok().json(searched_musics.unwrap().unwrap()))
@@ -98,33 +61,7 @@ pub async fn search_album(
     let db = get_mongo().await;
     let dz = deezer_api.read().unwrap();
     let res = dz.search_music(req.clone()).await.unwrap();
-    let artists: Vec<Artist> = res
-        .data
-        .clone()
-        .into_iter()
-        .map(|x| Artist::from(x))
-        .unique_by(|x| x.id)
-        .collect_vec();
-    let albums: Vec<(i32, Album)> = res
-        .data
-        .clone()
-        .into_iter()
-        .map(|x| (x.artist.id, Album::from(x)))
-        .unique_by(|x| x.1.id)
-        .collect_vec();
-
-    let _ = db
-        .bulk_insert_albums(albums.clone().into_iter().map(|x| x.1).collect())
-        .await;
-    let _ = db.bulk_insert_artists(artists).await;
-
-    let lazy_update = async move {
-        for val in albums.clone().iter() {
-            let _ = db.append_to_artist(&val.1.id, &val.0).await;
-        }
-    };
-
-    actix_rt::spawn(lazy_update);
+    index_search_musics_result(&res).await;
     //musics.group_by()
     let searched_albums = db.search_album(req.into_inner(), &pagination).await;
     Ok(HttpResponse::Ok().json(searched_albums.unwrap().unwrap()))
@@ -138,19 +75,44 @@ pub async fn search_artist(
     let db = get_mongo().await;
     let dz = deezer_api.read().unwrap();
     let res = dz.search_music(req.clone()).await.unwrap();
-    let artists: Vec<Artist> = res
-        .data
-        .clone()
-        .into_iter()
-        .map(|x| Artist::from(x))
-        .unique_by(|x| x.id)
-        .collect_vec();
-
-    let _ = db.bulk_insert_artists(artists).await;
-
+    index_search_musics_result(&res).await;
     //musics.group_by()
     let searched_artists = db.search_artist(req.into_inner(), &pagination).await;
     Ok(HttpResponse::Ok().json(searched_artists.unwrap().unwrap()))
+}
+
+pub async fn trending_musics(
+    deezer_api: web::Data<RwLock<DeezerClient>>,
+    pagination: web::Query<PaginationOptions>,
+) -> MusicResponse {
+    let db = get_mongo().await;
+    let dz = deezer_api.read().unwrap();
+
+    let charts = db.get_chart_today().await.unwrap();
+    let charts = match charts {
+        Some(c) => c,
+        None => {
+            let chart = dz.get_most_popular().await.unwrap();
+            index_search_musics_result(&SearchMusicsResult {
+                data: chart.clone().tracks.data,
+            })
+            .await;
+            let ch = Chart::from(chart);
+            let _ = db.insert_chart(&ch).await.unwrap();
+            ch
+        }
+    };
+    let rng = pagination.get_max_results() * pagination.get_page()
+        ..pagination.get_max_results() * (pagination.get_page() + 1);
+    let mut vec: Vec<i32> = Vec::with_capacity(rng.len());
+    for (i, e) in charts.musics.iter().enumerate() {
+        if rng.contains(&i) {
+            vec.push(*e);
+        }
+    }
+    let musics = db.get_musics(&vec).await.unwrap();
+
+    Ok(HttpResponse::Ok().json(musics))
 }
 
 pub async fn get_album(
@@ -234,4 +196,44 @@ pub async fn get_music(
 
     Ok(f.use_last_modified(true)
         .set_content_type("audio/mpeg".parse().unwrap()))
+}
+
+async fn index_search_musics_result(res: &deezer::SearchMusicsResult) {
+    let db = get_mongo().await;
+    let artists: Vec<Artist> = res
+        .data
+        .clone()
+        .into_iter()
+        .map(|x| Artist::from(x))
+        .unique_by(|x| x.id)
+        .collect_vec();
+    let albums: Vec<(i32, Album)> = res
+        .data
+        .clone()
+        .into_iter()
+        .map(|x| (x.artist.id, Album::from(x)))
+        .unique_by(|x| x.1.id)
+        .collect_vec();
+    let musics: Vec<(i32, Music)> = res
+        .data
+        .clone()
+        .into_iter()
+        .map(|x| (x.album.id, Music::from(x)))
+        .collect();
+    let _ = db
+        .bulk_insert_musics(musics.clone().into_iter().map(|x| x.1).collect())
+        .await;
+    let _ = db
+        .bulk_insert_albums(albums.clone().into_iter().map(|x| x.1).collect())
+        .await;
+    let _ = db.bulk_insert_artists(artists).await;
+    let lazy_update = async move {
+        for val in musics.clone().iter() {
+            let _ = db.append_to_album(&val.1.id, &val.0).await;
+        }
+        for val in albums.clone().iter() {
+            let _ = db.append_to_artist(&val.1.id, &val.0).await;
+        }
+    };
+    actix_rt::spawn(lazy_update);
 }

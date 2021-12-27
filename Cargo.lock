@@ -479,9 +479,9 @@ dependencies = [
 
 [[package]]
 name = "bson"
-version = "2.0.1"
+version = "2.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ff58d466782b57e0001c8e97c6a70c01c2359d7e13e257a83654c0b783ecc139"
+checksum = "41539b5c502b7c4e7b8af8ef07e5c442fe79ceba62a2aad8e62bd589b9454745"
 dependencies = [
  "ahash",
  "base64",
@@ -1469,9 +1469,9 @@ dependencies = [
 
 [[package]]
 name = "mongodb"
-version = "2.0.1"
+version = "2.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d419667771704b002e6837d52f7461f70cea853f58c077d299f132ed6f75b2ad"
+checksum = "bacb6f8cee6bf010d7bc57550d859f6a4ffe255eb8c9a7014637fe988eaece64"
 dependencies = [
  "async-trait",
  "base64",
@@ -1492,6 +1492,7 @@ dependencies = [
  "percent-encoding",
  "rand",
  "rustls",
+ "rustls-pemfile",
  "serde 1.0.130",
  "serde_bytes",
  "serde_with",
@@ -1530,8 +1531,10 @@ dependencies = [
  "async-trait",
  "block-modes",
  "blowfish",
+ "bson",
  "bytes",
  "cached",
+ "chrono",
  "config",
  "env_logger",
  "futures",
@@ -1542,6 +1545,7 @@ dependencies = [
  "md5",
  "mime",
  "mongodb",
+ "now",
  "once_cell",
  "reqwest",
  "ring",
@@ -1582,6 +1586,15 @@ dependencies = [
  "lexical-core",
  "memchr",
  "version_check",
+]
+
+[[package]]
+name = "now"
+version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "84e240744647b9b9496ff378a31be1e89a44a8e867dd4c5c7c5be1f57694eedb"
+dependencies = [
+ "chrono",
 ]
 
 [[package]]
@@ -1983,6 +1996,15 @@ dependencies = [
  "ring",
  "sct",
  "webpki",
+]
+
+[[package]]
+name = "rustls-pemfile"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5eebeaeb360c87bfb72e84abdb3447159c0eaececf1bef2aecd65a8be949d1c9"
+dependencies = [
+ "base64",
 ]
 
 [[package]]
@@ -2783,6 +2805,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bc5cf98d8186244414c848017f0e2676b3fcb46807f6668a97dfe67359a3c4b7"
 dependencies = [
  "getrandom",
+ "serde 1.0.130",
 ]
 
 [[package]]

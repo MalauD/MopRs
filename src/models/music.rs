@@ -1,7 +1,12 @@
+use std::time::{SystemTime, UNIX_EPOCH};
+
+use chrono::Utc;
 use mongodb::bson::DateTime;
 use serde::{Deserialize, Serialize};
 
-use crate::deezer::{AlbumTracksResultItem, ArtistAlbumsResultItem, SearchMusicsResultItem};
+use crate::deezer::{
+    AlbumTracksResultItem, ArtistAlbumsResultItem, ChartResult, SearchMusicsResultItem,
+};
 
 #[derive(Deserialize, Serialize, Clone)]
 pub struct Music {
@@ -42,6 +47,17 @@ pub struct Album {
 }
 
 #[derive(Deserialize, Serialize, Clone)]
+pub struct Chart {
+    #[serde(rename = "_id")]
+    pub id: i32,
+    #[serde(with = "bson::serde_helpers::chrono_datetime_as_bson_datetime")]
+    published_date: chrono::DateTime<Utc>,
+    pub musics: Vec<i32>,
+    pub albums: Vec<i32>,
+    pub artists: Vec<i32>,
+}
+
+#[derive(Deserialize, Serialize, Clone)]
 pub struct PopulatedAlbum {
     #[serde(rename = "_id")]
     pub id: i32,
@@ -50,6 +66,21 @@ pub struct PopulatedAlbum {
     is_complete: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub musics: Option<Vec<Music>>,
+}
+
+impl From<ChartResult> for Chart {
+    fn from(ch: ChartResult) -> Self {
+        Chart {
+            id: SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .expect("Time went backwards")
+                .as_secs() as i32,
+            published_date: Utc::now(),
+            musics: ch.tracks.data.iter().map(|x| x.id).collect(),
+            albums: ch.albums.data.iter().map(|x| x.id).collect(),
+            artists: ch.artists.data.iter().map(|x| x.id).collect(),
+        }
+    }
 }
 
 impl From<Album> for PopulatedAlbum {

@@ -67,7 +67,7 @@ impl MongoClient {
                 result.push(res);
             }
         }
-        result.sort_by(|x, y| x.get_rank().cmp(y.get_rank()));
+        result.sort_by(|x, y| y.get_rank().cmp(x.get_rank()));
         Ok(Some(result))
     }
 

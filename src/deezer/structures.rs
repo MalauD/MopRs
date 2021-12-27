@@ -81,3 +81,24 @@ pub struct Session {
 pub struct UnofficialMusicResult {
     pub results: StreamMusic,
 }
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct ChartResult {
+    pub tracks: ChartResultTracks,
+    pub albums: ChartResultAlbums,
+    pub artists: ChartResultArtists,
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct ChartResultTracks {
+    pub data: Vec<SearchMusicsResultItem>,
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct ChartResultAlbums {
+    pub data: Vec<SearchMusicsResultItemAlbum>,
+}
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct ChartResultArtists {
+    pub data: Vec<SearchMusicsResultItemArtist>,
+}
