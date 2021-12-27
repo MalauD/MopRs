@@ -1,5 +1,5 @@
 use crate::{
-    db::get_mongo,
+    db::{get_mongo, PaginationOptions},
     models::{Sessions, User, UserReq},
     tools::UserError,
 };
@@ -16,7 +16,8 @@ pub fn config_user(cfg: &mut web::ServiceConfig) {
             .route("/Login", web::post().to(login))
             .route("/Register", web::post().to(register))
             .route("/Logout", web::post().to(logout))
-            .route("/Me", web::get().to(get_account)),
+            .route("/Me", web::get().to(get_account))
+            .route("/LikedMusics", web::get().to(get_liked)),
     );
 }
 
@@ -26,7 +27,7 @@ pub async fn login(
     sessions: web::Data<RwLock<Sessions>>,
 ) -> UserResponse {
     let db = get_mongo().await;
-    if let Some(user_mod) = db.get_user(&user).await? {
+    if let Some(user_mod) = db.get_user_req(&user).await? {
         user_mod.login(&user)?;
         id.remember(user_mod.get_username());
         sessions
@@ -68,5 +69,16 @@ pub async fn logout(id: Identity) -> UserResponse {
 }
 
 pub async fn get_account(user: User) -> impl Responder {
-    web::Json(json!({ "Account": user }))
+    let db = get_mongo().await;
+    let u = db.get_user(&user).await.unwrap().unwrap();
+    web::Json(json!({ "Account": u }))
+}
+
+pub async fn get_liked(pagination: web::Query<PaginationOptions>, user: User) -> UserResponse {
+    let db = get_mongo().await;
+    let u = db.get_user(&user).await.unwrap().unwrap();
+    let musics = u.liked_musics().to_vec();
+
+    let res = db.get_musics(&pagination.trim_vec(&musics)).await.unwrap();
+    Ok(HttpResponse::Ok().json(res))
 }

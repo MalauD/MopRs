@@ -4,7 +4,7 @@ use crate::{
     app_settings::AppSettings,
     db::{get_mongo, PaginationOptions},
     deezer::{self, DeezerClient, SearchMusicsResult},
-    models::{Album, Artist, Chart, Music, PopulatedAlbum, PopulatedArtist},
+    models::{Album, Artist, Chart, Music, PopulatedAlbum, PopulatedArtist, User},
     tools::MusicError,
 };
 use actix_files::NamedFile;
@@ -35,7 +35,8 @@ pub fn config_music(cfg: &mut web::ServiceConfig) {
             .route("/Trending/Musics", web::get().to(trending_musics))
             .route("/Album/id/{id}", web::get().to(get_album))
             .route("/Artist/id/{id}", web::get().to(get_artist))
-            .route("/cdn/{id}", web::get().to(get_music)),
+            .route("/cdn/{id}", web::get().to(get_music))
+            .route("/Like/Music/{id}", web::get().to(like_music)),
     );
 }
 
@@ -102,14 +103,7 @@ pub async fn trending_musics(
             ch
         }
     };
-    let rng = pagination.get_max_results() * pagination.get_page()
-        ..pagination.get_max_results() * (pagination.get_page() + 1);
-    let mut vec: Vec<i32> = Vec::with_capacity(rng.len());
-    for (i, e) in charts.musics.iter().enumerate() {
-        if rng.contains(&i) {
-            vec.push(*e);
-        }
-    }
+    let vec: Vec<i32> = pagination.trim_vec(&charts.musics);
     let musics = db.get_musics(&vec).await.unwrap();
 
     Ok(HttpResponse::Ok().json(musics))
@@ -146,6 +140,16 @@ pub async fn get_album(
     let mut pop_album = PopulatedAlbum::from(compl_album);
     pop_album.musics = Some(musics_of_album);
     Ok(HttpResponse::Ok().json(pop_album))
+}
+
+pub async fn like_music(req: web::Path<i32>, user: User) -> MusicResponse {
+    let db = get_mongo().await;
+    let u = db.get_user(&user).await.unwrap().unwrap();
+    let res = db.like_music(&u, &req).await.unwrap();
+    db.modify_like_count(&req, if res { 1 } else { -1 })
+        .await
+        .unwrap();
+    Ok(HttpResponse::Ok().finish())
 }
 
 pub async fn get_artist(

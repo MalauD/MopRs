@@ -82,4 +82,11 @@ impl MongoClient {
         }
         return Ok(Some(result));
     }
+
+    pub async fn modify_like_count(&self, music_id: &i32, inc: i32) -> Result<()> {
+        let coll = self._database.collection::<Music>("Music");
+        coll.update_one(doc! {"_id": music_id}, doc! {"$inc": {"likes": inc}}, None)
+            .await?;
+        Ok(())
+    }
 }

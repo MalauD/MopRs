@@ -1,6 +1,7 @@
 use actix_files::{Files, NamedFile};
 use actix_identity::{CookieIdentityPolicy, IdentityService};
 use actix_web::{
+    middleware::{self, Compress},
     web::{self, Data},
     App, HttpRequest, HttpServer, Result,
 };
@@ -54,6 +55,7 @@ async fn main() -> std::io::Result<()> {
         App::new()
             .app_data(sessions.clone())
             .app_data(deezer_client.clone())
+            //.wrap(Compress::default())
             .app_data(Data::new(app_settings::AppSettings::new(
                 settings.get_str("music_path").unwrap(),
             )))

@@ -171,7 +171,7 @@ class PlayerConnected extends React.Component {
 
         const PlayingIcon = !IsPlaying ? 'play-circle-outline' : 'pause-circle-outline';
 
-        document.title = `${PlayingMusic ? PlayingMusic.Title : ''} mop`;
+        document.title = PlayingMusic ? PlayingMusic.title + ' - mop' : 'mop';
 
         if (PlayingMusic) {
             return (

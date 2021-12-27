@@ -72,7 +72,7 @@ class MusicElementConnected extends React.Component {
     HandleLike = () => {
         const { Music } = this.props;
 
-        Axios.get(`/Music/Music/Like/${Music._id}`).then(() => {});
+        Axios.get(`/Music/Like/Music/${Music._id}`).then(() => {});
     };
 
     componentWillUnmount = () => {

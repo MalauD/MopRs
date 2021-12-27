@@ -83,6 +83,16 @@ impl User {
     pub fn get_id(&self) -> Option<ObjectId> {
         self.id.clone()
     }
+
+    /// Get a reference to the user's id.
+    pub fn id(&self) -> Option<ObjectId> {
+        self.id
+    }
+
+    /// Get a reference to the user's liked musics.
+    pub fn liked_musics(&self) -> &[i32] {
+        self.liked_musics.as_ref()
+    }
 }
 
 impl FromRequest for User {
