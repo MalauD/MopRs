@@ -61,7 +61,7 @@ class Trending extends React.Component {
                     Musics={Musics}
                     DetailType="Trending"
                     ContextType={TRENDING_CONTEXT}
-                    MoreButton={true}
+                    MoreButton={!PrevPageEmpty}
                     OnMoreClick={this.OnMoreClick}
                 />
             );
