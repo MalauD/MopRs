@@ -5,6 +5,7 @@ use crate::{
 };
 use actix_identity::Identity;
 use actix_web::{web, HttpResponse, Responder};
+use serde::Deserialize;
 use serde_json::json;
 use std::sync::RwLock;
 
@@ -17,7 +18,16 @@ pub fn config_user(cfg: &mut web::ServiceConfig) {
             .route("/Register", web::post().to(register))
             .route("/Logout", web::post().to(logout))
             .route("/Me", web::get().to(get_account))
-            .route("/LikedMusics", web::get().to(get_liked)),
+            .route("/LikedMusics", web::get().to(get_liked))
+            .route("/CurrentPlaylist", web::get().to(get_current_playlist))
+            .route(
+                "/CurrentPlaylist/Musics",
+                web::post().to(set_current_playlist_musics),
+            )
+            .route(
+                "/CurrentPlaylist/Playing",
+                web::post().to(set_current_playlist_playing),
+            ),
     );
 }
 
@@ -81,4 +91,48 @@ pub async fn get_liked(pagination: web::Query<PaginationOptions>, user: User) ->
 
     let res = db.get_musics(&pagination.trim_vec(&musics)).await.unwrap();
     Ok(HttpResponse::Ok().json(res))
+}
+
+pub async fn get_current_playlist(user: User) -> UserResponse {
+    let db = get_mongo().await;
+    let u = db.get_user(&user).await.unwrap().unwrap();
+
+    let res = db.get_musics(&u.current_playlist().to_vec()).await.unwrap();
+    Ok(HttpResponse::Ok()
+        .json(json! ({"CurrentPlaylist": res, "CurrentPlaylistPlaying": u.current_playing()})))
+}
+
+#[derive(Deserialize)]
+pub struct PlaylistMusics {
+    #[serde(rename = "CurrentPlaylist")]
+    pub current_playlist: Vec<i32>,
+}
+
+pub async fn set_current_playlist_musics(
+    user: User,
+    playlist: web::Json<PlaylistMusics>,
+) -> UserResponse {
+    let db = get_mongo().await;
+
+    let _ = db
+        .set_current_playlist_musics(&user, &playlist.current_playlist)
+        .await;
+    Ok(HttpResponse::Ok().finish())
+}
+
+#[derive(Deserialize)]
+pub struct CurrentPlaylistPlaying {
+    #[serde(rename = "CurrentPlaylistPlaying")]
+    pub current_playlist_playing: i32,
+}
+
+pub async fn set_current_playlist_playing(
+    user: User,
+    playlist: web::Json<CurrentPlaylistPlaying>,
+) -> UserResponse {
+    let db = get_mongo().await;
+    let _ = db
+        .set_current_playlist_index(&user, &playlist.current_playlist_playing)
+        .await;
+    Ok(HttpResponse::Ok().finish())
 }

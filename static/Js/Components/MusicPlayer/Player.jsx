@@ -56,7 +56,7 @@ class PlayerConnected extends React.Component {
             image_url: PropTypes.string.isRequired,
         }),
         NextMusic: PropTypes.shape({
-            Title: PropTypes.string.isRequired,
+            title: PropTypes.string.isRequired,
         }),
         CurrentMusicId: PropTypes.number,
     };
@@ -240,7 +240,7 @@ class PlayerConnected extends React.Component {
                                     className="my-auto ml-1 mt-1 d-none d-lg-block"
                                     onClick={this.HandleOpenPlaylist}
                                 >
-                                    {NextMusic ? `Next: ${NextMusic.Title}` : 'Queue'}
+                                    {NextMusic ? `Next: ${NextMusic.title}` : 'Queue'}
                                 </Button>
                             </Row>
 

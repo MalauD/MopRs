@@ -52,4 +52,30 @@ impl MongoClient {
             return Ok(true);
         }
     }
+
+    pub async fn set_current_playlist_musics(
+        &self,
+        user: &User,
+        musics_id: &Vec<i32>,
+    ) -> Result<()> {
+        let coll = self._database.collection::<User>("User");
+        coll.update_one(
+            doc! {"_id": user.id().unwrap()},
+            doc! {"$set": {"current_playlist": musics_id}},
+            None,
+        )
+        .await?;
+        Ok(())
+    }
+
+    pub async fn set_current_playlist_index(&self, user: &User, index: &i32) -> Result<()> {
+        let coll = self._database.collection::<User>("User");
+        coll.update_one(
+            doc! {"_id": user.id().unwrap()},
+            doc! {"$set": {"current_playing": index}},
+            None,
+        )
+        .await?;
+        Ok(())
+    }
 }

@@ -38,6 +38,8 @@ pub struct User {
     #[serde(with = "serde_bytes")]
     pub credential: Vec<u8>,
     liked_musics: Vec<i32>,
+    current_playlist: Vec<i32>,
+    current_playing: i32,
 }
 
 impl User {
@@ -73,6 +75,8 @@ impl User {
             username: req.username.clone(),
             credential: cred.to_vec(),
             liked_musics: Vec::new(),
+            current_playing: 0,
+            current_playlist: Vec::new(),
         }
     }
 
@@ -92,6 +96,26 @@ impl User {
     /// Get a reference to the user's liked musics.
     pub fn liked_musics(&self) -> &[i32] {
         self.liked_musics.as_ref()
+    }
+
+    /// Get a reference to the user's current playlist.
+    pub fn current_playlist(&self) -> &[i32] {
+        self.current_playlist.as_ref()
+    }
+
+    /// Set the user's current playlist.
+    pub fn set_current_playlist(&mut self, current_playlist: Vec<i32>) {
+        self.current_playlist = current_playlist;
+    }
+
+    /// Get a reference to the user's current playing.
+    pub fn current_playing(&self) -> i32 {
+        self.current_playing
+    }
+
+    /// Set the user's current playing.
+    pub fn set_current_playing(&mut self, current_playing: i32) {
+        self.current_playing = current_playing;
     }
 }
 
