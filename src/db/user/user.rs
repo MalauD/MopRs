@@ -78,4 +78,17 @@ impl MongoClient {
         .await?;
         Ok(())
     }
+
+    pub async fn add_to_history(&self, user: &User, music_id: &i32) -> Result<()> {
+        let coll = self._database.collection::<User>("User");
+
+        let _ = coll
+            .update_one(
+                doc! {"_id": user.id().unwrap()},
+                doc! {"$push": {"viewed_musics": music_id}},
+                None,
+            )
+            .await?;
+        Ok(())
+    }
 }

@@ -19,6 +19,7 @@ pub fn config_user(cfg: &mut web::ServiceConfig) {
             .route("/Logout", web::post().to(logout))
             .route("/Me", web::get().to(get_account))
             .route("/LikedMusics", web::get().to(get_liked))
+            .route("/ViewedMusics", web::get().to(get_viewed))
             .route("/CurrentPlaylist", web::get().to(get_current_playlist))
             .route(
                 "/CurrentPlaylist/Musics",
@@ -88,6 +89,15 @@ pub async fn get_liked(pagination: web::Query<PaginationOptions>, user: User) ->
     let db = get_mongo().await;
     let u = db.get_user(&user).await.unwrap().unwrap();
     let musics = u.liked_musics().to_vec();
+
+    let res = db.get_musics(&pagination.trim_vec(&musics)).await.unwrap();
+    Ok(HttpResponse::Ok().json(res))
+}
+
+pub async fn get_viewed(pagination: web::Query<PaginationOptions>, user: User) -> UserResponse {
+    let db = get_mongo().await;
+    let u = db.get_user(&user).await.unwrap().unwrap();
+    let musics = u.viewed_musics().to_vec();
 
     let res = db.get_musics(&pagination.trim_vec(&musics)).await.unwrap();
     Ok(HttpResponse::Ok().json(res))

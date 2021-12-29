@@ -185,7 +185,9 @@ pub async fn get_music(
     req: web::Path<i32>,
     deezer_api: web::Data<RwLock<DeezerClient>>,
     settings: web::Data<AppSettings>,
+    user: User,
 ) -> actix_web::Result<NamedFile> {
+    let db = get_mongo().await;
     let path = format!("./Musics/{}.mp3", &req);
     let path: PathBuf = path.parse().unwrap();
     let f = NamedFile::open(path);
@@ -197,6 +199,8 @@ pub async fn get_music(
             NamedFile::open(dz.download_music(*req, &path_dir).await.unwrap()).unwrap()
         }
     };
+
+    db.add_to_history(&user, &req).await.unwrap();
 
     Ok(f.use_last_modified(true)
         .set_content_type("audio/mpeg".parse().unwrap()))

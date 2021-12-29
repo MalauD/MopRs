@@ -40,6 +40,7 @@ pub struct User {
     liked_musics: Vec<i32>,
     current_playlist: Vec<i32>,
     current_playing: i32,
+    viewed_musics: Vec<i32>,
 }
 
 impl User {
@@ -77,6 +78,7 @@ impl User {
             liked_musics: Vec::new(),
             current_playing: 0,
             current_playlist: Vec::new(),
+            viewed_musics: Vec::new(),
         }
     }
 
@@ -116,6 +118,11 @@ impl User {
     /// Set the user's current playing.
     pub fn set_current_playing(&mut self, current_playing: i32) {
         self.current_playing = current_playing;
+    }
+
+    /// Get a reference to the user's viewed musics.
+    pub fn viewed_musics(&self) -> &[i32] {
+        self.viewed_musics.as_ref()
     }
 }
 
