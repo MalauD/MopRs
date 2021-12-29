@@ -97,8 +97,8 @@ pub async fn get_liked(pagination: web::Query<PaginationOptions>, user: User) ->
 pub async fn get_viewed(pagination: web::Query<PaginationOptions>, user: User) -> UserResponse {
     let db = get_mongo().await;
     let u = db.get_user(&user).await.unwrap().unwrap();
-    let musics = u.viewed_musics().to_vec();
-
+    let mut musics = u.viewed_musics().to_vec();
+    musics.reverse();
     let res = db.get_musics(&pagination.trim_vec(&musics)).await.unwrap();
     Ok(HttpResponse::Ok().json(res))
 }

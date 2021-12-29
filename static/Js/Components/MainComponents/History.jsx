@@ -12,7 +12,7 @@ class History extends React.Component {
 
     static defaultProps = {
         Size: 20,
-        RemoveDups: true,
+        RemoveDups: false,
     };
 
     constructor(props) {

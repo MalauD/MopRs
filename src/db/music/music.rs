@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use futures::StreamExt;
 use mongodb::{
     bson::doc,
@@ -74,13 +76,17 @@ impl MongoClient {
     pub async fn get_musics(&self, music_ids: &Vec<i32>) -> Result<Option<Vec<Music>>> {
         let coll = self._database.collection::<Music>("Music");
         let mut cursor = coll.find(doc! {"_id": {"$in": music_ids}}, None).await?;
-        let mut result = Vec::<Music>::with_capacity(20);
+        let mut result_hash = HashMap::with_capacity(music_ids.len());
         while let Some(value) = cursor.next().await {
             if let Ok(res) = value {
-                result.push(res);
+                result_hash.entry(res.id).or_insert(res);
             }
         }
-        return Ok(Some(result));
+        let mut final_arranged: Vec<Music> = Vec::with_capacity(music_ids.len());
+        for e in music_ids {
+            final_arranged.push(result_hash[e].clone());
+        }
+        return Ok(Some(final_arranged));
     }
 
     pub async fn modify_like_count(&self, music_id: &i32, inc: i32) -> Result<()> {
