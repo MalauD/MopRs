@@ -4,14 +4,9 @@ use actix_web::{
     web::{self, Data},
     App, HttpRequest, HttpServer, Result,
 };
-use log::{info, trace, warn};
+use log::info;
 use routes::{config_music, config_user};
-use std::{
-    fs,
-    path::{Path, PathBuf},
-    sync::RwLock,
-    time::Instant,
-};
+use std::{fs, sync::RwLock};
 
 use crate::{deezer::DeezerClient, models::Sessions};
 
@@ -34,7 +29,7 @@ async fn main() -> std::io::Result<()> {
     let mut settings = config::Config::default();
     settings.merge(config::File::with_name("Settings")).unwrap();
 
-    fs::create_dir_all(settings.get_str("music_path").unwrap());
+    let _ = fs::create_dir_all(settings.get_str("music_path").unwrap());
 
     let arl = settings.get_str("arl").unwrap();
 

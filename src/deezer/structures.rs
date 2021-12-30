@@ -74,7 +74,8 @@ pub struct InitSessionResult {
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct Session {
-    pub SESSION: String,
+    #[serde(rename = "SESSION")]
+    pub session: String,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]

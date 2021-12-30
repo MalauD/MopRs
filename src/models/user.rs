@@ -86,10 +86,6 @@ impl User {
         self.username.clone()
     }
 
-    pub fn get_id(&self) -> Option<ObjectId> {
-        self.id.clone()
-    }
-
     /// Get a reference to the user's id.
     pub fn id(&self) -> Option<ObjectId> {
         self.id
@@ -105,19 +101,9 @@ impl User {
         self.current_playlist.as_ref()
     }
 
-    /// Set the user's current playlist.
-    pub fn set_current_playlist(&mut self, current_playlist: Vec<i32>) {
-        self.current_playlist = current_playlist;
-    }
-
     /// Get a reference to the user's current playing.
     pub fn current_playing(&self) -> i32 {
         self.current_playing
-    }
-
-    /// Set the user's current playing.
-    pub fn set_current_playing(&mut self, current_playing: i32) {
-        self.current_playing = current_playing;
     }
 
     /// Get a reference to the user's viewed musics.

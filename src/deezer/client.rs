@@ -1,9 +1,6 @@
 use std::{fs, io::Write, path::Path};
 
-use block_modes::{
-    block_padding::{NoPadding, ZeroPadding},
-    BlockMode, Cbc,
-};
+use block_modes::{block_padding::NoPadding, BlockMode, Cbc};
 use blowfish::Blowfish;
 use log::info;
 use reqwest::Client;
@@ -50,7 +47,7 @@ impl DeezerClient {
             .await
             .expect("Failed to parse session");
 
-        self.cred.set_sid(response.results.SESSION);
+        self.cred.set_sid(response.results.session);
         Ok(())
     }
 

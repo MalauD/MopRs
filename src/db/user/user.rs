@@ -2,7 +2,6 @@ use crate::{
     db::MongoClient,
     models::{User, UserReq},
 };
-use bson::oid::ObjectId;
 use mongodb::{bson::doc, error::Result};
 
 impl MongoClient {

@@ -55,15 +55,11 @@ impl MongoClient {
         Ok(())
     }
 
-    pub async fn append_multiple_to_an_album(
-        &self,
-        music_ids: Vec<i32>,
-        album_id: &i32,
-    ) -> Result<()> {
+    pub async fn set_album_musics(&self, music_ids: Vec<i32>, album_id: &i32) -> Result<()> {
         let coll = self._database.collection::<Album>("Album");
         coll.update_one(
             doc! {"_id": album_id },
-            doc! {"$addToSet": {"musics": {"$each": music_ids}}},
+            doc! {"$set": {"musics": music_ids}},
             None,
         )
         .await?;
