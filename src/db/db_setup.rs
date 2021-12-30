@@ -39,8 +39,13 @@ pub async fn get_mongo() -> &'static MongoClient {
     if let Some(c) = MONGO.get() {
         info!(target: "mop-rs::mongodb", "Creating indexes");
         let _ = c.create_music_text_indexes().await;
+        info!(target: "mop-rs::mongodb", "Creating indexes 1/4");
         let _ = c.create_album_text_indexes().await;
+        info!(target: "mop-rs::mongodb", "Creating indexes 2/4");
         let _ = c.create_artist_text_indexes().await;
+        info!(target: "mop-rs::mongodb", "Creating indexes 3/4");
+        let _ = c.create_playlist_text_indexes().await;
+        info!(target: "mop-rs::mongodb", "Creating indexes 4/4 - Done.");
     }
     drop(initialized);
     MONGO.get().unwrap()

@@ -4,12 +4,16 @@ use crate::{
     app_settings::AppSettings,
     db::{get_mongo, PaginationOptions},
     deezer::{self, DeezerClient, SearchMusicsResult},
-    models::{Album, Artist, Chart, Music, PopulatedAlbum, PopulatedArtist, User},
+    models::{
+        Album, Artist, Chart, Music, PopulatedAlbum, PopulatedArtist, PopulatedPlaylist, User,
+    },
     tools::MusicError,
 };
 use actix_files::NamedFile;
 use actix_web::{web, HttpResponse};
+use bson::oid::ObjectId;
 use itertools::Itertools;
+use serde::Deserialize;
 
 type MusicResponse = Result<HttpResponse, MusicError>;
 
@@ -31,6 +35,9 @@ pub fn config_music(cfg: &mut web::ServiceConfig) {
             .route("/Trending/Musics", web::get().to(trending_musics))
             .route("/Album/id/{id}", web::get().to(get_album))
             .route("/Artist/id/{id}", web::get().to(get_artist))
+            .route("/Playlist/id/{id}", web::get().to(get_playlist))
+            .route("/Playlist/id/{id}", web::delete().to(delete_playlist))
+            .route("/Playlist/Create", web::post().to(create_playlist))
             .route("/cdn/{id}", web::get().to(get_music))
             .route("/Like/Music/{id}", web::get().to(like_music)),
     );
@@ -175,6 +182,58 @@ pub async fn get_artist(
     let mut pop_artist = PopulatedArtist::from(compl_artist);
     pop_artist.albums = Some(albums_of_artist);
     Ok(HttpResponse::Ok().json(pop_artist))
+}
+
+pub async fn get_playlist(req: web::Path<String>, user: User) -> MusicResponse {
+    let db = get_mongo().await;
+    let playlist = db
+        .get_playlist(&ObjectId::parse_str(&*req).unwrap())
+        .await
+        .unwrap();
+    if playlist.is_none() {
+        return Ok(HttpResponse::NotFound().finish());
+    }
+    let playlist = playlist.unwrap();
+    if !playlist.is_authorized_read(&user.id().unwrap()) {
+        return Ok(HttpResponse::Unauthorized().finish());
+    }
+
+    let musics = db
+        .get_musics(&playlist.musics.as_ref().unwrap())
+        .await
+        .unwrap();
+    let mut playlist_pop = PopulatedPlaylist::from(playlist);
+    playlist_pop.musics = musics;
+    Ok(HttpResponse::Ok().json(playlist_pop))
+}
+
+#[derive(Deserialize)]
+struct CreatePlaylistBody {
+    #[serde(rename = "Name")]
+    name: String,
+    #[serde(rename = "MusicsId")]
+    musics: Vec<i32>,
+    #[serde(rename = "IsPublic")]
+    is_public: bool,
+}
+
+pub async fn create_playlist(user: User, pl: web::Json<CreatePlaylistBody>) -> MusicResponse {}
+
+pub async fn delete_playlist(req: web::Path<String>, user: User) -> MusicResponse {
+    let db = get_mongo().await;
+    let playlist = db
+        .get_playlist(&ObjectId::parse_str(&*req).unwrap())
+        .await
+        .unwrap();
+    if playlist.is_none() {
+        return Ok(HttpResponse::NotFound().finish());
+    }
+    let playlist = playlist.unwrap();
+    if !playlist.is_authorized_write(&user.id().unwrap()) {
+        return Ok(HttpResponse::Unauthorized().finish());
+    }
+    let _ = db.remove_playlist(&playlist.id).await.unwrap();
+    Ok(HttpResponse::Ok().finish())
 }
 
 pub async fn get_music(

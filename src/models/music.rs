@@ -1,5 +1,6 @@
 use std::time::{SystemTime, UNIX_EPOCH};
 
+use bson::oid::ObjectId;
 use chrono::Utc;
 use mongodb::bson::DateTime;
 use serde::{Deserialize, Serialize};
@@ -195,6 +196,48 @@ impl From<SearchMusicsResultItem> for Artist {
             name: music.artist.name,
             picture: music.artist.picture_big,
             albums: None,
+        }
+    }
+}
+
+#[derive(Deserialize, Serialize, Clone)]
+pub struct Playlist {
+    #[serde(rename = "_id")]
+    pub id: ObjectId,
+    name: String,
+    creator: ObjectId,
+    public: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub musics: Option<Vec<i32>>,
+}
+
+impl Playlist {
+    pub fn is_authorized_read(&self, user: &ObjectId) -> bool {
+        self.creator == *user || self.public
+    }
+
+    pub fn is_authorized_write(&self, user: &ObjectId) -> bool {
+        self.creator == *user
+    }
+}
+
+#[derive(Deserialize, Serialize, Clone)]
+pub struct PopulatedPlaylist {
+    #[serde(rename = "_id")]
+    pub id: ObjectId,
+    name: String,
+    creator: ObjectId,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub musics: Option<Vec<Music>>,
+}
+
+impl From<Playlist> for PopulatedPlaylist {
+    fn from(p: Playlist) -> Self {
+        PopulatedPlaylist {
+            id: p.id,
+            name: p.name,
+            creator: p.creator,
+            musics: None,
         }
     }
 }

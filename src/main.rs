@@ -8,7 +8,7 @@ use log::info;
 use routes::{config_music, config_user};
 use std::{fs, sync::RwLock};
 
-use crate::{deezer::DeezerClient, models::Sessions};
+use crate::{db::get_mongo, deezer::DeezerClient, models::Sessions};
 
 mod app_settings;
 mod db;
@@ -44,6 +44,10 @@ async fn main() -> std::io::Result<()> {
         let _ = cl.init_session().await;
         let _ = cl.init_user().await;
     }
+
+    let db = get_mongo().await;
+    let c = db.get_musics_count().await.unwrap();
+    info!(target:"mop-rs::mongo","{} musics in database", c);
 
     HttpServer::new(move || {
         App::new()

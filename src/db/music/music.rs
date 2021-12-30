@@ -95,4 +95,9 @@ impl MongoClient {
             .await?;
         Ok(())
     }
+
+    pub async fn get_musics_count(&self) -> Result<u64> {
+        let coll = self._database.collection::<Music>("Music");
+        Ok(coll.estimated_document_count(None).await?)
+    }
 }
