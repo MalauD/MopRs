@@ -10,10 +10,11 @@ use crate::{
     tools::MusicError,
 };
 use actix_files::NamedFile;
-use actix_web::{web, HttpResponse};
+use actix_web::{http::header::HttpDate, web, HttpResponse};
 use bson::oid::ObjectId;
 use itertools::Itertools;
 use serde::Deserialize;
+use serde_json::json;
 
 type MusicResponse = Result<HttpResponse, MusicError>;
 
@@ -37,6 +38,7 @@ pub fn config_music(cfg: &mut web::ServiceConfig) {
             .route("/Artist/id/{id}", web::get().to(get_artist))
             .route("/Playlist/id/{id}", web::get().to(get_playlist))
             .route("/Playlist/id/{id}", web::delete().to(delete_playlist))
+            .route("/Playlist/id/{id}/Add", web::post().to(add_music_playlist))
             .route("/Playlist/Create", web::post().to(create_playlist))
             .route("/cdn/{id}", web::get().to(get_music))
             .route("/Like/Music/{id}", web::get().to(like_music)),
@@ -206,18 +208,50 @@ pub async fn get_playlist(req: web::Path<String>, user: User) -> MusicResponse {
     playlist_pop.musics = musics;
     Ok(HttpResponse::Ok().json(playlist_pop))
 }
-
 #[derive(Deserialize)]
-struct CreatePlaylistBody {
-    #[serde(rename = "Name")]
-    name: String,
+pub(crate) struct AddMusicBody {
     #[serde(rename = "MusicsId")]
-    musics: Vec<i32>,
-    #[serde(rename = "IsPublic")]
-    is_public: bool,
+    pub musics: Vec<i32>,
 }
 
-pub async fn create_playlist(user: User, pl: web::Json<CreatePlaylistBody>) -> MusicResponse {}
+pub async fn add_music_playlist(
+    user: User,
+    pl: web::json<AddMusicBody>,
+    req: web::Path<String>,
+) -> MusicResponse {
+    let db = get_mongo().await;
+    let playlist = db
+        .get_playlist(&ObjectId::parse_str(&*req).unwrap())
+        .await
+        .unwrap();
+    if playlist.is_none() {
+        return Ok(HttpResponse::NotFound().finish());
+    }
+    let playlist = playlist.unwrap();
+    if !playlist.is_authorized_write(&user.id().unwrap()) {
+        return Ok(HttpResponse::Unauthorized().finish());
+    }
+    let _ = db.add_music_playlist(playlist.id, pl.musics).await;
+    OK(HttpResponse::Ok().finish())
+}
+
+#[derive(Deserialize)]
+pub(crate) struct CreatePlaylistBody {
+    #[serde(rename = "Name")]
+    pub name: String,
+    #[serde(rename = "MusicsId")]
+    pub musics: Vec<i32>,
+    #[serde(rename = "IsPublic")]
+    pub is_public: bool,
+}
+
+pub async fn create_playlist(user: User, pl: web::Json<CreatePlaylistBody>) -> MusicResponse {
+    let db = get_mongo().await;
+    let id = db
+        .create_playlist(pl.name, &pl.musics, pl.is_public, user.id)
+        .await;
+    Ok(HttpResponse::Ok().json(json!({ "CreatedPlaylistId": id })));
+}
 
 pub async fn delete_playlist(req: web::Path<String>, user: User) -> MusicResponse {
     let db = get_mongo().await;

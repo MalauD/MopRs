@@ -54,4 +54,16 @@ impl MongoClient {
             .await?;
         Ok(r.inserted_id.as_object_id().unwrap())
     }
+
+    pub async fn add_music_playlist(&self, playlist_id: ObjectId, music: i32) -> Result<()> {
+        let coll = self._database.collection::<Playlist>("Playlist");
+        let r = coll
+            .update_one(
+                doc! {"_id": playlist_id},
+                doc! {"$push": {"musics": music}},
+                None,
+            )
+            .await?;
+        Ok(())
+    }
 }
