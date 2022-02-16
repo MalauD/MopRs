@@ -46,21 +46,24 @@ impl MongoClient {
         creator: &User,
     ) -> Result<ObjectId> {
         let coll = self._database.collection::<Playlist>("Playlist");
-        let r = coll
-            .insert_one(
-                doc! {"name":name, "creator": creator.id(), "public": public, "musics":musics},
-                None,
-            )
-            .await?;
-        Ok(r.inserted_id.as_object_id().unwrap())
+        let id = ObjectId::new();
+        let pl = Playlist::new(
+            id,
+            name,
+            creator.id().unwrap(),
+            public,
+            Some(musics.to_vec()),
+        );
+        let _ = coll.insert_one(pl, None).await?;
+        Ok(id)
     }
 
-    pub async fn add_music_playlist(&self, playlist_id: ObjectId, music: i32) -> Result<()> {
+    pub async fn add_musics_playlist(&self, playlist_id: ObjectId, music: &Vec<i32>) -> Result<()> {
         let coll = self._database.collection::<Playlist>("Playlist");
         let r = coll
             .update_one(
                 doc! {"_id": playlist_id},
-                doc! {"$push": {"musics": music}},
+                doc! {"$push": {"musics": {"$each": music}}},
                 None,
             )
             .await?;

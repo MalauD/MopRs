@@ -6,7 +6,7 @@ use actix_web::{
 use futures::Future;
 use mongodb::bson::oid::ObjectId;
 use ring::{digest, pbkdf2};
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize, Serializer};
 use std::{num::NonZeroU32, pin::Pin, sync::RwLock, u8};
 
 use super::Sessions;
@@ -32,7 +32,11 @@ impl UserReq {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct User {
-    #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
+    #[serde(
+        rename = "_id",
+        skip_serializing_if = "Option::is_none",
+        serialize_with = "serialize_option_oid_hex"
+    )]
     id: Option<ObjectId>,
     pub username: String,
     #[serde(with = "serde_bytes")]
@@ -41,6 +45,16 @@ pub struct User {
     current_playlist: Vec<i32>,
     current_playing: i32,
     viewed_musics: Vec<i32>,
+}
+
+fn serialize_option_oid_hex<S>(x: &Option<ObjectId>, s: S) -> Result<S::Ok, S::Error>
+where
+    S: Serializer,
+{
+    match x {
+        Some(o) => s.serialize_str(&o.to_hex()),
+        None => s.serialize_none(),
+    }
 }
 
 impl User {

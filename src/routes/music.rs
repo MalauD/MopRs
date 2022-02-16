@@ -10,7 +10,7 @@ use crate::{
     tools::MusicError,
 };
 use actix_files::NamedFile;
-use actix_web::{http::header::HttpDate, web, HttpResponse};
+use actix_web::{web, HttpResponse};
 use bson::oid::ObjectId;
 use itertools::Itertools;
 use serde::Deserialize;
@@ -36,10 +36,10 @@ pub fn config_music(cfg: &mut web::ServiceConfig) {
             .route("/Trending/Musics", web::get().to(trending_musics))
             .route("/Album/id/{id}", web::get().to(get_album))
             .route("/Artist/id/{id}", web::get().to(get_artist))
+            .route("/Playlist/Create", web::post().to(create_playlist))
             .route("/Playlist/id/{id}", web::get().to(get_playlist))
             .route("/Playlist/id/{id}", web::delete().to(delete_playlist))
             .route("/Playlist/id/{id}/Add", web::post().to(add_music_playlist))
-            .route("/Playlist/Create", web::post().to(create_playlist))
             .route("/cdn/{id}", web::get().to(get_music))
             .route("/Like/Music/{id}", web::get().to(like_music)),
     );
@@ -209,14 +209,14 @@ pub async fn get_playlist(req: web::Path<String>, user: User) -> MusicResponse {
     Ok(HttpResponse::Ok().json(playlist_pop))
 }
 #[derive(Deserialize)]
-pub(crate) struct AddMusicBody {
+pub struct AddMusicBody {
     #[serde(rename = "MusicsId")]
     pub musics: Vec<i32>,
 }
 
 pub async fn add_music_playlist(
     user: User,
-    pl: web::json<AddMusicBody>,
+    pl: web::Json<AddMusicBody>,
     req: web::Path<String>,
 ) -> MusicResponse {
     let db = get_mongo().await;
@@ -231,12 +231,12 @@ pub async fn add_music_playlist(
     if !playlist.is_authorized_write(&user.id().unwrap()) {
         return Ok(HttpResponse::Unauthorized().finish());
     }
-    let _ = db.add_music_playlist(playlist.id, pl.musics).await;
-    OK(HttpResponse::Ok().finish())
+    let _ = db.add_musics_playlist(playlist.id, &pl.musics).await;
+    Ok(HttpResponse::Ok().finish())
 }
 
 #[derive(Deserialize)]
-pub(crate) struct CreatePlaylistBody {
+pub struct CreatePlaylistBody {
     #[serde(rename = "Name")]
     pub name: String,
     #[serde(rename = "MusicsId")]
@@ -248,9 +248,9 @@ pub(crate) struct CreatePlaylistBody {
 pub async fn create_playlist(user: User, pl: web::Json<CreatePlaylistBody>) -> MusicResponse {
     let db = get_mongo().await;
     let id = db
-        .create_playlist(pl.name, &pl.musics, pl.is_public, user.id)
-        .await;
-    Ok(HttpResponse::Ok().json(json!({ "CreatedPlaylistId": id })));
+        .create_playlist(pl.name.clone(), &pl.musics, pl.is_public, &user)
+        .await?;
+    Ok(HttpResponse::Ok().json(&json!({ "CreatedPlaylistId": id.to_hex() })))
 }
 
 pub async fn delete_playlist(req: web::Path<String>, user: User) -> MusicResponse {

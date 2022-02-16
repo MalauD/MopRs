@@ -1,6 +1,7 @@
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use bson::oid::ObjectId;
+use bson::serde_helpers::serialize_object_id_as_hex_string;
 use chrono::Utc;
 use mongodb::bson::DateTime;
 use serde::{Deserialize, Serialize};
@@ -212,6 +213,22 @@ pub struct Playlist {
 }
 
 impl Playlist {
+    pub fn new(
+        id: ObjectId,
+        name: String,
+        creator: ObjectId,
+        public: bool,
+        musics: Option<Vec<i32>>,
+    ) -> Self {
+        Self {
+            id,
+            name,
+            creator,
+            public,
+            musics,
+        }
+    }
+
     pub fn is_authorized_read(&self, user: &ObjectId) -> bool {
         self.creator == *user || self.public
     }
