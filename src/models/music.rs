@@ -10,6 +10,8 @@ use crate::deezer::{
     AlbumTracksResultItem, ArtistAlbumsResultItem, ChartResult, SearchMusicsResultItem,
 };
 
+use super::User;
+
 #[derive(Deserialize, Serialize, Clone)]
 pub struct Music {
     #[serde(rename = "_id")]
@@ -236,24 +238,38 @@ impl Playlist {
     pub fn is_authorized_write(&self, user: &ObjectId) -> bool {
         self.creator == *user
     }
+
+    /// Get a reference to the playlist's creator.
+    pub fn creator(&self) -> ObjectId {
+        self.creator
+    }
 }
 
 #[derive(Deserialize, Serialize, Clone)]
 pub struct PopulatedPlaylist {
-    #[serde(rename = "_id")]
+    #[serde(rename = "_id", serialize_with = "serialize_object_id_as_hex_string")]
     pub id: ObjectId,
     name: String,
-    creator: ObjectId,
+    creator: User,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub musics: Option<Vec<Music>>,
 }
 
-impl From<Playlist> for PopulatedPlaylist {
-    fn from(p: Playlist) -> Self {
-        PopulatedPlaylist {
-            id: p.id,
-            name: p.name,
-            creator: p.creator,
+impl PopulatedPlaylist {
+    pub fn new(id: ObjectId, name: String, creator: User, musics: Option<Vec<Music>>) -> Self {
+        Self {
+            id,
+            name,
+            creator,
+            musics,
+        }
+    }
+
+    pub fn from_playlist(pl: Playlist, creator: User) -> Self {
+        Self {
+            id: pl.id,
+            name: pl.name,
+            creator,
             musics: None,
         }
     }

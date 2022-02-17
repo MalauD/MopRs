@@ -2,6 +2,7 @@ use crate::{
     db::MongoClient,
     models::{User, UserReq},
 };
+use bson::oid::ObjectId;
 use mongodb::{bson::doc, error::Result};
 
 impl MongoClient {
@@ -11,9 +12,9 @@ impl MongoClient {
             .await
     }
 
-    pub async fn get_user(&self, user: &User) -> Result<Option<User>> {
+    pub async fn get_user(&self, user: &ObjectId) -> Result<Option<User>> {
         let coll = self._database.collection::<User>("User");
-        coll.find_one(doc! {"_id": user.id()}, None).await
+        coll.find_one(doc! {"_id": user}, None).await
     }
 
     pub async fn save_user(&self, user: User) -> Result<()> {

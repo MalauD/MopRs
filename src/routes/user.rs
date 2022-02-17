@@ -1,10 +1,11 @@
 use crate::{
     db::{get_mongo, PaginationOptions},
-    models::{Sessions, User, UserReq},
+    models::{PopulatedPlaylist, Sessions, User, UserReq},
     tools::UserError,
 };
 use actix_identity::Identity;
 use actix_web::{web, HttpResponse, Responder};
+use bson::oid::ObjectId;
 use serde::Deserialize;
 use serde_json::json;
 use std::sync::RwLock;
@@ -28,7 +29,8 @@ pub fn config_user(cfg: &mut web::ServiceConfig) {
             .route(
                 "/CurrentPlaylist/Playing",
                 web::post().to(set_current_playlist_playing),
-            ),
+            )
+            .route("/{id}/Playlists", web::get().to(get_user_playlists)),
     );
 }
 
@@ -81,13 +83,13 @@ pub async fn logout(id: Identity) -> UserResponse {
 
 pub async fn get_account(user: User) -> impl Responder {
     let db = get_mongo().await;
-    let u = db.get_user(&user).await.unwrap().unwrap();
+    let u = db.get_user(&user.id().unwrap()).await.unwrap().unwrap();
     web::Json(json!({ "Account": u }))
 }
 
 pub async fn get_liked(pagination: web::Query<PaginationOptions>, user: User) -> UserResponse {
     let db = get_mongo().await;
-    let u = db.get_user(&user).await.unwrap().unwrap();
+    let u = db.get_user(&user.id().unwrap()).await.unwrap().unwrap();
     let musics = u.liked_musics().to_vec();
 
     let res = db.get_musics(&pagination.trim_vec(&musics)).await.unwrap();
@@ -96,7 +98,7 @@ pub async fn get_liked(pagination: web::Query<PaginationOptions>, user: User) ->
 
 pub async fn get_viewed(pagination: web::Query<PaginationOptions>, user: User) -> UserResponse {
     let db = get_mongo().await;
-    let u = db.get_user(&user).await.unwrap().unwrap();
+    let u = db.get_user(&user.id().unwrap()).await.unwrap().unwrap();
     let mut musics = u.viewed_musics().to_vec();
     musics.reverse();
     let res = db.get_musics(&pagination.trim_vec(&musics)).await.unwrap();
@@ -105,7 +107,7 @@ pub async fn get_viewed(pagination: web::Query<PaginationOptions>, user: User) -
 
 pub async fn get_current_playlist(user: User) -> UserResponse {
     let db = get_mongo().await;
-    let u = db.get_user(&user).await.unwrap().unwrap();
+    let u = db.get_user(&user.id().unwrap()).await.unwrap().unwrap();
 
     let res = db.get_musics(&u.current_playlist().to_vec()).await.unwrap();
     Ok(HttpResponse::Ok()
@@ -145,4 +147,32 @@ pub async fn set_current_playlist_playing(
         .set_current_playlist_index(&user, &playlist.current_playlist_playing)
         .await;
     Ok(HttpResponse::Ok().finish())
+}
+
+pub async fn get_user_playlists(
+    req: web::Path<String>,
+    user: User,
+    pagination: web::Query<PaginationOptions>,
+) -> UserResponse {
+    let db = get_mongo().await;
+    let user_id = &ObjectId::parse_str(&*req).unwrap();
+    let playlists = db.get_user_playlists(user_id, &pagination).await.unwrap();
+
+    let creator = db.get_user(user_id).await.unwrap().unwrap();
+
+    let mut pop_playlists: Vec<PopulatedPlaylist> = Vec::with_capacity(playlists.len());
+    for playlist in playlists.iter().cloned() {
+        if playlist.is_authorized_read(&user.id().unwrap()) {
+            //Something else might be faster
+            let musics = db
+                .get_musics(&playlist.musics.as_ref().unwrap())
+                .await
+                .unwrap();
+            let mut playlist_pop = PopulatedPlaylist::from_playlist(playlist, creator.clone());
+            playlist_pop.musics = musics;
+            pop_playlists.push(playlist_pop);
+        }
+    }
+
+    Ok(HttpResponse::Ok().json(pop_playlists))
 }

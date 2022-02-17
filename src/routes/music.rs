@@ -149,7 +149,7 @@ pub async fn get_album(
 
 pub async fn like_music(req: web::Path<i32>, user: User) -> MusicResponse {
     let db = get_mongo().await;
-    let u = db.get_user(&user).await.unwrap().unwrap();
+    let u = db.get_user(&user.id().unwrap()).await.unwrap().unwrap();
     let res = db.like_music(&u, &req).await.unwrap();
     db.modify_like_count(&req, if res { 1 } else { -1 })
         .await
@@ -204,7 +204,8 @@ pub async fn get_playlist(req: web::Path<String>, user: User) -> MusicResponse {
         .get_musics(&playlist.musics.as_ref().unwrap())
         .await
         .unwrap();
-    let mut playlist_pop = PopulatedPlaylist::from(playlist);
+    let user = db.get_user(&playlist.creator()).await.unwrap();
+    let mut playlist_pop = PopulatedPlaylist::from_playlist(playlist, user.unwrap());
     playlist_pop.musics = musics;
     Ok(HttpResponse::Ok().json(playlist_pop))
 }

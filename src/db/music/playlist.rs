@@ -1,8 +1,13 @@
 use bson::{doc, oid::ObjectId};
-use mongodb::{error::Result, options::IndexOptions, IndexModel};
+use futures::StreamExt;
+use mongodb::{
+    error::Result,
+    options::{FindOptions, IndexOptions},
+    IndexModel,
+};
 
 use crate::{
-    db::MongoClient,
+    db::{MongoClient, PaginationOptions},
     models::{Playlist, User},
 };
 
@@ -30,6 +35,31 @@ impl MongoClient {
     pub async fn get_playlist(&self, playlist_id: &ObjectId) -> Result<Option<Playlist>> {
         let coll = self._database.collection::<Playlist>("Playlist");
         Ok(coll.find_one(doc! {"_id": playlist_id}, None).await?)
+    }
+
+    pub async fn get_user_playlists(
+        &self,
+        user: &ObjectId,
+        pagination: &PaginationOptions,
+    ) -> Result<Vec<Playlist>> {
+        let coll = self._database.collection::<Playlist>("Playlist");
+
+        let find_option = FindOptions::builder()
+            .limit(pagination.get_max_results() as i64)
+            .skip(Some(
+                (pagination.get_page() * pagination.get_max_results()) as u64,
+            ))
+            .build();
+
+        let mut cursor = coll.find(doc! {"creator": user}, None).await?;
+
+        let mut result = Vec::<Playlist>::with_capacity(pagination.get_max_results().max(20));
+        while let Some(value) = cursor.next().await {
+            if let Ok(res) = value {
+                result.push(res);
+            }
+        }
+        Ok(result)
     }
 
     pub async fn remove_playlist(&self, playlist_id: &ObjectId) -> Result<()> {

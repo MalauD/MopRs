@@ -3,14 +3,20 @@ import Axios from 'axios';
 import PropTypes from 'prop-types';
 import MusicGroup from './Groups/MusicGroup';
 import { OWN_PLAYLIST_CONTEXT, PLAYLIST_CONTEXT } from '../../Constants/MusicsConstants';
+import { connect } from 'react-redux';
 
-class UserPlaylist extends React.Component {
+const mapStateToProps = (state) => ({
+    Account: state.UserAccountReducer.Account,
+});
+
+class UserPlaylistConnected extends React.Component {
     static propTypes = {
         match: PropTypes.shape({
             params: PropTypes.shape({
                 id: PropTypes.string.isRequired,
             }).isRequired,
         }).isRequired,
+        Account: PropTypes.shape().isRequired,
     };
 
     constructor(props) {
@@ -25,15 +31,15 @@ class UserPlaylist extends React.Component {
     }
 
     componentDidMount = () => {
-        const { match } = this.props;
+        const { match, Account } = this.props;
 
         Axios.get(`/Music/Playlist/id/${match.params.id}`).then((res) => {
             this.setState({
                 Musics: res.data.musics,
                 PlaylistName: res.data.name,
                 PlaylistId: res.data._id,
-                CreatorName: res.data.creator,
-                OwnPlaylist: true,
+                CreatorName: res.data.creator.username,
+                OwnPlaylist: Account._id === res.data.creator._id,
             });
         });
     };
@@ -55,5 +61,7 @@ class UserPlaylist extends React.Component {
         return <></>;
     }
 }
+
+const UserPlaylist = connect(mapStateToProps)(UserPlaylistConnected);
 
 export default UserPlaylist;
