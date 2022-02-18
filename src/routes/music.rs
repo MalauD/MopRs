@@ -40,6 +40,10 @@ pub fn config_music(cfg: &mut web::ServiceConfig) {
             .route("/Playlist/id/{id}", web::get().to(get_playlist))
             .route("/Playlist/id/{id}", web::delete().to(delete_playlist))
             .route("/Playlist/id/{id}/Add", web::post().to(add_music_playlist))
+            .route(
+                "/Playlist/id/{id}/Remove",
+                web::delete().to(remove_music_playlist),
+            )
             .route("/cdn/{id}", web::get().to(get_music))
             .route("/Like/Music/{id}", web::get().to(like_music)),
     );
@@ -210,14 +214,14 @@ pub async fn get_playlist(req: web::Path<String>, user: User) -> MusicResponse {
     Ok(HttpResponse::Ok().json(playlist_pop))
 }
 #[derive(Deserialize)]
-pub struct AddMusicBody {
+pub struct AddRemoveMusicBody {
     #[serde(rename = "MusicsId")]
     pub musics: Vec<i32>,
 }
 
 pub async fn add_music_playlist(
     user: User,
-    pl: web::Json<AddMusicBody>,
+    pl: web::Json<AddRemoveMusicBody>,
     req: web::Path<String>,
 ) -> MusicResponse {
     let db = get_mongo().await;
@@ -233,6 +237,27 @@ pub async fn add_music_playlist(
         return Ok(HttpResponse::Unauthorized().finish());
     }
     let _ = db.add_musics_playlist(playlist.id, &pl.musics).await;
+    Ok(HttpResponse::Ok().finish())
+}
+
+pub async fn remove_music_playlist(
+    user: User,
+    pl: web::Json<AddRemoveMusicBody>,
+    req: web::Path<String>,
+) -> MusicResponse {
+    let db = get_mongo().await;
+    let playlist = db
+        .get_playlist(&ObjectId::parse_str(&*req).unwrap())
+        .await
+        .unwrap();
+    if playlist.is_none() {
+        return Ok(HttpResponse::NotFound().finish());
+    }
+    let playlist = playlist.unwrap();
+    if !playlist.is_authorized_write(&user.id().unwrap()) {
+        return Ok(HttpResponse::Unauthorized().finish());
+    }
+    let _ = db.remove_musics_playlist(playlist.id, &pl.musics).await;
     Ok(HttpResponse::Ok().finish())
 }
 

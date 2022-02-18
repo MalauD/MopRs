@@ -90,10 +90,26 @@ impl MongoClient {
 
     pub async fn add_musics_playlist(&self, playlist_id: ObjectId, music: &Vec<i32>) -> Result<()> {
         let coll = self._database.collection::<Playlist>("Playlist");
-        let r = coll
+        let _r = coll
             .update_one(
                 doc! {"_id": playlist_id},
                 doc! {"$push": {"musics": {"$each": music}}},
+                None,
+            )
+            .await?;
+        Ok(())
+    }
+
+    pub async fn remove_musics_playlist(
+        &self,
+        playlist_id: ObjectId,
+        music: &Vec<i32>,
+    ) -> Result<()> {
+        let coll = self._database.collection::<Playlist>("Playlist");
+        let _r = coll
+            .update_one(
+                doc! {"_id": playlist_id},
+                doc! {"$pull": {"musics": {"$in": music}}},
                 None,
             )
             .await?;
