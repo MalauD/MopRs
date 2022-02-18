@@ -1,14 +1,13 @@
 .MusicItemRow .Accessory {
-    transform: scale(0);
-
-    -webkit-transition: transform .1s ease-in-out;
-    -moz-transition: transform .1s ease-in-out;
-    -o-transition: transform .1s ease-in-out;
-    transition: transform .1s ease-in-out;
+    opacity: 0.0;
+    -webkit-transition: opacity .1s ease-in-out;
+    -moz-transition: opacity .1s ease-in-out;
+    -o-transition: opacity .1s ease-in-out;
+    transition: opacity .1s ease-in-out;
 }
 
 .MusicItemRow:hover .Accessory {
-    transform: scale(1);
+    opacity: 1.0;
 }
 
 .LikeButton {
@@ -17,6 +16,6 @@
 
 @media only screen and (max-width: 768px) {
     .MusicItemRow .Accessory {
-        transform: scale(1);
+        opacity: 1.0;
     }
 }
