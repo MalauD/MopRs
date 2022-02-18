@@ -11,7 +11,7 @@ class Trending extends React.Component {
     };
 
     static defaultProps = {
-        Size: 10,
+        Size: 14,
         RemoveDups: true,
     };
 
