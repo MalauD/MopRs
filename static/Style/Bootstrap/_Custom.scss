@@ -41,17 +41,15 @@ $body-bg: $PrimaryColor2;
 $body-color: $white;
 
 // Fonts
-$text-muted: darken($white, 5%);
+$text-muted: rgba(224, 232, 255, 0.7);
+
+@font-face {
+    font-family: "SF-Pro-Rounded-Bold";
+    src: url("/Fonts/subset-SFRounded-Heavy.woff2") format("woff2");
+}
 
 // stylelint-disable-next-line value-keyword-case
-$font-family-sans-serif: system-ui,
--apple-system,
-BlinkMacSystemFont,
-"Segoe UI",
-Roboto,
-Ubuntu,
-"Helvetica Neue",
-sans-serif;
+$font-family-sans-serif: "SF-Pro-Rounded-Bold";
 $headings-color: $white;
 
 // Tables

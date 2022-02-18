@@ -39,7 +39,7 @@ export default class TopNav extends React.Component {
                     style={{
                         fontFamily: 'Pacifico, cursive',
                         fontSize: '2em',
-                        marginLeft: '0.5rem',
+                        marginLeft: '0.4em',
                         textShadow: '#cc506c 3px 3px 0px',
                     }}
                     href="#"

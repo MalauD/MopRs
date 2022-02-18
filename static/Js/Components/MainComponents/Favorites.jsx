@@ -11,7 +11,7 @@ class Favorites extends React.Component {
     };
 
     static defaultProps = {
-        Size: undefined,
+        Size: 14,
         Reverse: true,
     };
 

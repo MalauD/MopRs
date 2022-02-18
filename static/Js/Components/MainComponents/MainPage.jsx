@@ -16,8 +16,8 @@ class MainPage extends React.Component {
             <>
                 <Selection />
                 <Trending />
-                <Favorites Size={10} />
-                <History Size={10} />
+                <Favorites Size={14} />
+                <History Size={14} />
             </>
         );
     }
