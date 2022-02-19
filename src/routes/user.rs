@@ -90,8 +90,8 @@ pub async fn get_account(user: User) -> impl Responder {
 pub async fn get_liked(pagination: web::Query<PaginationOptions>, user: User) -> UserResponse {
     let db = get_mongo().await;
     let u = db.get_user(&user.id().unwrap()).await.unwrap().unwrap();
-    let musics = u.liked_musics().to_vec();
-
+    let mut musics = u.liked_musics().to_vec();
+    musics.reverse();
     let res = db.get_musics(&pagination.trim_vec(&musics)).await.unwrap();
     Ok(HttpResponse::Ok().json(res))
 }

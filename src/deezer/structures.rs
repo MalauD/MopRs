@@ -1,4 +1,4 @@
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize};
 
 use super::StreamMusic;
 
@@ -28,7 +28,15 @@ pub struct SearchMusicsResultItemArtist {
 pub struct SearchMusicsResultItemAlbum {
     pub id: i32,
     pub title: String,
+    #[serde(deserialize_with = "parse_cover")]
     pub cover_big: String,
+}
+
+fn parse_cover<'de, D>(d: D) -> Result<String, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    Deserialize::deserialize(d).map(|x: Option<_>| x.unwrap_or("".to_string()))
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
