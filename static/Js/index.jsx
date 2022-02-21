@@ -15,11 +15,11 @@ import Register from './Components/Authentification/Register';
 import Favorites from './Components/MainComponents/Favorites';
 import History from './Components/MainComponents/History';
 import SearchPage from './Components/Search/SearchPage';
-import CurrentPlaylist from './Components/Containers/PlaylistContainer';
 import Album from './Components/MainComponents/Album';
 import Artist from './Components/MainComponents/Artist';
 import UserPlaylist from './Components/MainComponents/UserPlaylist';
 import UserPlaylists from './Components/MainComponents/UserPlaylists';
+import PlayerFull from './Components/MainComponents/PlayerFull';
 
 Axios.defaults.withCredentials = true;
 
@@ -36,7 +36,7 @@ const App = () => (
                 <ProtectedRoute path="/Favorites" component={Favorites} />
                 <ProtectedRoute path="/History" component={History} />
                 <ProtectedRoute path="/Search" component={SearchPage} />
-                <ProtectedRoute path="/CurrentPlaylist" component={CurrentPlaylist} />
+                <ProtectedRoute path="/Player" component={PlayerFull} />
                 <ProtectedRoute path="/Album/:id" component={Album} />
                 <ProtectedRoute path="/Artist/:id" component={Artist} />
                 <ProtectedRoute path="/Playlist/:id" component={UserPlaylist} />
