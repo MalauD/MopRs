@@ -10,6 +10,7 @@ import {
 import PlaylistSaverButton from '../Helper/PlaylistSaverButton';
 import { arrayMoveImmutable } from 'array-move';
 import { SortableContainer, SortableElement } from 'react-sortable-hoc';
+import ButtonIcon from '../Helper/ButtonIcon';
 
 const mapStateToProps = (state) => ({
     Musics: state.MusicPlayerReducer.Playlist.Musics,
@@ -25,6 +26,14 @@ const mapDispatchToProps = (dispatch) => ({
         dispatch(UpdateCurrentPlaylistRedux(UpdatedMusics, UpdatedPlayingId));
     },
 });
+
+function shuffle(a) {
+    for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+}
 
 class PlaylistContainerConnected extends React.Component {
     static propTypes = {
@@ -43,6 +52,13 @@ class PlaylistContainerConnected extends React.Component {
     onSortEnd = ({ oldIndex, newIndex }) => {
         const { CurrentPlaying, UpdateCurrentPlaylist, Musics } = this.props;
         const newMusicsPlaylist = arrayMoveImmutable(Musics, oldIndex, newIndex);
+        UpdateCurrentPlaylist(newMusicsPlaylist, newMusicsPlaylist.indexOf(CurrentPlaying));
+    };
+
+    onShuffle = () => {
+        const { CurrentPlaying, UpdateCurrentPlaylist, Musics } = this.props;
+        const newMusicsPlaylist = arrayMoveImmutable(Musics, 0, 0);
+        shuffle(newMusicsPlaylist);
         UpdateCurrentPlaylist(newMusicsPlaylist, newMusicsPlaylist.indexOf(CurrentPlaying));
     };
 
@@ -70,6 +86,16 @@ class PlaylistContainerConnected extends React.Component {
                                 </small>
                             </Col>
                             <Col>
+                                <ButtonIcon
+                                    dataEva={'shuffle-2-outline'}
+                                    buttonClass="float-right d-none d-lg-block ml-3"
+                                    onClick={this.onShuffle}
+                                    evaOptions={{
+                                        fill: '#d6d6d6ff',
+                                        width: '30px',
+                                        height: '30px',
+                                    }}
+                                />
                                 <PlaylistSaverButton MusicsId={Musics.map((m) => m._id)} />
                             </Col>
                         </Row>
