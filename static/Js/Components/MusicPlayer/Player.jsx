@@ -37,6 +37,7 @@ const mapDispatchToProps = (dispatch) => ({
 });
 
 class PlayerConnected extends React.Component {
+    _isMounted = false;
     static propTypes = {
         history: PropTypes.shape({
             push: PropTypes.func.isRequired,
@@ -107,10 +108,12 @@ class PlayerConnected extends React.Component {
     };
 
     componentWillUnmount = () => {
+        this._isMounted = true;
         clearInterval(this.refreshPlayer);
     };
 
     componentDidMount = () => {
+        this._isMounted = true;
         const { UpdateCurrentPlaylist } = this.props;
         const { IsPlaying } = this.state;
         if (this.player) {
@@ -119,6 +122,52 @@ class PlayerConnected extends React.Component {
         Axios.get('/User/CurrentPlaylist').then(({ data }) => {
             UpdateCurrentPlaylist(data.CurrentPlaylist, data.CurrentPlaylistPlaying);
         });
+        const { mediaSession } = navigator;
+        mediaSession.setActionHandler('play', function () {
+            this.HandlePlay();
+        });
+        mediaSession.setActionHandler('pause', function () {
+            this.HandlePlay();
+        });
+        mediaSession.setActionHandler('seekbackward', function (e) {
+            console.log(e);
+            this.player.currentTime = this.player.currentTime - e.seekOffset;
+        });
+        mediaSession.setActionHandler('seekforward', function (e) {
+            this.player.currentTime = this.player.currentTime + e.seekOffset;
+        });
+        mediaSession.setActionHandler('seekto', function (e) {
+            this.player.currentTime = e.seekTime;
+        });
+        mediaSession.setActionHandler('previoustrack', function () {
+            this.HandleBack();
+        });
+        mediaSession.setActionHandler('nexttrack', function () {
+            this.HandleNext();
+        });
+        this.OnUpdate();
+    };
+
+    componentDidUpdate = () => {
+        this.OnUpdate();
+    };
+
+    OnUpdate = () => {
+        const { mediaSession } = navigator;
+        const { PlayingMusic } = this.props;
+        if (PlayingMusic) {
+            mediaSession.metadata = new MediaMetadata({
+                title: PlayingMusic.title,
+                artist: PlayingMusic.artist_name,
+                artwork: [
+                    {
+                        src: PlayingMusic.image_url,
+                        sizes: '96x96,128x128,192x192,256x256,384x384,512x512',
+                        type: 'image/png',
+                    },
+                ],
+            });
+        }
     };
 
     OnPlayerEnd = () => {
@@ -243,7 +292,6 @@ class PlayerConnected extends React.Component {
                                     {NextMusic ? `Next: ${NextMusic.title}` : 'Queue'}
                                 </Button>
                             </Row>
-
                             <audio
                                 ref={(ref) => {
                                     this.player = ref;

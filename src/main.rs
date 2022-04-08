@@ -8,7 +8,11 @@ use log::info;
 use routes::{config_music, config_user};
 use std::{fs, sync::RwLock};
 
-use crate::{db::get_mongo, deezer::DeezerClient, models::Sessions};
+use crate::{
+    db::get_mongo,
+    deezer::{get_dz_client, DeezerClient},
+    models::Sessions,
+};
 
 mod app_settings;
 mod db;
@@ -32,18 +36,8 @@ async fn main() -> std::io::Result<()> {
     let _ = fs::create_dir_all(settings.get_str("music_path").unwrap());
 
     let arl = settings.get_str("arl").unwrap();
-
+    let _ = get_dz_client(Some(arl)).await;
     let sessions: Data<RwLock<Sessions>> = Data::new(RwLock::new(Default::default()));
-    let deezer_client = Data::new(RwLock::new(DeezerClient::new(
-        "https://api.deezer.com/".to_string(),
-        arl,
-    )));
-    {
-        info!(target:"mop-rs::deezer","Initializing deezer client");
-        let mut cl = deezer_client.write().unwrap();
-        let _ = cl.init_session().await;
-        let _ = cl.init_user().await;
-    }
 
     let db = get_mongo().await;
     let c = db.get_musics_count().await.unwrap();
@@ -52,7 +46,6 @@ async fn main() -> std::io::Result<()> {
     HttpServer::new(move || {
         App::new()
             .app_data(sessions.clone())
-            .app_data(deezer_client.clone())
             .app_data(Data::new(app_settings::AppSettings::new(
                 settings.get_str("music_path").unwrap(),
             )))

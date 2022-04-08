@@ -1,10 +1,12 @@
-use std::{fs, io::Write, path::Path};
+use std::{borrow::Borrow, fs, io::Write, path::Path};
 
 use block_modes::{block_padding::NoPadding, BlockMode, Cbc};
 use blowfish::Blowfish;
 use log::info;
+use once_cell::sync::OnceCell;
 use reqwest::Client;
 use serde_json::json;
+use tokio::sync::{Mutex, RwLock};
 
 use crate::deezer::SearchMusicsResult;
 
@@ -17,6 +19,41 @@ pub struct DeezerClient {
     http_client: Client,
     base_url: String,
     pub cred: StreamingCredentials,
+}
+
+static DEEZER: OnceCell<RwLock<DeezerClient>> = OnceCell::new();
+static DEEZER_INITIALIZED: OnceCell<Mutex<bool>> = OnceCell::new();
+
+pub async fn get_dz_client(arl: Option<String>) -> &'static RwLock<DeezerClient> {
+    if let Some(c) = DEEZER.get() {
+        return c;
+    }
+
+    let initializing_mutex = DEEZER_INITIALIZED.get_or_init(|| tokio::sync::Mutex::new(false));
+
+    let mut initialized = initializing_mutex.lock().await;
+
+    if !*initialized {
+        if let Some(arl_value) = arl {
+            let mut client = DeezerClient::new("https://api.deezer.com/".to_string(), arl_value);
+            info!(target:"mop-rs::deezer","Initializing deezer client");
+            let _ = client.init_session().await;
+            let _ = client.init_user().await;
+            if DEEZER.set(RwLock::new(client)).is_ok() {
+                *initialized = true;
+            }
+        }
+    }
+
+    drop(initialized);
+    DEEZER.get().unwrap()
+}
+
+pub async fn refresh_dz_client() {
+    let mut dz = get_dz_client(None).await.write().await;
+    info!(target:"mop-rs::deezer","Initializing deezer client");
+    let _ = dz.init_session().await;
+    let _ = dz.init_user().await;
 }
 
 impl DeezerClient {

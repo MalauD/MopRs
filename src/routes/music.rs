@@ -1,9 +1,9 @@
-use std::{path::PathBuf, sync::RwLock};
+use std::path::PathBuf;
 
 use crate::{
     app_settings::AppSettings,
     db::{get_mongo, PaginationOptions},
-    deezer::{self, DeezerClient, SearchMusicsResult},
+    deezer::{self, get_dz_client, refresh_dz_client, SearchMusicsResult},
     models::{
         Album, Artist, Chart, Music, PopulatedAlbum, PopulatedArtist, PopulatedPlaylist, User,
     },
@@ -51,11 +51,10 @@ pub fn config_music(cfg: &mut web::ServiceConfig) {
 
 pub async fn search_music(
     req: web::Path<String>,
-    deezer_api: web::Data<RwLock<DeezerClient>>,
     pagination: web::Query<PaginationOptions>,
 ) -> MusicResponse {
     let db = get_mongo().await;
-    let dz = deezer_api.read().unwrap();
+    let dz = get_dz_client(None).await.read().await;
     let res = dz.search_music(req.clone()).await.unwrap();
     index_search_musics_result(&res).await;
     //musics.group_by()
@@ -65,11 +64,10 @@ pub async fn search_music(
 
 pub async fn search_album(
     req: web::Path<String>,
-    deezer_api: web::Data<RwLock<DeezerClient>>,
     pagination: web::Query<PaginationOptions>,
 ) -> MusicResponse {
     let db = get_mongo().await;
-    let dz = deezer_api.read().unwrap();
+    let dz = get_dz_client(None).await.read().await;
     let res = dz.search_music(req.clone()).await.unwrap();
     index_search_musics_result(&res).await;
     //musics.group_by()
@@ -79,11 +77,10 @@ pub async fn search_album(
 
 pub async fn search_artist(
     req: web::Path<String>,
-    deezer_api: web::Data<RwLock<DeezerClient>>,
     pagination: web::Query<PaginationOptions>,
 ) -> MusicResponse {
     let db = get_mongo().await;
-    let dz = deezer_api.read().unwrap();
+    let dz = get_dz_client(None).await.read().await;
     let res = dz.search_music(req.clone()).await.unwrap();
     index_search_musics_result(&res).await;
     //musics.group_by()
@@ -91,12 +88,9 @@ pub async fn search_artist(
     Ok(HttpResponse::Ok().json(searched_artists.unwrap().unwrap()))
 }
 
-pub async fn trending_musics(
-    deezer_api: web::Data<RwLock<DeezerClient>>,
-    pagination: web::Query<PaginationOptions>,
-) -> MusicResponse {
+pub async fn trending_musics(pagination: web::Query<PaginationOptions>) -> MusicResponse {
     let db = get_mongo().await;
-    let dz = deezer_api.read().unwrap();
+    let dz = get_dz_client(None).await.read().await;
 
     let charts = db.get_chart_today().await.unwrap();
     let charts = match charts {
@@ -118,12 +112,9 @@ pub async fn trending_musics(
     Ok(HttpResponse::Ok().json(musics))
 }
 
-pub async fn get_album(
-    req: web::Path<i32>,
-    deezer_api: web::Data<RwLock<DeezerClient>>,
-) -> MusicResponse {
+pub async fn get_album(req: web::Path<i32>) -> MusicResponse {
     let db = get_mongo().await;
-    let dz = deezer_api.read().unwrap();
+    let dz = get_dz_client(None).await.read().await;
     let res = dz.get_album_musics(req.clone()).await.unwrap();
     let album = db.get_album(&req).await.unwrap().unwrap();
     let musics: Vec<Music> = res
@@ -161,12 +152,9 @@ pub async fn like_music(req: web::Path<i32>, user: User) -> MusicResponse {
     Ok(HttpResponse::Ok().finish())
 }
 
-pub async fn get_artist(
-    req: web::Path<i32>,
-    deezer_api: web::Data<RwLock<DeezerClient>>,
-) -> MusicResponse {
+pub async fn get_artist(req: web::Path<i32>) -> MusicResponse {
     let db = get_mongo().await;
-    let dz = deezer_api.read().unwrap();
+    let dz = get_dz_client(None).await.read().await;
     let res = dz.get_artist_albums(&req).await.unwrap();
     let albums: Vec<Album> = res
         .data
@@ -298,10 +286,10 @@ pub async fn delete_playlist(req: web::Path<String>, user: User) -> MusicRespons
 
 pub async fn get_music(
     req: web::Path<i32>,
-    deezer_api: web::Data<RwLock<DeezerClient>>,
     settings: web::Data<AppSettings>,
     user: User,
 ) -> actix_web::Result<NamedFile> {
+    let dz = get_dz_client(None).await.read().await;
     let db = get_mongo().await;
     let path = format!("./Musics/{}.mp3", &req);
     let path: PathBuf = path.parse().unwrap();
@@ -309,9 +297,13 @@ pub async fn get_music(
     let f = match f {
         Ok(file) => file,
         Err(_) => {
-            let dz = deezer_api.read().unwrap();
             let path_dir: PathBuf = settings.music_path().parse().unwrap();
-            NamedFile::open(dz.download_music(*req, &path_dir).await.unwrap()).unwrap()
+            if let Ok(p) = dz.download_music(*req, &path_dir).await {
+                NamedFile::open(p).unwrap()
+            } else {
+                refresh_dz_client().await;
+                NamedFile::open(dz.download_music(*req, &path_dir).await.unwrap()).unwrap()
+            }
         }
     };
 
