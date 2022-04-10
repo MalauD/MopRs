@@ -126,7 +126,7 @@ impl DeezerClient {
     }
 
     pub async fn download_music(&self, id: i32, dir: &Path) -> Result<String, String> {
-        let m = self.get_music_by_id_unofficial(id).await.unwrap();
+        let m = self.get_music_by_id_unofficial(id).await?;
         let response = self
             .http_client
             .get(m.get_url())
