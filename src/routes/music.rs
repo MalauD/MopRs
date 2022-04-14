@@ -33,6 +33,10 @@ pub fn config_music(cfg: &mut web::ServiceConfig) {
                 "/Search/Artist/Name/{search_req}",
                 web::get().to(search_artist),
             )
+            .route(
+                "/Search/Playlist/Name/{search_req}",
+                web::get().to(search_playlist),
+            )
             .route("/Trending/Musics", web::get().to(trending_musics))
             .route("/Album/id/{id}", web::get().to(get_album))
             .route("/Artist/id/{id}", web::get().to(get_artist))
@@ -86,6 +90,37 @@ pub async fn search_artist(
     //musics.group_by()
     let searched_artists = db.search_artist(req.into_inner(), &pagination).await;
     Ok(HttpResponse::Ok().json(searched_artists.unwrap().unwrap()))
+}
+
+pub async fn search_playlist(
+    req: web::Path<String>,
+    user: User,
+    pagination: web::Query<PaginationOptions>,
+) -> MusicResponse {
+    let db = get_mongo().await;
+
+    let playlists = db
+        .search_playlist(req.into_inner(), &pagination)
+        .await
+        .unwrap()
+        .unwrap();
+
+    let mut pop_playlists: Vec<PopulatedPlaylist> = Vec::with_capacity(playlists.len());
+    for playlist in playlists.iter().cloned() {
+        if playlist.is_authorized_read(&user.clone().id().unwrap()) {
+            //Something else might be faster
+            let musics = db
+                .get_musics(&playlist.musics.as_ref().unwrap())
+                .await
+                .unwrap();
+            //TODO add correct user..
+            let mut playlist_pop = PopulatedPlaylist::from_playlist(playlist, user.clone());
+            playlist_pop.musics = musics;
+            pop_playlists.push(playlist_pop);
+        }
+    }
+
+    Ok(HttpResponse::Ok().json(pop_playlists))
 }
 
 pub async fn trending_musics(pagination: web::Query<PaginationOptions>) -> MusicResponse {

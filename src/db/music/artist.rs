@@ -8,7 +8,7 @@ use tokio_stream::StreamExt;
 
 use crate::{
     db::{MongoClient, PaginationOptions},
-    models::Artist,
+    models::{Artist, Playlist},
 };
 
 impl MongoClient {
@@ -71,6 +71,30 @@ impl MongoClient {
             .find(doc! { "$text": { "$search": search } }, find_option)
             .await?;
         let mut result = Vec::<Artist>::with_capacity(pagination.get_max_results().max(20));
+        while let Some(value) = cursor.next().await {
+            if let Ok(res) = value {
+                result.push(res);
+            }
+        }
+        Ok(Some(result))
+    }
+
+    pub async fn search_playlist(
+        &self,
+        search: String,
+        pagination: &PaginationOptions,
+    ) -> Result<Option<Vec<Playlist>>> {
+        let coll = self._database.collection::<Playlist>("Playlist");
+        let find_option = FindOptions::builder()
+            .limit(pagination.get_max_results() as i64)
+            .skip(Some(
+                (pagination.get_page() * pagination.get_max_results()) as u64,
+            ))
+            .build();
+        let mut cursor = coll
+            .find(doc! { "$text": { "$search": search } }, find_option)
+            .await?;
+        let mut result = Vec::<Playlist>::with_capacity(pagination.get_max_results().max(20));
         while let Some(value) = cursor.next().await {
             if let Ok(res) = value {
                 result.push(res);
