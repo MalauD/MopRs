@@ -1,18 +1,24 @@
+@use 'sass:color';
+
 @import 'Colors';
 
-$ProgressBallSize: 15px; 
+$ProgressBallSize: 15px;
+
+#Progress-container {
+    background-clip: content-box;
+    background-color: darken($AccentColor, 30%);
+}
 
 #Progress-container .Progress-bar {
-    -webkit-transition: width .5s ease-in-out,height .5s ease-in-out,left .5s ease-in-out;
-    -moz-transition: width .5s ease-in-out,height .5s ease-in-out,left .5s ease-in-out;
-    -o-transition: width .5s ease-in-out,height .5s ease-in-out,left .5s ease-in-out;
-    transition: width .5s ease-in-out,height .5s ease-in-out,left .5s ease-in-out;
+    -webkit-transition: width 0.5s ease-in-out, height 0.5s ease-in-out, left 0.5s ease-in-out;
+    -moz-transition: width 0.5s ease-in-out, height 0.5s ease-in-out, left 0.5s ease-in-out;
+    -o-transition: width 0.5s ease-in-out, height 0.5s ease-in-out, left 0.5s ease-in-out;
+    transition: width 0.5s ease-in-out, height 0.5s ease-in-out, left 0.5s ease-in-out;
     background-color: $AccentColor;
 }
 
-
 @media only screen and (max-width: 768px) {
-    .Progress-ball{
+    .Progress-ball {
         transform: scale(1) !important;
     }
 }
@@ -22,12 +28,15 @@ $ProgressBallSize: 15px;
     top: -($ProgressBallSize / 2);
     position: absolute;
 
-    -webkit-transition: width .5s ease-in-out,height .5s ease-in-out,left .5s ease-in-out, transform .25s ease-in-out;
-    -moz-transition: width .5s ease-in-out,height .5s ease-in-out,left .5s ease-in-out, transform .25s ease-in-out;
-    -o-transition: width .5s ease-in-out,height .5s ease-in-out,left .5s ease-in-out, transform .25s ease-in-out;
-    transition: width .5s ease-in-out,height .5s ease-in-out,left .5s ease-in-out, transform .25s ease-in-out;
+    -webkit-transition: width 0.5s ease-in-out, height 0.5s ease-in-out, left 0.5s ease-in-out,
+        transform 0.25s ease-in-out;
+    -moz-transition: width 0.5s ease-in-out, height 0.5s ease-in-out, left 0.5s ease-in-out,
+        transform 0.25s ease-in-out;
+    -o-transition: width 0.5s ease-in-out, height 0.5s ease-in-out, left 0.5s ease-in-out,
+        transform 0.25s ease-in-out;
+    transition: width 0.5s ease-in-out, height 0.5s ease-in-out, left 0.5s ease-in-out,
+        transform 0.25s ease-in-out;
 }
-
 
 #Progress-container .Progress-ball {
     position: absolute;
@@ -37,14 +46,13 @@ $ProgressBallSize: 15px;
     height: $ProgressBallSize;
     background-color: $AccentColor;
 
-    -webkit-transition: transform .25s ease-in-out;
-    -moz-transition: transform .25s ease-in-out;
-    -o-transition: transform .25s ease-in-out;
-    transition: transform .25s ease-in-out;
-
+    -webkit-transition: transform 0.25s ease-in-out;
+    -moz-transition: transform 0.25s ease-in-out;
+    -o-transition: transform 0.25s ease-in-out;
+    transition: transform 0.25s ease-in-out;
 }
 
-#Player:hover .Progress-ball{
+#Player:hover .Progress-ball {
     transform: scale(1);
 }
 
