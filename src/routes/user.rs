@@ -1,6 +1,6 @@
 use crate::{
     db::{get_mongo, PaginationOptions},
-    models::{PopulatedPlaylist, Sessions, User, UserReq},
+    models::{PopulatedPlaylist, User, UserReq},
     tools::UserError,
 };
 use actix_identity::Identity;
@@ -34,31 +34,18 @@ pub fn config_user(cfg: &mut web::ServiceConfig) {
     );
 }
 
-pub async fn login(
-    id: Identity,
-    user: web::Json<UserReq>,
-    sessions: web::Data<RwLock<Sessions>>,
-) -> UserResponse {
+pub async fn login(id: Identity, user: web::Json<UserReq>) -> UserResponse {
     let db = get_mongo().await;
     if let Some(user_mod) = db.get_user_req(&user).await? {
         user_mod.login(&user)?;
-        id.remember(user_mod.get_username());
-        sessions
-            .write()
-            .unwrap()
-            .map
-            .insert(user_mod.get_username(), user_mod);
+        id.remember(user_mod.id().unwrap().to_string());
         Ok(HttpResponse::Ok().json(json!({"success": true})))
     } else {
         Ok(HttpResponse::Forbidden().finish())
     }
 }
 
-pub async fn register(
-    id: Identity,
-    user: web::Json<UserReq>,
-    sessions: web::Data<RwLock<Sessions>>,
-) -> UserResponse {
+pub async fn register(id: Identity, user: web::Json<UserReq>) -> UserResponse {
     let db = get_mongo().await;
     let user_mod = User::new(&user.0);
 
@@ -67,12 +54,7 @@ pub async fn register(
     }
     let user_saved = user_mod.clone();
     db.save_user(user_mod).await?;
-    id.remember(user.get_username());
-    sessions
-        .write()
-        .unwrap()
-        .map
-        .insert(user.get_username(), user_saved.clone());
+    id.remember(user_saved.id().unwrap().to_string());
     Ok(HttpResponse::Ok().json(json!({"success": true})))
 }
 

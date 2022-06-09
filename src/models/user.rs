@@ -1,4 +1,4 @@
-use crate::tools::UserError;
+use crate::{db::get_mongo, tools::UserError};
 use actix_identity::Identity;
 use actix_web::{
     dev::Payload, error::ErrorUnauthorized, web::Data, Error, FromRequest, HttpRequest,
@@ -8,8 +8,6 @@ use mongodb::bson::oid::ObjectId;
 use ring::{digest, pbkdf2};
 use serde::{Deserialize, Serialize, Serializer};
 use std::{num::NonZeroU32, pin::Pin, sync::RwLock, u8};
-
-use super::Sessions;
 
 static PBKDF2_ALG: pbkdf2::Algorithm = pbkdf2::PBKDF2_HMAC_SHA256;
 const CREDENTIAL_LEN: usize = digest::SHA256_OUTPUT_LEN;
@@ -132,19 +130,13 @@ impl FromRequest for User {
 
     fn from_request(req: &HttpRequest, pl: &mut Payload) -> Self::Future {
         let fut = Identity::from_request(req, pl);
-        let sessions: Option<&Data<RwLock<Sessions>>> = req.app_data();
-        if sessions.is_none() {
-            return Box::pin(async { Err(ErrorUnauthorized("unauthorized")) });
-        }
-        let sessions = sessions.unwrap().clone();
         Box::pin(async move {
+            let db = get_mongo().await;
             if let Some(identity) = fut.await?.identity() {
-                if let Some(user) = sessions
-                    .read()
+                if let Some(user) = db
+                    .get_user(&ObjectId::parse_str(identity).unwrap())
+                    .await
                     .unwrap()
-                    .map
-                    .get(&identity)
-                    .map(|x| x.clone())
                 {
                     return Ok(user);
                 }

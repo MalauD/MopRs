@@ -11,7 +11,6 @@ use std::{fs, sync::RwLock};
 use crate::{
     db::get_mongo,
     deezer::{get_dz_client, DeezerClient},
-    models::Sessions,
 };
 
 mod app_settings;
@@ -37,7 +36,6 @@ async fn main() -> std::io::Result<()> {
 
     let arl = settings.get_str("arl").unwrap();
     let _ = get_dz_client(Some(arl)).await;
-    let sessions: Data<RwLock<Sessions>> = Data::new(RwLock::new(Default::default()));
 
     let db = get_mongo().await;
     let c = db.get_musics_count().await.unwrap();
@@ -45,7 +43,6 @@ async fn main() -> std::io::Result<()> {
 
     HttpServer::new(move || {
         App::new()
-            .app_data(sessions.clone())
             .app_data(Data::new(app_settings::AppSettings::new(
                 settings.get_str("music_path").unwrap(),
             )))
