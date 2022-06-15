@@ -336,6 +336,7 @@ pub async fn get_music(
             if let Ok(p) = dz.download_music(*req, &path_dir).await {
                 NamedFile::open(p).unwrap()
             } else {
+                drop(dz);
                 refresh_dz_client().await;
                 let dz = get_dz_client(None).await.read().await;
                 NamedFile::open(dz.download_music(*req, &path_dir).await.unwrap()).unwrap()
