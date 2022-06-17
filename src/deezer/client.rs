@@ -110,7 +110,7 @@ impl DeezerClient {
             "http://www.deezer.com/ajax/gw-light.php?api_token={}&api_version=1.0&input=3&method=song.getData",
             self.cred.token
         );
-        let response: UnofficialMusicResult = self
+        if let Ok(response) = self
             .http_client
             .post(url)
             .json(&json!({ "sng_id": id }))
@@ -118,11 +118,13 @@ impl DeezerClient {
             .send()
             .await
             .expect("Failed to get music")
-            .json()
+            .json::<UnofficialMusicResult>()
             .await
-            .expect("Failed to parse music");
-
-        Ok(response.results)
+        {
+            Ok(response.results)
+        } else {
+            Err("Failed to get music".to_string())
+        }
     }
 
     pub async fn download_music(&self, id: i32, dir: &Path) -> Result<String, String> {
