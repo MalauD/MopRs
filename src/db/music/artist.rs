@@ -32,7 +32,7 @@ impl MongoClient {
         Ok(())
     }
 
-    pub async fn bulk_insert_artists(&self, musics: Vec<Artist>) -> Result<()> {
+    pub async fn bulk_insert_artists(&self, musics: &Vec<Artist>) -> Result<()> {
         let coll = self._database.collection::<Artist>("Artist");
 
         let _ = coll
@@ -117,6 +117,32 @@ impl MongoClient {
         coll.update_one(
             doc! {"_id": artist_id },
             doc! {"$addToSet": {"albums": {"$each": album_ids}}},
+            None,
+        )
+        .await?;
+        Ok(())
+    }
+
+    pub async fn set_related_artists(
+        &self,
+        artist_id: &i32,
+        related_artists: Vec<i32>,
+    ) -> Result<()> {
+        let coll = self._database.collection::<Artist>("Artist");
+        coll.update_one(
+            doc! {"_id": artist_id },
+            doc! {"$set": {"related_artists": related_artists}},
+            None,
+        )
+        .await?;
+        Ok(())
+    }
+
+    pub async fn set_top_tracks(&self, artist_id: &i32, top_tracks: &Vec<i32>) -> Result<()> {
+        let coll = self._database.collection::<Artist>("Artist");
+        coll.update_one(
+            doc! {"_id": artist_id },
+            doc! {"$set": {"top_tracks": top_tracks}},
             None,
         )
         .await?;

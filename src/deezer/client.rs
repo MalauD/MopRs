@@ -11,8 +11,8 @@ use tokio::sync::{Mutex, RwLock};
 use crate::deezer::SearchMusicsResult;
 
 use super::{
-    AlbumTracksResult, ArtistAlbumsResult, ChartResult, InitSessionResult, StreamMusic,
-    StreamingCredentials, UnofficialMusicResult,
+    AlbumTracksResult, ArtistAlbumsResult, ChartResult, InitSessionResult, RelatedArtists,
+    SearchMusicsResultItem, StreamMusic, StreamingCredentials, UnofficialMusicResult, ArtistTopTracksResult,
 };
 
 pub struct DeezerClient {
@@ -244,6 +244,37 @@ impl DeezerClient {
             .json()
             .await
             .expect("Failed to parse charts from Deezer Api");
+        Ok(response)
+    }
+
+    pub async fn get_related_artists(&self, artist_id: &i32) -> Result<RelatedArtists, String> {
+        let url = format!("{}/artist/{}/related", self.base_url, artist_id);
+        let response: RelatedArtists = self
+            .http_client
+            .get(url)
+            .send()
+            .await
+            .expect("Failed to get related artists from Deezer Api")
+            .json()
+            .await
+            .expect("Failed to parse related artists from Deezer Api");
+        Ok(response)
+    }
+
+    pub async fn get_artist_top_tracks(
+        &self,
+        artist_id: &i32,
+    ) -> Result<ArtistTopTracksResult, String> {
+        let url = format!("{}/artist/{}/top?limit=50", self.base_url, artist_id);
+        let response: ArtistTopTracksResult = self
+            .http_client
+            .get(url)
+            .send()
+            .await
+            .expect("Failed to get top tracks of artist from Deezer Api")
+            .json()
+            .await
+            .expect("Failed to parse top tracks of artists from Deezer Api");
         Ok(response)
     }
 }

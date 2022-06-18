@@ -111,3 +111,37 @@ pub struct ChartResultAlbums {
 pub struct ChartResultArtists {
     pub data: Vec<SearchMusicsResultItemArtist>,
 }
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct RelatedArtists {
+    pub data: Vec<SearchMusicsResultItemArtist>,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct ArtistTopTracksResult {
+    pub data: Vec<ArtistTopTracksItem>,
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct ArtistTopTracksItem {
+    pub id: i32,
+    pub title: String,
+    pub rank: i32,
+    pub duration: i32,
+    pub album: ArtistTopTracksItemAlbum,
+    pub artist: ArtistTopTracksItemArtist,
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct ArtistTopTracksItemAlbum {
+    pub id: i32,
+    pub title: String,
+    #[serde(deserialize_with = "parse_cover")]
+    pub cover_big: String,
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct ArtistTopTracksItemArtist {
+    pub id: i32,
+    pub name: String,
+}

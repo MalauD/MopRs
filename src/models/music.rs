@@ -7,7 +7,8 @@ use mongodb::bson::DateTime;
 use serde::{Deserialize, Serialize};
 
 use crate::deezer::{
-    AlbumTracksResultItem, ArtistAlbumsResultItem, ChartResult, SearchMusicsResultItem,
+    AlbumTracksResultItem, ArtistAlbumsResultItem, ArtistTopTracksItem, ChartResult,
+    SearchMusicsResultItem, SearchMusicsResultItemArtist,
 };
 
 use super::User;
@@ -107,6 +108,10 @@ pub struct Artist {
     picture: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub albums: Option<Vec<i32>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub top_tracks: Option<Vec<i32>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub related_artists: Option<Vec<i32>>,
 }
 
 #[derive(Deserialize, Serialize, Clone)]
@@ -117,6 +122,8 @@ pub struct PopulatedArtist {
     pub picture: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub albums: Option<Vec<Album>>,
+    pub top_tracks: Option<Vec<Music>>,
+    pub related_artists: Option<Vec<Artist>>,
 }
 
 impl From<Artist> for PopulatedArtist {
@@ -126,12 +133,33 @@ impl From<Artist> for PopulatedArtist {
             name: al.name,
             picture: al.picture,
             albums: None,
+            top_tracks: None,
+            related_artists: None,
         }
     }
 }
 
 impl From<SearchMusicsResultItem> for Music {
     fn from(music_search_result: SearchMusicsResultItem) -> Self {
+        Music {
+            id: music_search_result.id,
+            title: music_search_result.title,
+            artist_name: music_search_result.artist.name,
+            published_date: DateTime::now(),
+            track_number: None,
+            disc_number: None,
+            file_path: None,
+            image_url: Some(music_search_result.album.cover_big),
+            views: 0,
+            likes: 0,
+            rank: music_search_result.rank,
+            last_view: DateTime::now(),
+        }
+    }
+}
+
+impl From<ArtistTopTracksItem> for Music {
+    fn from(music_search_result: ArtistTopTracksItem) -> Self {
         Music {
             id: music_search_result.id,
             title: music_search_result.title,
@@ -192,6 +220,18 @@ impl From<ArtistAlbumsResultItem> for Album {
     }
 }
 
+impl From<ArtistTopTracksItem> for Album {
+    fn from(music: ArtistTopTracksItem) -> Self {
+        Album {
+            id: music.album.id,
+            name: music.album.title,
+            cover: music.album.cover_big,
+            is_complete: false,
+            musics: None,
+        }
+    }
+}
+
 impl From<SearchMusicsResultItem> for Artist {
     fn from(music: SearchMusicsResultItem) -> Self {
         Artist {
@@ -199,6 +239,21 @@ impl From<SearchMusicsResultItem> for Artist {
             name: music.artist.name,
             picture: music.artist.picture_big,
             albums: None,
+            top_tracks: None,
+            related_artists: None,
+        }
+    }
+}
+
+impl From<SearchMusicsResultItemArtist> for Artist {
+    fn from(artist: SearchMusicsResultItemArtist) -> Self {
+        Artist {
+            id: artist.id,
+            name: artist.name,
+            picture: artist.picture_big,
+            albums: None,
+            top_tracks: None,
+            related_artists: None,
         }
     }
 }
