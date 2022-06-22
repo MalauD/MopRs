@@ -1,3 +1,6 @@
+use std::collections::HashMap;
+
+use chrono::Utc;
 use mongodb::{
     bson::doc,
     error::Result,
@@ -108,6 +111,22 @@ impl MongoClient {
         Ok(coll.find_one(doc! {"_id": artist_id}, None).await?)
     }
 
+    pub async fn get_artists(&self, artist_ids: &Vec<i32>) -> Result<Option<Vec<Artist>>> {
+        let coll = self._database.collection::<Artist>("Artist");
+        let mut cursor = coll.find(doc! {"_id": {"$in": artist_ids}}, None).await?;
+        let mut result_hash = HashMap::with_capacity(artist_ids.len());
+        while let Some(value) = cursor.next().await {
+            if let Ok(res) = value {
+                result_hash.entry(res.id).or_insert(res);
+            }
+        }
+        let mut final_arranged: Vec<Artist> = Vec::with_capacity(artist_ids.len());
+        for e in artist_ids {
+            final_arranged.push(result_hash[e].clone());
+        }
+        return Ok(Some(final_arranged));
+    }
+
     pub async fn append_multiple_to_an_artist(
         &self,
         album_ids: Vec<i32>,
@@ -131,7 +150,7 @@ impl MongoClient {
         let coll = self._database.collection::<Artist>("Artist");
         coll.update_one(
             doc! {"_id": artist_id },
-            doc! {"$set": {"related_artists": related_artists}},
+            doc! {"$set": {"related_artists": related_artists, "last_update": Utc::now()}},
             None,
         )
         .await?;
@@ -142,7 +161,7 @@ impl MongoClient {
         let coll = self._database.collection::<Artist>("Artist");
         coll.update_one(
             doc! {"_id": artist_id },
-            doc! {"$set": {"top_tracks": top_tracks}},
+            doc! {"$set": {"top_tracks": top_tracks, "last_update": Utc::now()}},
             None,
         )
         .await?;

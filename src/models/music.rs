@@ -112,6 +112,8 @@ pub struct Artist {
     pub top_tracks: Option<Vec<i32>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub related_artists: Option<Vec<i32>>,
+    #[serde(with = "bson::serde_helpers::chrono_datetime_as_bson_datetime")]
+    pub last_update: chrono::DateTime<Utc>,
 }
 
 #[derive(Deserialize, Serialize, Clone)]
@@ -241,6 +243,7 @@ impl From<SearchMusicsResultItem> for Artist {
             albums: None,
             top_tracks: None,
             related_artists: None,
+            last_update: Utc::now(),
         }
     }
 }
@@ -254,6 +257,7 @@ impl From<SearchMusicsResultItemArtist> for Artist {
             albums: None,
             top_tracks: None,
             related_artists: None,
+            last_update: Utc::now(),
         }
     }
 }

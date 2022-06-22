@@ -12,6 +12,7 @@ use crate::{
 use actix_files::NamedFile;
 use actix_web::{web, HttpResponse};
 use bson::oid::ObjectId;
+use chrono::{Duration, Utc};
 use itertools::Itertools;
 use serde::Deserialize;
 use serde_json::json;
@@ -208,38 +209,50 @@ pub async fn get_artist(req: web::Path<i32>) -> MusicResponse {
         .await
         .unwrap()
         .unwrap();
-    let mut pop_artist = PopulatedArtist::from(compl_artist);
+    let mut pop_artist = PopulatedArtist::from(compl_artist.clone());
     pop_artist.albums = Some(albums_of_artist);
 
-    let related = dz.get_related_artists(&req).await.unwrap();
-    let top_tracks = dz.get_artist_top_tracks(&req).await.unwrap();
+    if Utc::now() - compl_artist.last_update > Duration::hours(1) {
+        let related = dz.get_related_artists(&req).await.unwrap();
+        let top_tracks = dz.get_artist_top_tracks(&req).await.unwrap();
 
-    let rel_artists: Vec<Artist> = related
-        .data
-        .clone()
-        .into_iter()
-        .map(|x| Artist::from(x))
-        .unique_by(|x| x.id)
-        .collect_vec();
-    let _ = db.bulk_insert_artists(&rel_artists).await;
-    let _ = db
-        .set_related_artists(
-            &req,
-            rel_artists.clone().into_iter().map(|x| x.id).collect_vec(),
-        )
-        .await;
+        let rel_artists: Vec<Artist> = related
+            .data
+            .clone()
+            .into_iter()
+            .map(|x| Artist::from(x))
+            .unique_by(|x| x.id)
+            .collect_vec();
+        let _ = db.bulk_insert_artists(&rel_artists).await;
+        let _ = db
+            .set_related_artists(
+                &req,
+                rel_artists.clone().into_iter().map(|x| x.id).collect_vec(),
+            )
+            .await;
 
-    let tracks = index_artist_top_tracks(&top_tracks, &req).await.unwrap();
-    let _ = db
-        .set_top_tracks(
-            &req,
-            &tracks.clone().into_iter().map(|x| x.id).collect_vec(),
-        )
+        let tracks = index_artist_top_tracks(&top_tracks, &req).await.unwrap();
+        let _ = db
+            .set_top_tracks(
+                &req,
+                &tracks.clone().into_iter().map(|x| x.id).collect_vec(),
+            )
+            .await
+            .unwrap();
+    };
+    let top_tracks = db
+        .get_musics(&compl_artist.top_tracks.unwrap())
         .await
+        .unwrap()
+        .unwrap();
+    let related = db
+        .get_artists(&compl_artist.related_artists.unwrap())
+        .await
+        .unwrap()
         .unwrap();
 
-    pop_artist.related_artists = Some(rel_artists);
-    pop_artist.top_tracks = Some(tracks);
+    pop_artist.related_artists = Some(related);
+    pop_artist.top_tracks = Some(top_tracks);
 
     Ok(HttpResponse::Ok().json(pop_artist))
 }
