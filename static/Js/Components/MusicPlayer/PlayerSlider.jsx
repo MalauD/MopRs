@@ -11,7 +11,7 @@ const PlayerSlider = ({ Time, EndTime, OnSliderChange }) => {
     return (
         <div
             ref={ContainerRef}
-            style={{ width: '100%' }}
+            style={{ width: '100%', cursor: 'pointer' }}
             id="Progress-container"
             className="pb-1"
             onClick={(e) => OnSliderChange((e.clientX * EndTime) / width)}
