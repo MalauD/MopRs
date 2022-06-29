@@ -77,6 +77,12 @@ class PlayerConnected extends React.Component {
     }
 
     HandleTimeUpdate = () => {
+        const { mediaSession } = navigator;
+        mediaSession.setPositionState({
+            duration: this.player.duration,
+            playbackRate: 1,
+            position: this.player.currentTime,
+        });
         this.forceUpdate();
     };
 
@@ -123,26 +129,25 @@ class PlayerConnected extends React.Component {
             UpdateCurrentPlaylist(data.CurrentPlaylist, data.CurrentPlaylistPlaying);
         });
         const { mediaSession } = navigator;
-        mediaSession.setActionHandler('play', function () {
+        mediaSession.setActionHandler('play', () => {
             this.HandlePlay();
         });
-        mediaSession.setActionHandler('pause', function () {
+        mediaSession.setActionHandler('pause', () => {
             this.HandlePlay();
         });
-        mediaSession.setActionHandler('seekbackward', function (e) {
-            console.log(e);
-            this.player.currentTime = this.player.currentTime - e.seekOffset;
+        mediaSession.setActionHandler('seekbackward', (e) => {
+            this.player.currentTime = this.player.currentTime - (e.seekOffset ?? 10);
         });
-        mediaSession.setActionHandler('seekforward', function (e) {
-            this.player.currentTime = this.player.currentTime + e.seekOffset;
+        mediaSession.setActionHandler('seekforward', (e) => {
+            this.player.currentTime = this.player.currentTime + (e.seekOffset ?? 10);
         });
-        mediaSession.setActionHandler('seekto', function (e) {
+        mediaSession.setActionHandler('seekto', (e) => {
             this.player.currentTime = e.seekTime;
         });
-        mediaSession.setActionHandler('previoustrack', function () {
+        mediaSession.setActionHandler('previoustrack', () => {
             this.HandleBack();
         });
-        mediaSession.setActionHandler('nexttrack', function () {
+        mediaSession.setActionHandler('nexttrack', () => {
             this.HandleNext();
         });
         this.OnUpdate();
@@ -156,7 +161,7 @@ class PlayerConnected extends React.Component {
         const { mediaSession } = navigator;
         const { PlayingMusic } = this.props;
         if (PlayingMusic) {
-            mediaSession.metadata = new MediaMetadata({
+            const newMeta = new MediaMetadata({
                 title: PlayingMusic.title,
                 artist: PlayingMusic.artist_name,
                 artwork: [
@@ -167,6 +172,12 @@ class PlayerConnected extends React.Component {
                     },
                 ],
             });
+            if (
+                newMeta.title !== mediaSession.metadata?.title &&
+                newMeta.artist !== mediaSession.metadata?.artist
+            ) {
+                mediaSession.metadata = newMeta;
+            }
         }
     };
 
