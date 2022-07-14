@@ -44,7 +44,7 @@ impl MongoClient {
     ) -> Result<Vec<Playlist>> {
         let coll = self._database.collection::<Playlist>("Playlist");
 
-        let find_option = FindOptions::builder()
+        let _ = FindOptions::builder()
             .limit(pagination.get_max_results() as i64)
             .skip(Some(
                 (pagination.get_page() * pagination.get_max_results()) as u64,

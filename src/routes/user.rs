@@ -8,7 +8,6 @@ use actix_web::{web, HttpResponse, Responder};
 use bson::oid::ObjectId;
 use serde::Deserialize;
 use serde_json::json;
-use std::sync::RwLock;
 
 type UserResponse = Result<HttpResponse, UserError>;
 

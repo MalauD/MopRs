@@ -1,13 +1,11 @@
 use crate::{db::get_mongo, tools::UserError};
 use actix_identity::Identity;
-use actix_web::{
-    dev::Payload, error::ErrorUnauthorized, web::Data, Error, FromRequest, HttpRequest,
-};
+use actix_web::{dev::Payload, error::ErrorUnauthorized, Error, FromRequest, HttpRequest};
 use futures::Future;
 use mongodb::bson::oid::ObjectId;
 use ring::{digest, pbkdf2};
 use serde::{Deserialize, Serialize, Serializer};
-use std::{num::NonZeroU32, pin::Pin, sync::RwLock, u8};
+use std::{num::NonZeroU32, pin::Pin, u8};
 
 static PBKDF2_ALG: pbkdf2::Algorithm = pbkdf2::PBKDF2_HMAC_SHA256;
 const CREDENTIAL_LEN: usize = digest::SHA256_OUTPUT_LEN;

@@ -315,15 +315,6 @@ pub struct PopulatedPlaylist {
 }
 
 impl PopulatedPlaylist {
-    pub fn new(id: ObjectId, name: String, creator: User, musics: Option<Vec<Music>>) -> Self {
-        Self {
-            id,
-            name,
-            creator,
-            musics,
-        }
-    }
-
     pub fn from_playlist(pl: Playlist, creator: User) -> Self {
         Self {
             id: pl.id,
