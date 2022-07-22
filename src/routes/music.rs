@@ -61,7 +61,7 @@ pub async fn search_music(
     let db = get_mongo().await;
     let dz = get_dz_client(None).await.read().await;
     let res = dz.search_music(req.clone()).await.unwrap();
-    index_search_musics_result(&res).await;
+    let _ = index_search_musics_result(&res).await;
     //musics.group_by()
     let searched_musics = db.search_music(req.into_inner(), &pagination).await;
     Ok(HttpResponse::Ok().json(searched_musics.unwrap().unwrap()))
@@ -133,7 +133,7 @@ pub async fn trending_musics(pagination: web::Query<PaginationOptions>) -> Music
         Some(c) => c,
         None => {
             let chart = dz.get_most_popular().await.unwrap();
-            index_search_musics_result(&SearchMusicsResult {
+            let _ = index_search_musics_result(&SearchMusicsResult {
                 data: chart.clone().tracks.data,
             })
             .await;

@@ -1,4 +1,4 @@
-use std::{borrow::Borrow, fs, io::Write, path::Path};
+use std::{fs, io::Write, path::Path};
 
 use block_modes::{block_padding::NoPadding, BlockMode, Cbc};
 use blowfish::Blowfish;
@@ -11,8 +11,8 @@ use tokio::sync::{Mutex, RwLock};
 use crate::deezer::SearchMusicsResult;
 
 use super::{
-    AlbumTracksResult, ArtistAlbumsResult, ChartResult, InitSessionResult, RelatedArtists,
-    SearchMusicsResultItem, StreamMusic, StreamingCredentials, UnofficialMusicResult, ArtistTopTracksResult,
+    AlbumTracksResult, ArtistAlbumsResult, ArtistTopTracksResult, ChartResult, InitSessionResult,
+    RelatedArtists, StreamMusic, StreamingCredentials, UnofficialMusicResult,
 };
 
 pub struct DeezerClient {

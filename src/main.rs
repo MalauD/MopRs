@@ -6,12 +6,9 @@ use actix_web::{
 };
 use log::info;
 use routes::{config_music, config_user};
-use std::{fs, sync::RwLock};
+use std::fs;
 
-use crate::{
-    db::get_mongo,
-    deezer::{get_dz_client, DeezerClient},
-};
+use crate::{db::get_mongo, deezer::get_dz_client};
 
 mod app_settings;
 mod db;
