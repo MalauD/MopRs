@@ -8,6 +8,7 @@ import MusicItemRow from '../Items/MusicItemRow';
 import {
     ChangePlayingMusic as ChangePlayingMusicRedux,
     AddMusic as AddMusicRedux,
+    PlayNext as PlayNextRedux,
 } from '../../Actions/Action';
 import LikeButton from '../Helper/LikeButton';
 import AddToPlaylistModal from '../Helper/AddToPlaylistModal';
@@ -20,6 +21,9 @@ const mapDispatchToProps = (dispatch) => ({
     },
     AddMusic: (Music) => {
         dispatch(AddMusicRedux(Music));
+    },
+    PlayNext: (Music) => {
+        dispatch(PlayNextRedux(Music));
     },
 });
 
@@ -61,6 +65,12 @@ class MusicElementConnected extends React.Component {
         const { ChangePlayingMusic, Music } = this.props;
 
         ChangePlayingMusic(Music);
+    };
+
+    onPlayNext = () => {
+        const { PlayNext, Music } = this.props;
+
+        PlayNext(Music);
     };
 
     HandleAdd = () => {
@@ -146,6 +156,7 @@ class MusicElementConnected extends React.Component {
                     AccessoryRight={LikeButtonAccessory}
                 >
                     <Dropdown.Item onClick={this.onClick}>Play</Dropdown.Item>
+                    <Dropdown.Item onClick={this.onPlayNext}>Play next</Dropdown.Item>
                     <Dropdown.Item onClick={this.HandleAdd}>Add to current playlist</Dropdown.Item>
                     <Dropdown.Divider />
                     <Dropdown.Item onClick={this.ShowAddToPlaylistModal}>
