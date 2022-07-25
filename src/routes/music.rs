@@ -212,7 +212,10 @@ pub async fn get_artist(req: web::Path<i32>) -> MusicResponse {
     let mut pop_artist = PopulatedArtist::from(compl_artist.clone());
     pop_artist.albums = Some(albums_of_artist);
 
-    if Utc::now() - compl_artist.last_update > Duration::hours(1) {
+    if Utc::now() - compl_artist.last_update > Duration::hours(1)
+        || compl_artist.top_tracks.is_none()
+        || compl_artist.related_artists.is_none()
+    {
         let related = dz.get_related_artists(&req).await.unwrap();
         let top_tracks = dz.get_artist_top_tracks(&req).await.unwrap();
 
