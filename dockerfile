@@ -19,9 +19,10 @@ COPY . .
 RUN npm install
 RUN npx webpack --mode production
 
-FROM debian:buster-slim AS runtime
+FROM debian:stable-slim
 WORKDIR app
 COPY --from=builder /app/target/release/mop-rs .
 RUN mkdir static
 COPY --from=npmbuilder /static ./static
+RUN apt-get update && apt-get install -y ca-certificates && update-ca-certificates
 ENTRYPOINT ["./mop-rs"]

@@ -2,7 +2,7 @@ use actix_files::{Files, NamedFile};
 use actix_identity::{CookieIdentityPolicy, IdentityService};
 use actix_web::{
     web::{self, Data},
-    App, HttpRequest, HttpServer, Result,
+    App, HttpRequest, HttpResponse, HttpServer, Result,
 };
 use dotenv::dotenv;
 use log::info;
@@ -20,6 +20,10 @@ mod tools;
 
 async fn index(_req: HttpRequest) -> Result<NamedFile> {
     Ok(NamedFile::open("./static/index.html")?)
+}
+
+async fn health(_req: HttpRequest) -> Result<HttpResponse> {
+    Ok(HttpResponse::Ok().body("It's alive!"))
 }
 
 #[actix_web::main]
@@ -49,6 +53,7 @@ async fn main() -> std::io::Result<()> {
                     .secure(false),
             ))
             .route("/", web::get().to(index))
+            .route("/health", web::get().to(health))
             .configure(config_user)
             .configure(config_music)
             .service(Files::new("/", "./static"))
