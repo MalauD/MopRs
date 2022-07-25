@@ -129,7 +129,7 @@ impl FromRequest for User {
     fn from_request(req: &HttpRequest, pl: &mut Payload) -> Self::Future {
         let fut = Identity::from_request(req, pl);
         Box::pin(async move {
-            let db = get_mongo().await;
+            let db = get_mongo(None).await;
             if let Some(identity) = fut.await?.identity() {
                 if let Some(user) = db
                     .get_user(&ObjectId::parse_str(identity).unwrap())

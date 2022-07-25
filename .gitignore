@@ -3,3 +3,5 @@
 /static/Dist
 Settings.toml
 /Musics/**
+.env
+.kube/secrets.yaml

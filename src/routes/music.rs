@@ -58,7 +58,7 @@ pub async fn search_music(
     req: web::Path<String>,
     pagination: web::Query<PaginationOptions>,
 ) -> MusicResponse {
-    let db = get_mongo().await;
+    let db = get_mongo(None).await;
     let dz = get_dz_client(None).await.read().await;
     let res = dz.search_music(req.clone()).await.unwrap();
     let _ = index_search_musics_result(&res).await;
@@ -71,7 +71,7 @@ pub async fn search_album(
     req: web::Path<String>,
     pagination: web::Query<PaginationOptions>,
 ) -> MusicResponse {
-    let db = get_mongo().await;
+    let db = get_mongo(None).await;
     let dz = get_dz_client(None).await.read().await;
     let res = dz.search_music(req.clone()).await.unwrap();
     let _ = index_search_musics_result(&res).await;
@@ -84,7 +84,7 @@ pub async fn search_artist(
     req: web::Path<String>,
     pagination: web::Query<PaginationOptions>,
 ) -> MusicResponse {
-    let db = get_mongo().await;
+    let db = get_mongo(None).await;
     let dz = get_dz_client(None).await.read().await;
     let res = dz.search_music(req.clone()).await.unwrap();
     let _ = index_search_musics_result(&res).await;
@@ -98,7 +98,7 @@ pub async fn search_playlist(
     user: User,
     pagination: web::Query<PaginationOptions>,
 ) -> MusicResponse {
-    let db = get_mongo().await;
+    let db = get_mongo(None).await;
 
     let playlists = db
         .search_playlist(req.into_inner(), &pagination)
@@ -125,7 +125,7 @@ pub async fn search_playlist(
 }
 
 pub async fn trending_musics(pagination: web::Query<PaginationOptions>) -> MusicResponse {
-    let db = get_mongo().await;
+    let db = get_mongo(None).await;
     let dz = get_dz_client(None).await.read().await;
 
     let charts = db.get_chart_today().await.unwrap();
@@ -149,7 +149,7 @@ pub async fn trending_musics(pagination: web::Query<PaginationOptions>) -> Music
 }
 
 pub async fn get_album(req: web::Path<i32>) -> MusicResponse {
-    let db = get_mongo().await;
+    let db = get_mongo(None).await;
     let dz = get_dz_client(None).await.read().await;
     let res = dz.get_album_musics(req.clone()).await.unwrap();
     let album = db.get_album(&req).await.unwrap().unwrap();
@@ -179,7 +179,7 @@ pub async fn get_album(req: web::Path<i32>) -> MusicResponse {
 }
 
 pub async fn like_music(req: web::Path<i32>, user: User) -> MusicResponse {
-    let db = get_mongo().await;
+    let db = get_mongo(None).await;
     let u = db.get_user(&user.id().unwrap()).await.unwrap().unwrap();
     let res = db.like_music(&u, &req).await.unwrap();
     db.modify_like_count(&req, if res { 1 } else { -1 })
@@ -189,7 +189,7 @@ pub async fn like_music(req: web::Path<i32>, user: User) -> MusicResponse {
 }
 
 pub async fn get_artist(req: web::Path<i32>) -> MusicResponse {
-    let db = get_mongo().await;
+    let db = get_mongo(None).await;
     let dz = get_dz_client(None).await.read().await;
     let res = dz.get_artist_albums(&req).await.unwrap();
     let albums: Vec<Album> = res
@@ -258,7 +258,7 @@ pub async fn get_artist(req: web::Path<i32>) -> MusicResponse {
 }
 
 pub async fn get_playlist(req: web::Path<String>, user: User) -> MusicResponse {
-    let db = get_mongo().await;
+    let db = get_mongo(None).await;
     let playlist = db
         .get_playlist(&ObjectId::parse_str(&*req).unwrap())
         .await
@@ -291,7 +291,7 @@ pub async fn add_music_playlist(
     pl: web::Json<AddRemoveMusicBody>,
     req: web::Path<String>,
 ) -> MusicResponse {
-    let db = get_mongo().await;
+    let db = get_mongo(None).await;
     let playlist = db
         .get_playlist(&ObjectId::parse_str(&*req).unwrap())
         .await
@@ -312,7 +312,7 @@ pub async fn remove_music_playlist(
     pl: web::Json<AddRemoveMusicBody>,
     req: web::Path<String>,
 ) -> MusicResponse {
-    let db = get_mongo().await;
+    let db = get_mongo(None).await;
     let playlist = db
         .get_playlist(&ObjectId::parse_str(&*req).unwrap())
         .await
@@ -339,7 +339,7 @@ pub struct CreatePlaylistBody {
 }
 
 pub async fn create_playlist(user: User, pl: web::Json<CreatePlaylistBody>) -> MusicResponse {
-    let db = get_mongo().await;
+    let db = get_mongo(None).await;
     let id = db
         .create_playlist(pl.name.clone(), &pl.musics, pl.is_public, &user)
         .await?;
@@ -347,7 +347,7 @@ pub async fn create_playlist(user: User, pl: web::Json<CreatePlaylistBody>) -> M
 }
 
 pub async fn delete_playlist(req: web::Path<String>, user: User) -> MusicResponse {
-    let db = get_mongo().await;
+    let db = get_mongo(None).await;
     let playlist = db
         .get_playlist(&ObjectId::parse_str(&*req).unwrap())
         .await
@@ -369,14 +369,14 @@ pub async fn get_music(
     user: User,
 ) -> actix_web::Result<NamedFile> {
     let dz = get_dz_client(None).await.read().await;
-    let db = get_mongo().await;
+    let db = get_mongo(None).await;
     let path = format!("./Musics/{}.mp3", &req);
     let path: PathBuf = path.parse().unwrap();
     let f = NamedFile::open(path);
     let f = match f {
         Ok(file) => file,
         Err(_) => {
-            let path_dir: PathBuf = settings.music_path().parse().unwrap();
+            let path_dir: PathBuf = settings.music_path.parse().unwrap();
             if let Ok(p) = dz.download_music(*req, &path_dir).await {
                 NamedFile::open(p).unwrap()
             } else {
@@ -397,7 +397,7 @@ pub async fn get_music(
 async fn index_search_musics_result(
     res: &deezer::SearchMusicsResult,
 ) -> Result<Vec<Music>, String> {
-    let db = get_mongo().await;
+    let db = get_mongo(None).await;
     let artists: Vec<Artist> = res
         .data
         .clone()
@@ -442,7 +442,7 @@ async fn index_artist_top_tracks(
     res: &deezer::ArtistTopTracksResult,
     artist_id: &i32,
 ) -> Result<Vec<Music>, String> {
-    let db = get_mongo().await;
+    let db = get_mongo(None).await;
     let albums: Vec<(i32, Album)> = res
         .data
         .clone()
