@@ -51,9 +51,8 @@ pub async fn register(id: Identity, user: web::Json<UserReq>) -> UserResponse {
     if db.has_user_by_name(&user_mod).await? {
         return Ok(HttpResponse::Ok().json(json!({"success": false})));
     }
-    let user_saved = user_mod.clone();
-    db.save_user(user_mod).await?;
-    id.remember(user_saved.id().unwrap().to_string());
+    let uid = db.save_user(user_mod).await?;
+    id.remember(uid.to_string());
     Ok(HttpResponse::Ok().json(json!({"success": true})))
 }
 
