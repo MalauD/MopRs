@@ -7,15 +7,15 @@ use actix_web::{
 use dotenv::dotenv;
 use log::info;
 use routes::{config_music, config_user};
-use std::fs;
 
-use crate::{app_settings::AppSettings, db::get_mongo, deezer::get_dz_client};
+use crate::{app_settings::AppSettings, db::get_mongo, deezer::get_dz_client, s3::get_s3};
 
 mod app_settings;
 mod db;
 mod deezer;
 mod models;
 mod routes;
+mod s3;
 mod tools;
 
 async fn index(_req: HttpRequest) -> Result<NamedFile> {
@@ -36,11 +36,12 @@ async fn main() -> std::io::Result<()> {
 
     let config: AppSettings = envy::from_env().unwrap();
 
-    let _ = fs::create_dir_all(config.music_path.clone());
-
     let _ = get_dz_client(Some(config.arl.clone())).await;
 
     let db = get_mongo(Some(config.mongo_url.clone())).await;
+
+    let _ = get_s3(Some(config.s3_url.clone())).await;
+
     let c = db.get_musics_count().await.unwrap();
     info!(target:"mop-rs::mongo","{} musics in database", c);
 

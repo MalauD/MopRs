@@ -1,16 +1,15 @@
-use std::path::PathBuf;
+use std::str::FromStr;
 
 use crate::{
-    app_settings::AppSettings,
     db::{get_mongo, PaginationOptions},
     deezer::{self, get_dz_client, refresh_dz_client, SearchMusicsResult},
     models::{
         Album, Artist, Chart, Music, PopulatedAlbum, PopulatedArtist, PopulatedPlaylist, User,
     },
+    s3::get_s3,
     tools::MusicError,
 };
-use actix_files::NamedFile;
-use actix_web::{web, HttpResponse};
+use actix_web::{http::header::Range, web, HttpRequest, HttpResponse};
 use bson::oid::ObjectId;
 use chrono::{Duration, Utc};
 use itertools::Itertools;
@@ -365,33 +364,57 @@ pub async fn delete_playlist(req: web::Path<String>, user: User) -> MusicRespons
 
 pub async fn get_music(
     req: web::Path<i32>,
-    settings: web::Data<AppSettings>,
     user: User,
-) -> actix_web::Result<NamedFile> {
-    let dz = get_dz_client(None).await.read().await;
+    httpreq: HttpRequest,
+) -> actix_web::Result<HttpResponse> {
     let db = get_mongo(None).await;
-    let path = format!("./Musics/{}.mp3", &req);
-    let path: PathBuf = path.parse().unwrap();
-    let f = NamedFile::open(path);
-    let f = match f {
-        Ok(file) => file,
-        Err(_) => {
-            let path_dir: PathBuf = settings.music_path.parse().unwrap();
-            if let Ok(p) = dz.download_music(*req, &path_dir).await {
-                NamedFile::open(p).unwrap()
-            } else {
-                drop(dz);
-                refresh_dz_client().await;
-                let dz = get_dz_client(None).await.read().await;
-                NamedFile::open(dz.download_music(*req, &path_dir).await.unwrap()).unwrap()
-            }
+    let bucket = get_s3(None).await.get_bucket();
+    let dz = get_dz_client(None).await.read().await;
+    let id = req.into_inner();
+
+    let res = bucket.get_object(format!("/{}", id)).await;
+    let t = if res.is_err() {
+        if let Ok(track) = dz.download_music(id).await {
+            track
+        } else {
+            drop(dz);
+            refresh_dz_client().await;
+            let dz = get_dz_client(None).await.read().await;
+            dz.download_music(id).await.unwrap()
         }
+    } else {
+        let res = res.unwrap();
+        db.add_to_history(&user, &id).await.unwrap();
+        res.bytes().to_vec()
     };
 
-    db.add_to_history(&user, &req).await.unwrap();
-
-    Ok(f.use_last_modified(true)
-        .set_content_type("audio/mpeg".parse().unwrap()))
+    if let Some(r) = httpreq.headers().get("range") {
+        let range = Range::from_str(r.to_str().unwrap()).unwrap();
+        if let Range::Bytes(ranges) = range {
+            let range = ranges
+                .first()
+                .unwrap()
+                .to_satisfiable_range(t.len() as u64)
+                .unwrap();
+            Ok(HttpResponse::PartialContent()
+                .append_header((
+                    "Content-Range",
+                    format!("bytes {}-{}/{}", range.0, range.1, t.len()),
+                ))
+                .append_header(("Accept-Ranges", "bytes"))
+                .append_header(("Content-Type", "audio/mpeg"))
+                .append_header(("Content-Length", t.len().to_string()))
+                .body(t))
+        } else {
+            Ok(HttpResponse::Ok()
+                .append_header(("Content-Type", "audio/mpeg"))
+                .body(t))
+        }
+    } else {
+        Ok(HttpResponse::Ok()
+            .append_header(("Content-Type", "audio/mpeg"))
+            .body(t))
+    }
 }
 
 async fn index_search_musics_result(
