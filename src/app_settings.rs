@@ -1,12 +1,8 @@
+use serde::Deserialize;
+
+#[derive(Deserialize, Debug, Clone)]
 pub struct AppSettings {
-    music_path: String,
-}
-
-impl AppSettings {
-    pub fn new(music_path: String) -> Self { Self { music_path } }
-
-    /// Get a reference to the app settings's music path.
-    pub fn music_path(&self) -> &str {
-        self.music_path.as_ref()
-    }
+    pub s3_url: String,
+    pub arl: String,
+    pub mongo_url: String,
 }

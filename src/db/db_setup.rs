@@ -11,7 +11,7 @@ pub struct MongoClient {
     pub(in crate::db) _database: Database,
 }
 
-pub async fn get_mongo() -> &'static MongoClient {
+pub async fn get_mongo(mongo_url: Option<String>) -> &'static MongoClient {
     if let Some(c) = MONGO.get() {
         return c;
     }
@@ -22,7 +22,7 @@ pub async fn get_mongo() -> &'static MongoClient {
 
     if !*initialized {
         if let Ok(client_options) =
-            ClientOptions::parse("mongodb://localhost:27017/?appName=MopRs").await
+            ClientOptions::parse(mongo_url.unwrap()).await
         {
             if let Ok(client) = Client::with_options(client_options) {
                 if MONGO

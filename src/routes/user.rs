@@ -34,7 +34,7 @@ pub fn config_user(cfg: &mut web::ServiceConfig) {
 }
 
 pub async fn login(id: Identity, user: web::Json<UserReq>) -> UserResponse {
-    let db = get_mongo().await;
+    let db = get_mongo(None).await;
     if let Some(user_mod) = db.get_user_req(&user).await? {
         user_mod.login(&user)?;
         id.remember(user_mod.id().unwrap().to_string());
@@ -45,7 +45,7 @@ pub async fn login(id: Identity, user: web::Json<UserReq>) -> UserResponse {
 }
 
 pub async fn register(id: Identity, user: web::Json<UserReq>) -> UserResponse {
-    let db = get_mongo().await;
+    let db = get_mongo(None).await;
     let user_mod = User::new(&user.0);
 
     if db.has_user_by_name(&user_mod).await? {
@@ -62,13 +62,13 @@ pub async fn logout(id: Identity) -> UserResponse {
 }
 
 pub async fn get_account(user: User) -> impl Responder {
-    let db = get_mongo().await;
+    let db = get_mongo(None).await;
     let u = db.get_user(&user.id().unwrap()).await.unwrap().unwrap();
     web::Json(json!({ "Account": u }))
 }
 
 pub async fn get_liked(pagination: web::Query<PaginationOptions>, user: User) -> UserResponse {
-    let db = get_mongo().await;
+    let db = get_mongo(None).await;
     let u = db.get_user(&user.id().unwrap()).await.unwrap().unwrap();
     let mut musics = u.liked_musics().to_vec();
     musics.reverse();
@@ -77,7 +77,7 @@ pub async fn get_liked(pagination: web::Query<PaginationOptions>, user: User) ->
 }
 
 pub async fn get_viewed(pagination: web::Query<PaginationOptions>, user: User) -> UserResponse {
-    let db = get_mongo().await;
+    let db = get_mongo(None).await;
     let u = db.get_user(&user.id().unwrap()).await.unwrap().unwrap();
     let mut musics = u.viewed_musics().to_vec();
     musics.reverse();
@@ -86,7 +86,7 @@ pub async fn get_viewed(pagination: web::Query<PaginationOptions>, user: User) -
 }
 
 pub async fn get_current_playlist(user: User) -> UserResponse {
-    let db = get_mongo().await;
+    let db = get_mongo(None).await;
     let u = db.get_user(&user.id().unwrap()).await.unwrap().unwrap();
 
     let res = db.get_musics(&u.current_playlist().to_vec()).await.unwrap();
@@ -104,7 +104,7 @@ pub async fn set_current_playlist_musics(
     user: User,
     playlist: web::Json<PlaylistMusics>,
 ) -> UserResponse {
-    let db = get_mongo().await;
+    let db = get_mongo(None).await;
 
     let _ = db
         .set_current_playlist_musics(&user, &playlist.current_playlist)
@@ -122,7 +122,7 @@ pub async fn set_current_playlist_playing(
     user: User,
     playlist: web::Json<CurrentPlaylistPlaying>,
 ) -> UserResponse {
-    let db = get_mongo().await;
+    let db = get_mongo(None).await;
     let _ = db
         .set_current_playlist_index(&user, &playlist.current_playlist_playing)
         .await;
@@ -134,7 +134,7 @@ pub async fn get_user_playlists(
     user: User,
     pagination: web::Query<PaginationOptions>,
 ) -> UserResponse {
-    let db = get_mongo().await;
+    let db = get_mongo(None).await;
     let user_id = &ObjectId::parse_str(&*req).unwrap();
     let playlists = db.get_user_playlists(user_id, &pagination).await.unwrap();
 

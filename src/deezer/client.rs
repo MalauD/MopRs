@@ -1,5 +1,3 @@
-use std::{fs, io::Write, path::Path};
-
 use block_modes::{block_padding::NoPadding, BlockMode, Cbc};
 use blowfish::Blowfish;
 use log::info;
@@ -8,7 +6,7 @@ use reqwest::Client;
 use serde_json::json;
 use tokio::sync::{Mutex, RwLock};
 
-use crate::deezer::SearchMusicsResult;
+use crate::{deezer::SearchMusicsResult, s3::get_s3};
 
 use super::{
     AlbumTracksResult, ArtistAlbumsResult, ArtistTopTracksResult, ChartResult, InitSessionResult,
@@ -127,7 +125,7 @@ impl DeezerClient {
         }
     }
 
-    pub async fn download_music(&self, id: i32, dir: &Path) -> Result<String, String> {
+    pub async fn download_music(&self, id: i32) -> Result<Vec<u8>, String> {
         let m = self.get_music_by_id_unofficial(id).await?;
         let response = self
             .http_client
@@ -139,9 +137,6 @@ impl DeezerClient {
             .bytes()
             .await
             .expect("Failed to get music");
-        let path = dir.join(format!("{}.mp3", id.to_string()));
-
-        let mut f = fs::File::create(&path).unwrap();
 
         let chunks = response.chunks(2048);
         let mut decrypted_file: Vec<u8> = Vec::with_capacity(chunks.len());
@@ -168,9 +163,14 @@ impl DeezerClient {
 
             iter = iter + 1;
         }
-        let _ = f.write_all(&decrypted_file);
+        let s3 = get_s3(None).await;
+        let _ = s3
+            .get_bucket()
+            .put_object(format!("/{}", id), &decrypted_file)
+            .await
+            .unwrap();
         info!(target: "mop-rs::deezer","Downloaded music");
-        Ok(path.into_os_string().into_string().unwrap())
+        Ok(decrypted_file)
     }
 
     pub async fn search_music(&self, search: String) -> Result<SearchMusicsResult, String> {

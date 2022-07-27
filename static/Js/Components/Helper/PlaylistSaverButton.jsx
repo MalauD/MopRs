@@ -54,7 +54,6 @@ class PlaylistSaverButton extends React.Component {
             <>
                 <ButtonIcon
                     dataEva={'save'}
-                    buttonClass="float-right d-none d-lg-block"
                     onClick={this.openModal}
                     evaOptions={{ fill: '#d6d6d6ff', width: '30px', height: '30px' }}
                 />

@@ -80,23 +80,29 @@ class PlaylistContainerConnected extends React.Component {
                 <div className="m-4">
                     <small className="text-muted">
                         <Row className="p-1">
-                            <Col>
+                            <Col xs={9} className="mr-auto">
                                 <small className="text-muted">
                                     <h5>Current Playlist</h5>
                                 </small>
                             </Col>
-                            <Col>
-                                <ButtonIcon
-                                    dataEva={'shuffle-2-outline'}
-                                    buttonClass="float-right d-none d-lg-block ml-3"
-                                    onClick={this.onShuffle}
-                                    evaOptions={{
-                                        fill: '#d6d6d6ff',
-                                        width: '30px',
-                                        height: '30px',
-                                    }}
-                                />
-                                <PlaylistSaverButton MusicsId={Musics.map((m) => m._id)} />
+                            <Col xs={3}>
+                                <Row>
+                                    <Col md="auto" className="mr-auto" />
+                                    <Col xs={1} className="mx-1">
+                                        <ButtonIcon
+                                            dataEva={'shuffle-2-outline'}
+                                            onClick={this.onShuffle}
+                                            evaOptions={{
+                                                fill: '#d6d6d6ff',
+                                                width: '30px',
+                                                height: '30px',
+                                            }}
+                                        />
+                                    </Col>
+                                    <Col xs={1} className="mx-1">
+                                        <PlaylistSaverButton MusicsId={Musics.map((m) => m._id)} />
+                                    </Col>
+                                </Row>
                             </Col>
                         </Row>
                     </small>

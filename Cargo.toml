@@ -44,3 +44,7 @@ env_logger = "0.9.0"
 chrono = "0.4.19"
 now = "0.1.2"
 cached = "0.26.2"
+openssl = { version = "0.10", features = ["vendored"] }
+envy = "0.4"
+dotenv = "0.15.0"
+rust-s3 = "0.32.1"
