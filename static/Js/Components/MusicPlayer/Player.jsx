@@ -52,7 +52,7 @@ class PlayerConnected extends React.Component {
         AddMultipleMusics: PropTypes.func.isRequired,
         MusicFilePath: PropTypes.string,
         PlayingMusic: PropTypes.shape({
-            _id: PropTypes.string.isRequired,
+            _id: PropTypes.number.isRequired,
             title: PropTypes.string.isRequired,
             artist_name: PropTypes.string.isRequired,
             image_url: PropTypes.string.isRequired,

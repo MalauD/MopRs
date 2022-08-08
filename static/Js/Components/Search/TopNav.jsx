@@ -56,7 +56,7 @@ export default class TopNav extends React.Component {
                     />
                 </Navbar.Toggle>
                 <Navbar.Collapse id="basic-navbar-nav" className="justify-content-end">
-                    <Form inline onSubmit={this.handleSearch}>
+                    <Form onSubmit={this.handleSearch}>
                         <FormControl
                             type="text"
                             placeholder="Search for musics"

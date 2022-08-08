@@ -22,9 +22,7 @@ class AccountTopNavConnected extends React.Component {
     static propTypes = {
         Account: PropTypes.shape({
             username: PropTypes.string.isRequired,
-            _id: PropTypes.shape({
-                $oid: PropTypes.string,
-            }).isRequired,
+            _id: PropTypes.string.isRequired,
         }),
         AddMyAccount: PropTypes.func.isRequired,
         history: PropTypes.shape({
@@ -104,7 +102,7 @@ class AccountTopNavConnected extends React.Component {
                     {ShowPlaylistImporterModal && (
                         <PlaylistImporterModal OnClose={this.OnPlaylistModalClose} />
                     )}
-                    <NavDropdown title={username} id="basic-nav-dropdown" alignRight>
+                    <NavDropdown title={username} id="basic-nav-dropdown">
                         <NavDropdown.Item onClick={this.OnFavorites}>Favorites</NavDropdown.Item>
                         <NavDropdown.Item onClick={this.OnHistory}>History</NavDropdown.Item>
                         <NavDropdown.Item onClick={this.OnPlaylists}>Playlists</NavDropdown.Item>
