@@ -79,12 +79,6 @@ class MusicElementConnected extends React.Component {
         AddMusic(Music);
     };
 
-    HandleLike = () => {
-        const { Music } = this.props;
-
-        Axios.get(`/Music/Like/Music/${Music._id}`).then(() => {});
-    };
-
     componentWillUnmount = () => {
         this.setState = () => {};
     };
@@ -126,12 +120,7 @@ class MusicElementConnected extends React.Component {
         const isAvailable = Music.FilePath !== undefined;
         const LikeButtonAccessory = (
             <td className="align-middle">
-                {Music ? (
-                    <LikeButton
-                        onLike={this.HandleLike}
-                        defaultLikeState={LikedMusics ? LikedMusics.includes(Music._id) : false}
-                    />
-                ) : undefined}
+                {Music ? <LikeButton MusicId={Music._id} /> : undefined}
             </td>
         );
 

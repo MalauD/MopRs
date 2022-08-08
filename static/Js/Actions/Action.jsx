@@ -62,10 +62,18 @@ export function ClearPlaylist() {
 }
 
 export const ADD_MY_ACCOUNT = 'ADD_MY_ACCOUNT';
+export const LIKE_MUSIC = 'LIKE_MUSIC';
 
 export function AddMyAccount(MyAccount) {
     return {
         type: ADD_MY_ACCOUNT,
         Account: MyAccount,
+    };
+}
+
+export function LikeMusic(MusicId) {
+    return {
+        type: LIKE_MUSIC,
+        MusicId,
     };
 }

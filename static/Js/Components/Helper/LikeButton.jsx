@@ -1,44 +1,61 @@
 import React from 'react';
+import { connect } from 'react-redux';
 import PropTypes from 'prop-types';
 import ButtonIcon from './ButtonIcon';
+import { LikeMusic as LikeMusicRedux } from '../../Actions/Action';
+import axios from 'axios';
 
-class LikeButton extends React.Component {
-	static propTypes = {
-		onLike: PropTypes.func.isRequired,
-		defaultLikeState: PropTypes.bool,
-	}
+const mapDispatchToProps = (dispatch) => ({
+    LikeMusic: (MusicId) => dispatch(LikeMusicRedux(MusicId)),
+});
 
-	static defaultProps = {
-		defaultLikeState: false,
-	}
+const mapStateToProps = (state) => {
+    const { UserAccountReducer } = state;
+    return { LikedMusics: UserAccountReducer.Account.liked_musics };
+};
 
-	constructor(props) {
-		super(props);
-		this.state = {
-			IsLiked: props.defaultLikeState,
-		};
-	}
+class LikeButtonConnected extends React.Component {
+    static propTypes = {
+        MusicId: PropTypes.number.isRequired,
+        LikedMusics: PropTypes.arrayOf(PropTypes.number).isRequired,
+        LikeMusic: PropTypes.func.isRequired,
+    };
 
-	onButtonClick = () => {
-		const { onLike } = this.props;
-		this.setState((prevState) => ({
-			IsLiked: !prevState.IsLiked,
-		}), () => {
-			const { IsLiked } = this.state;
-			onLike(IsLiked);
-		});
-	}
+    constructor(props) {
+        super(props);
+        this.state = {
+            IsLiked: props.LikedMusics.indexOf(props.MusicId) !== -1,
+        };
+    }
 
-	render() {
-		const { IsLiked } = this.state;
+    onButtonClick = () => {
+        const { LikeMusic, MusicId } = this.props;
+        axios.get(`/Music/Like/Music/${MusicId}`).then(() => {
+            this.setState(
+                (prevState) => ({
+                    IsLiked: !prevState.IsLiked,
+                }),
+                () => {
+                    LikeMusic(MusicId);
+                }
+            );
+        });
+    };
 
-		return (<ButtonIcon 
-			onClick={this.onButtonClick}
-			dataEva={IsLiked ? "heart" : "heart-outline"}
-			evaOptions={{fill: "#CC506C", width: '30px', height: '30px'}} 
-			buttonClass="float-right d-none d-lg-block Accessory LikeButton" 
-		/>);
-	}
+    render() {
+        const { IsLiked } = this.state;
+
+        return (
+            <ButtonIcon
+                onClick={this.onButtonClick}
+                dataEva={IsLiked ? 'heart' : 'heart-outline'}
+                evaOptions={{ fill: '#CC506C', width: '30px', height: '30px' }}
+                buttonClass="float-right d-none d-lg-block Accessory LikeButton"
+            />
+        );
+    }
 }
+
+const LikeButton = connect(mapStateToProps, mapDispatchToProps)(LikeButtonConnected);
 
 export default LikeButton;
