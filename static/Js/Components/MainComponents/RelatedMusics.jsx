@@ -2,8 +2,8 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import { Row, Col } from 'react-bootstrap';
 import ButtonIcon from '../Helper/ButtonIcon';
-import MusicItemRow from '../Items/MusicItemRow';
 import axios from 'axios';
+import MusicElement from '../Elements/MusicElement';
 
 export default class RelatedMusics extends React.Component {
     static propTypes = {
@@ -64,14 +64,7 @@ export default class RelatedMusics extends React.Component {
         const { RelatedMusics } = this.state;
 
         const RelatedMusicsElems = RelatedMusics.map((m) => {
-            return (
-                <MusicItemRow
-                    ImageDz={m.image_url}
-                    Title={m.title}
-                    Artist={m.artist_name}
-                    onClick={() => this.onAdd(m)}
-                ></MusicItemRow>
-            );
+            return <MusicElement Music={m}></MusicElement>;
         });
 
         return (
