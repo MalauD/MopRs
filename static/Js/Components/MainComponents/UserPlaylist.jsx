@@ -4,6 +4,7 @@ import PropTypes from 'prop-types';
 import MusicGroup from './Groups/MusicGroup';
 import { OWN_PLAYLIST_CONTEXT, PLAYLIST_CONTEXT } from '../../Constants/MusicsConstants';
 import { connect } from 'react-redux';
+import RelatedMusics from './RelatedMusics';
 
 const mapStateToProps = (state) => ({
     Account: state.UserAccountReducer.Account,
@@ -44,17 +45,33 @@ class UserPlaylistConnected extends React.Component {
         });
     };
 
+    onAdd = (Music) => {
+        const { PlaylistId } = this.state;
+        Axios.post(`/Music/Playlist/id/${PlaylistId}/Add`, {
+            MusicsId: [Music._id],
+        }).then(() => {
+            this.setState({
+                Musics: [...this.state.Musics, Music],
+            });
+        });
+    };
+
     render() {
         const { Musics, PlaylistName, CreatorName, OwnPlaylist, PlaylistId } = this.state;
 
         if (Musics) {
             return (
-                <MusicGroup
-                    Musics={Musics}
-                    DetailType={`${PlaylistName} by ${CreatorName}`}
-                    ContextType={OwnPlaylist ? OWN_PLAYLIST_CONTEXT : PLAYLIST_CONTEXT}
-                    ContextPlaylistId={PlaylistId}
-                />
+                <>
+                    <MusicGroup
+                        Musics={Musics}
+                        DetailType={`${PlaylistName} by ${CreatorName}`}
+                        ContextType={OwnPlaylist ? OWN_PLAYLIST_CONTEXT : PLAYLIST_CONTEXT}
+                        ContextPlaylistId={PlaylistId}
+                    />
+                    {OwnPlaylist && (
+                        <RelatedMusics Musics={Musics} OnAdd={this.onAdd}></RelatedMusics>
+                    )}
+                </>
             );
         }
 

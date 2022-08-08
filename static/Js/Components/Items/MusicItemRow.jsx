@@ -59,9 +59,11 @@ const MusicItemRow = ({
             </Col>
         </td>
         {AccessoryRight}
-        <td className="align-middle py-3 pr-1 Accessory">
-            <MoreButtonMusic>{children}</MoreButtonMusic>
-        </td>
+        {children.length > 0 && (
+            <td className="align-middle py-3 pr-1 Accessory">
+                <MoreButtonMusic>{children}</MoreButtonMusic>
+            </td>
+        )}
     </tr>
 );
 

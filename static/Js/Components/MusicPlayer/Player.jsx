@@ -21,6 +21,7 @@ const mapStateToProps = (state) => {
         MusicFilePath: Playlist.Musics[Playlist.PlayingId]
             ? `/Music/cdn/${Playlist.Musics[Playlist.PlayingId]._id}`
             : undefined,
+        MusicIds: Playlist.Musics.map((m) => m._id),
     };
 };
 
@@ -60,6 +61,7 @@ class PlayerConnected extends React.Component {
             title: PropTypes.string.isRequired,
         }),
         CurrentMusicId: PropTypes.number,
+        MusicIds: PropTypes.arrayOf(PropTypes.number),
     };
 
     static defaultProps = {
@@ -67,6 +69,7 @@ class PlayerConnected extends React.Component {
         NextMusic: undefined,
         CurrentMusicId: undefined,
         MusicFilePath: undefined,
+        MusicIds: [],
     };
 
     constructor(props) {
@@ -182,10 +185,11 @@ class PlayerConnected extends React.Component {
     };
 
     OnPlayerEnd = () => {
-        const { NextMusic, ChangePlayingId, CurrentMusicId, AddMultipleMusics } = this.props;
+        const { NextMusic, ChangePlayingId, CurrentMusicId, AddMultipleMusics, MusicIds } =
+            this.props;
         if (!NextMusic) {
-            Axios.get('/Music/Selection/v1').then((res) => {
-                AddMultipleMusics(res.data);
+            Axios.post('/Music/Related', { MusicIds }).then((res) => {
+                AddMultipleMusics(res.data.RelatedMusics);
                 if (res.data.length !== 0) {
                     ChangePlayingId(CurrentMusicId + 1);
                 } else {

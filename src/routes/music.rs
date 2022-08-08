@@ -7,6 +7,7 @@ use crate::{
         Album, Artist, Chart, Music, PopulatedAlbum, PopulatedArtist, PopulatedPlaylist, User,
     },
     s3::get_s3,
+    suggestion::get_related_to,
     tools::MusicError,
 };
 use actix_web::{http::header::Range, web, HttpRequest, HttpResponse};
@@ -49,7 +50,8 @@ pub fn config_music(cfg: &mut web::ServiceConfig) {
                 web::delete().to(remove_music_playlist),
             )
             .route("/cdn/{id}", web::get().to(get_music))
-            .route("/Like/Music/{id}", web::get().to(like_music)),
+            .route("/Like/Music/{id}", web::get().to(like_music))
+            .route("/Related", web::post().to(get_related_musics)),
     );
 }
 
@@ -418,6 +420,19 @@ pub async fn get_music(
             .append_header(("Content-Type", "audio/mpeg"))
             .body(t))
     }
+}
+
+#[derive(Deserialize)]
+struct RelMusicsReq {
+    #[serde(rename = "MusicIds")]
+    pub music_ids: Vec<i32>,
+}
+
+async fn get_related_musics(_user: User, pl: web::Json<RelMusicsReq>) -> MusicResponse {
+    let db = get_mongo(None).await;
+    let rel = get_related_to(&pl.music_ids, 20).await;
+    let pop_rel = db.get_musics(&rel).await.unwrap().unwrap_or_default();
+    Ok(HttpResponse::Ok().json(&json!({ "RelatedMusics": pop_rel })))
 }
 
 async fn index_search_musics_result(

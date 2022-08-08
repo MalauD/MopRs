@@ -127,6 +127,29 @@ impl MongoClient {
         return Ok(Some(final_arranged));
     }
 
+    pub async fn get_artists_by_name(
+        &self,
+        artist_names: &Vec<String>,
+    ) -> Result<Option<Vec<Artist>>> {
+        let coll = self._database.collection::<Artist>("Artist");
+        let mut cursor = coll
+            .find(doc! {"name": {"$in": artist_names}}, None)
+            .await?;
+        let mut result_hash = HashMap::with_capacity(artist_names.len());
+        while let Some(value) = cursor.next().await {
+            if let Ok(res) = value {
+                result_hash.entry(res.name.clone()).or_insert(res);
+            }
+        }
+        let mut final_arranged: Vec<Artist> = Vec::with_capacity(artist_names.len());
+        for e in artist_names {
+            if result_hash.contains_key(e) {
+                final_arranged.push(result_hash[e].clone());
+            }
+        }
+        return Ok(Some(final_arranged));
+    }
+
     pub async fn append_multiple_to_an_artist(
         &self,
         album_ids: Vec<i32>,

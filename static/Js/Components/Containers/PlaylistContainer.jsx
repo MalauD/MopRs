@@ -4,6 +4,7 @@ import PropTypes from 'prop-types';
 import { Row, Col } from 'react-bootstrap';
 import PlaylistElement from '../Elements/PlaylistElement';
 import {
+    AddMusic as AddMusicRedux,
     ChangePlayingId as ChangePlayingIdRedux,
     UpdateCurrentPlaylist as UpdateCurrentPlaylistRedux,
 } from '../../Actions/Action';
@@ -11,6 +12,7 @@ import PlaylistSaverButton from '../Helper/PlaylistSaverButton';
 import { arrayMoveImmutable } from 'array-move';
 import { SortableContainer, SortableElement } from 'react-sortable-hoc';
 import ButtonIcon from '../Helper/ButtonIcon';
+import RelatedMusics from '../MainComponents/RelatedMusics';
 
 const mapStateToProps = (state) => ({
     Musics: state.MusicPlayerReducer.Playlist.Musics,
@@ -24,6 +26,9 @@ const mapDispatchToProps = (dispatch) => ({
     },
     UpdateCurrentPlaylist: (UpdatedMusics, UpdatedPlayingId) => {
         dispatch(UpdateCurrentPlaylistRedux(UpdatedMusics, UpdatedPlayingId));
+    },
+    AddMusic: (Music) => {
+        dispatch(AddMusicRedux(Music));
     },
 });
 
@@ -63,7 +68,7 @@ class PlaylistContainerConnected extends React.Component {
     };
 
     render() {
-        const { Musics, CurrentPlaying, ChangePlayingId } = this.props;
+        const { Musics, CurrentPlaying, ChangePlayingId, AddMusic } = this.props;
 
         const PlaylistSortableElement = SortableElement(({ value }) => (
             <PlaylistElement
@@ -81,9 +86,7 @@ class PlaylistContainerConnected extends React.Component {
                     <small className="text-muted">
                         <Row className="p-1">
                             <Col xs={9} className="mr-auto">
-                                <small className="text-muted">
-                                    <h5>Current Playlist</h5>
-                                </small>
+                                <h3 className="align-self-center my-auto">Current playlist</h3>
                             </Col>
                             <Col xs={3}>
                                 <Row>
@@ -114,15 +117,18 @@ class PlaylistContainerConnected extends React.Component {
         });
 
         return (
-            <PlaylistSortableContainer onSortEnd={this.onSortEnd} useDragHandle>
-                {Musics.map((value, index) => (
-                    <PlaylistSortableElement
-                        key={`item-${value._id}`}
-                        index={index}
-                        value={{ ...value, index }}
-                    />
-                ))}
-            </PlaylistSortableContainer>
+            <>
+                <PlaylistSortableContainer onSortEnd={this.onSortEnd} useDragHandle>
+                    {Musics.map((value, index) => (
+                        <PlaylistSortableElement
+                            key={`item-${value._id}`}
+                            index={index}
+                            value={{ ...value, index }}
+                        />
+                    ))}
+                </PlaylistSortableContainer>
+                <RelatedMusics Musics={Musics} OnAdd={AddMusic}></RelatedMusics>
+            </>
         );
     }
 }

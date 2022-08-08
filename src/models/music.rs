@@ -104,7 +104,7 @@ impl From<Album> for PopulatedAlbum {
 pub struct Artist {
     #[serde(rename = "_id")]
     pub id: i32,
-    name: String,
+    pub name: String,
     picture: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub albums: Option<Vec<i32>>,

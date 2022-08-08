@@ -16,6 +16,7 @@ mod deezer;
 mod models;
 mod routes;
 mod s3;
+mod suggestion;
 mod tools;
 
 async fn index(_req: HttpRequest) -> Result<NamedFile> {
