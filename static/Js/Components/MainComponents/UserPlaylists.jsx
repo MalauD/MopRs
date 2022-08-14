@@ -17,6 +17,7 @@ class UserPlaylists extends React.Component {
         this.state = {
             IsFetching: false,
             Playlists: [],
+            Creator: {},
         };
     }
 
@@ -27,19 +28,20 @@ class UserPlaylists extends React.Component {
         });
         Axios.get(`/User/${match.params.id}/Playlists?page=0&maxResults=100`).then((res) => {
             this.setState({
-                Playlists: res.data,
+                Playlists: res.data.Playlists,
+                Creator: res.data.Creator,
                 IsFetching: false,
             });
         });
     };
 
     render() {
-        const { Playlists, IsFetching } = this.state;
+        const { Playlists, IsFetching, Creator } = this.state;
 
         return (
             <UserPlaylistGroup
                 Playlists={Playlists}
-                DetailType={`Playlists of ${Playlists[0] ? Playlists[0].creator.username : 'loading..'}`}
+                DetailType={`Playlists of ${Creator.username}`}
                 IsFetching={IsFetching}
             />
         );

@@ -154,5 +154,8 @@ pub async fn get_user_playlists(
         }
     }
 
-    Ok(HttpResponse::Ok().json(pop_playlists))
+    Ok(HttpResponse::Ok().json(json!({
+        "Playlists": pop_playlists,
+        "Creator": creator
+    })))
 }
