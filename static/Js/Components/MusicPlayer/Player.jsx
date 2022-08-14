@@ -153,6 +153,11 @@ class PlayerConnected extends React.Component {
         mediaSession.setActionHandler('nexttrack', () => {
             this.HandleNext();
         });
+        document.onkeydown = (e) => {
+            if (e.key === ' ') {
+                this.HandlePlay();
+            }
+        };
         this.OnUpdate();
     };
 
