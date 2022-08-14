@@ -13,6 +13,7 @@ import { arrayMoveImmutable } from 'array-move';
 import { SortableContainer, SortableElement } from 'react-sortable-hoc';
 import ButtonIcon from '../Helper/ButtonIcon';
 import RelatedMusics from '../MainComponents/RelatedMusics';
+import SortableMusicContainer from './SortableMusicContainer';
 
 const mapStateToProps = (state) => ({
     Musics: state.MusicPlayerReducer.Playlist.Musics,
@@ -80,45 +81,26 @@ class PlaylistContainerConnected extends React.Component {
             />
         ));
 
-        const PlaylistSortableContainer = SortableContainer(({ children }) => {
-            return (
-                <div className="m-4">
-                    <small className="text-muted">
-                        <Row className="p-1">
-                            <Col xs={9} className="mr-auto">
-                                <h3 className="align-self-center my-auto">Current playlist</h3>
-                            </Col>
-                            <Col xs={3}>
-                                <Row>
-                                    <Col md="auto" className="mr-auto" />
-                                    <Col xs={1} className="mx-1">
-                                        <ButtonIcon
-                                            dataEva={'shuffle-2-outline'}
-                                            onClick={this.onShuffle}
-                                            evaOptions={{
-                                                fill: '#d6d6d6ff',
-                                                width: '30px',
-                                                height: '30px',
-                                            }}
-                                        />
-                                    </Col>
-                                    <Col xs={1} className="mx-1">
-                                        <PlaylistSaverButton MusicsId={Musics.map((m) => m._id)} />
-                                    </Col>
-                                </Row>
-                            </Col>
-                        </Row>
-                    </small>
-                    <table className="table table-hover table-borderless">
-                        <tbody>{children}</tbody>
-                    </table>
-                </div>
-            );
-        });
+        const accessories = [
+            <ButtonIcon
+                dataEva={'shuffle-2-outline'}
+                onClick={this.onShuffle}
+                evaOptions={{
+                    fill: '#d6d6d6ff',
+                    width: '30px',
+                    height: '30px',
+                }}
+            />,
+            <PlaylistSaverButton MusicsId={Musics.map((m) => m._id)} />,
+        ];
 
         return (
             <>
-                <PlaylistSortableContainer onSortEnd={this.onSortEnd} useDragHandle>
+                <SortableMusicContainer
+                    title={'Current playlist'}
+                    accessories={accessories}
+                    onSortEnd={this.onSortEnd}
+                >
                     {Musics.map((value, index) => (
                         <PlaylistSortableElement
                             key={`item-${value._id}`}
@@ -126,7 +108,7 @@ class PlaylistContainerConnected extends React.Component {
                             value={{ ...value, index }}
                         />
                     ))}
-                </PlaylistSortableContainer>
+                </SortableMusicContainer>
                 <RelatedMusics Musics={Musics} OnAdd={AddMusic}></RelatedMusics>
             </>
         );
