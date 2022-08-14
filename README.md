@@ -8,7 +8,7 @@
 <!-- Badges -->
 <p>
   <a href="https://github.com/MalauD/MopRs/actions">
-    <img src="https://github.com/github/docs/actions/workflows/main.yml/badge.svg" alt="build status" />
+    <img src="https://github.com/github/docs/actions/workflows/ci.yml/badge.svg" alt="build status" />
   </a>
 </p>
    
