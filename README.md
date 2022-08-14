@@ -20,7 +20,7 @@
 </div>
 <div align="center">
 
-  <img src="docs/images/user_playlist.png" alt="logo" width="1000" height="auto" />
+  <img src="docs/images/user_playlist.png" alt="Demo" width="1000" height="auto" />
 </div>
 <br />
 <!-- About the Project -->
