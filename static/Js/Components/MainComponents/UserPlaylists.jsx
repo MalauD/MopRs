@@ -35,6 +35,11 @@ class UserPlaylists extends React.Component {
         });
     };
 
+    handlePlaylistDelete = (Playlist) => {
+        const { Playlists } = this.state;
+        this.setState({ Playlists: Playlists.filter((p) => p._id !== Playlist._id) });
+    };
+
     render() {
         const { Playlists, IsFetching, Creator } = this.state;
 
@@ -43,6 +48,7 @@ class UserPlaylists extends React.Component {
                 Playlists={Playlists}
                 DetailType={`Playlists of ${Creator.username}`}
                 IsFetching={IsFetching}
+                OnPlaylistDelete={this.handlePlaylistDelete}
             />
         );
     }

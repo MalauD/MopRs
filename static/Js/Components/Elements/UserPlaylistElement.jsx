@@ -38,6 +38,7 @@ class UserPlaylistElementConnected extends React.Component {
         AccountId: PropTypes.string.isRequired,
         ClearPlaylist: PropTypes.func.isRequired,
         AddMusics: PropTypes.func.isRequired,
+        OnDelete: PropTypes.func.isRequired,
     };
 
     constructor(props) {
@@ -51,10 +52,10 @@ class UserPlaylistElementConnected extends React.Component {
     };
 
     OnDelete = () => {
-        const { Playlist } = this.props;
+        const { Playlist, OnDelete } = this.props;
         Axios.delete(`/Music/Playlist/id/${Playlist._id}`).then(() => {
             // TODO it resets the player
-            window.location.reload(false);
+            OnDelete(Playlist);
         });
     };
 
