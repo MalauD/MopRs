@@ -154,7 +154,8 @@ class PlayerConnected extends React.Component {
             this.HandleNext();
         });
         document.onkeydown = (e) => {
-            if (e.key === ' ') {
+            if (e.key === ' ' && e.target.tagName.toUpperCase() !== 'INPUT') {
+                e.preventDefault();
                 this.HandlePlay();
             }
         };
