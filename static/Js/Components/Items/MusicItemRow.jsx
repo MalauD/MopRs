@@ -14,12 +14,10 @@ const DragHandle = SortableHandle(() => (
 
 const MusicItemRow = ({
     onClick,
-    Image,
     ImageDz,
     Title,
     Artist,
     children,
-    isAvailable,
     AccessoryRight,
     UseDragHandle,
 }) => (
@@ -33,20 +31,7 @@ const MusicItemRow = ({
             {UseDragHandle && <DragHandle />}
         </td>
         <td className="p-0 py-2 pl-0 align-middle" onClick={onClick} style={{ width: '50px' }}>
-            {ImageDz ? (
-                <ImgBootstrap className="PlayerImage my-auto" rounded height="50em" src={ImageDz} />
-            ) : (
-                <ImgBootstrap
-                    className="PlayerImage my-auto"
-                    rounded
-                    height="50em"
-                    src={
-                        Image
-                            ? `data:image/jpeg;base64,${Image.toString('base64')}`
-                            : '/Ressources/noMusic.jpg'
-                    }
-                />
-            )}
+            <ImgBootstrap className="PlayerImage my-auto" rounded height="50em" src={ImageDz} />
         </td>
         <td className="p-0 py-2 pl-3 pr-0 align-top" onClick={onClick}>
             <Col className="pl-0">
@@ -69,18 +54,15 @@ const MusicItemRow = ({
 
 MusicItemRow.propTypes = {
     onClick: PropTypes.func.isRequired,
-    Image: PropTypes.string,
     ImageDz: PropTypes.string,
     Title: PropTypes.string.isRequired,
     Artist: PropTypes.string.isRequired,
     children: PropTypes.oneOfType([PropTypes.arrayOf(PropTypes.node), PropTypes.node]),
     AccessoryRight: PropTypes.node,
-    isAvailable: PropTypes.bool.isRequired,
 };
 
 MusicItemRow.defaultProps = {
-    Image: undefined,
-    ImageDz: undefined,
+    ImageDz: '/Ressources/noMusic.jpg',
     children: <></>,
     AccessoryRight: <></>,
 };
