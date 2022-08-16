@@ -4,7 +4,6 @@ import Axios from 'axios';
 import AlbumGroup from './Groups/AlbumGroup';
 import ArtistGroup from './Groups/ArtistGroup';
 import MusicGroup from './Groups/MusicGroup';
-import { SEARCH_CONTEXT } from '../../Constants/MusicsConstants';
 
 class Artist extends React.Component {
     static propTypes = {
@@ -87,31 +86,30 @@ class Artist extends React.Component {
                 </h2>
                 <MusicGroup
                     Musics={TopTracks.slice(0, displayedTopTracks)}
-                    DetailType="Top Musics"
-                    ContextType={SEARCH_CONTEXT}
-                    MoreButton={TopTracks.length > displayedTopTracks}
-                    OnMoreClick={() => {
+                    title="Top Musics"
+                    showMore={TopTracks.length > displayedTopTracks}
+                    onMoreClick={() => {
                         this.setState({ displayedTopTracks: displayedTopTracks + 8 });
                     }}
-                    isFetching={isFetching}
+                    isLoading={isFetching}
                 />
                 <AlbumGroup
                     Albums={AlbumsId.slice(0, displayedAlbums)}
-                    DetailType={'Albums'}
-                    MoreButton={AlbumsId.length > displayedAlbums}
-                    OnMoreClick={() => {
+                    title="Albums"
+                    showMore={AlbumsId.length > displayedAlbums}
+                    onMoreClick={() => {
                         this.setState({ displayedAlbums: displayedAlbums + 8 });
                     }}
-                    isFetching={isFetching}
+                    isLoading={isFetching}
                 />
                 <ArtistGroup
                     Artists={RelatedArtists.slice(0, displayedRelArtists)}
-                    DetailType="Related Artists"
-                    MoreButton={RelatedArtists.length > displayedRelArtists}
-                    OnMoreClick={() => {
+                    title="Related Artists"
+                    showMore={RelatedArtists.length > displayedRelArtists}
+                    onMoreClick={() => {
                         this.setState({ displayedRelArtists: displayedRelArtists + 8 });
                     }}
-                    isFetching={isFetching}
+                    isLoading={isFetching}
                 />
             </>
         );

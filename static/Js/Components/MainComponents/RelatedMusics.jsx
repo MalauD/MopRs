@@ -4,6 +4,7 @@ import { Row, Col } from 'react-bootstrap';
 import ButtonIcon from '../Helper/ButtonIcon';
 import axios from 'axios';
 import MusicElement from '../Elements/MusicElement';
+import MusicGroup from './Groups/MusicGroup';
 
 export default class RelatedMusics extends React.Component {
     static propTypes = {
@@ -16,15 +17,20 @@ export default class RelatedMusics extends React.Component {
         this.state = {
             RelatedMusics: [],
             RelatedMusicAdded: false,
+            isLoading: false,
         };
     }
 
     getNewRelatedMusics = () => {
         const { Musics } = this.props;
         const MusicIds = Musics.map((m) => m._id);
+        this.setState({
+            isLoading: true,
+        });
         axios.post('/Music/Related', { MusicIds }).then((res) => {
             this.setState({
                 RelatedMusics: res.data.RelatedMusics,
+                isLoading: false,
             });
         });
     };
@@ -62,35 +68,27 @@ export default class RelatedMusics extends React.Component {
 
     render() {
         const { RelatedMusics } = this.state;
+        const { isLoading } = this.state;
 
-        const RelatedMusicsElems = RelatedMusics.map((m) => {
-            return <MusicElement Music={m}></MusicElement>;
-        });
+        const Accessories = [
+            <ButtonIcon
+                dataEva={'flip-outline'}
+                onClick={this.onReloadRelated}
+                evaOptions={{
+                    fill: '#d6d6d6ff',
+                    width: '30px',
+                    height: '30px',
+                }}
+            />,
+        ];
 
         return (
-            <div className="m-4">
-                <Row className="p-1">
-                    <Col className="mr-auto">
-                        <h3 className="align-self-center my-auto">Related</h3>
-                    </Col>
-                    <Col>
-                        <ButtonIcon
-                            dataEva={'flip-outline'}
-                            onClick={this.onReloadRelated}
-                            evaOptions={{
-                                fill: '#d6d6d6ff',
-                                width: '30px',
-                                height: '30px',
-                            }}
-                            buttonClass="py-auto pr-0 float-right"
-                        />
-                    </Col>
-                </Row>
-
-                <table className="table table-hover table-borderless">
-                    <tbody>{RelatedMusicsElems}</tbody>
-                </table>
-            </div>
+            <MusicGroup
+                Musics={RelatedMusics}
+                title="Related"
+                isLoading={isLoading}
+                Accessories={Accessories}
+            />
         );
     }
 }

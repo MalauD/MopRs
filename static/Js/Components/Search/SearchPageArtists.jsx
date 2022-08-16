@@ -74,10 +74,10 @@ class SearchPageArtists extends React.Component {
         return (
             <ArtistGroup
                 Artists={Artists}
-                DetailType="Artists"
-                IsFetching={IsFetchingArtists}
-                MoreButton={!PrevPageEmpty}
-                OnMoreClick={this.OnMoreClick}
+                title="Artists"
+                isLoading={IsFetchingArtists}
+                showMore={!PrevPageEmpty}
+                onMoreClick={this.OnMoreClick}
             />
         );
     }

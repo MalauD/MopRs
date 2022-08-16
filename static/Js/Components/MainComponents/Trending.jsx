@@ -2,7 +2,6 @@ import React from 'react';
 import Axios from 'axios';
 import PropTypes from 'prop-types';
 import MusicGroup from './Groups/MusicGroup';
-import { TRENDING_CONTEXT } from '../../Constants/MusicsConstants';
 
 class Trending extends React.Component {
     static propTypes = {
@@ -59,10 +58,9 @@ class Trending extends React.Component {
             return (
                 <MusicGroup
                     Musics={Musics}
-                    DetailType="Trending"
-                    ContextType={TRENDING_CONTEXT}
-                    MoreButton={!PrevPageEmpty}
-                    OnMoreClick={this.OnMoreClick}
+                    title="Trending"
+                    showMore={!PrevPageEmpty}
+                    onMoreClick={this.OnMoreClick}
                 />
             );
         }

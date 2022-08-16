@@ -74,10 +74,10 @@ class SearchPagePlaylists extends React.Component {
         return (
             <UserPlaylistGroup
                 Playlists={Playlists}
-                DetailType="Playlists"
-                IsFetching={IsFetchingPlaylists}
-                MoreButton={!PrevPageEmpty}
-                OnMoreClick={this.OnMoreClick}
+                title="Playlists"
+                isLoading={IsFetchingPlaylists}
+                showMore={!PrevPageEmpty}
+                onMoreClick={this.OnMoreClick}
             />
         );
     }

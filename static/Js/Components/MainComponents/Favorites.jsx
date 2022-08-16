@@ -2,7 +2,6 @@ import React from 'react';
 import Axios from 'axios';
 import PropTypes from 'prop-types';
 import MusicGroup from './Groups/MusicGroup';
-import { FAV_CONTEXT } from '../../Constants/MusicsConstants';
 
 class Favorites extends React.Component {
     static propTypes = {
@@ -54,10 +53,9 @@ class Favorites extends React.Component {
             return (
                 <MusicGroup
                     Musics={Musics}
-                    DetailType="Favorites"
-                    ContextType={FAV_CONTEXT}
-                    MoreButton={!PrevPageEmpty}
-                    OnMoreClick={this.OnMoreClick}
+                    title="Favorites"
+                    showMore={!PrevPageEmpty}
+                    onMoreClick={this.OnMoreClick}
                 />
             );
         }

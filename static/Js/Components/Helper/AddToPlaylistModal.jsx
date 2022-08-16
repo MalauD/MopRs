@@ -41,7 +41,7 @@ class AddToPlaylistModalConnected extends React.Component {
         });
         Axios.get(`/User/${Account._id}/Playlists?page=0&maxResults=100`).then((res) => {
             this.setState({
-                UserPlaylists: res.data,
+                UserPlaylists: res.data.Playlists,
                 IsLoading: false,
             });
         });

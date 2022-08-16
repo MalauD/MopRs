@@ -2,7 +2,6 @@ import React from 'react';
 import Axios from 'axios';
 import PropTypes from 'prop-types';
 import MusicGroup from './Groups/MusicGroup';
-import { HIST_CONTEXT } from '../../Constants/MusicsConstants';
 
 class History extends React.Component {
     static propTypes = {
@@ -54,10 +53,9 @@ class History extends React.Component {
             return (
                 <MusicGroup
                     Musics={Musics}
-                    DetailType="History"
-                    ContextType={HIST_CONTEXT}
-                    MoreButton={!PrevPageEmpty}
-                    OnMoreClick={this.OnMoreClick}
+                    title="History"
+                    showMore={!PrevPageEmpty}
+                    onMoreClick={this.OnMoreClick}
                 />
             );
         }

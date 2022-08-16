@@ -2,9 +2,9 @@ import React from 'react';
 import Axios from 'axios';
 import PropTypes from 'prop-types';
 import MusicGroup from './Groups/MusicGroup';
-import { OWN_PLAYLIST_CONTEXT, PLAYLIST_CONTEXT } from '../../Constants/MusicsConstants';
 import { connect } from 'react-redux';
 import RelatedMusics from './RelatedMusics';
+import { DefaultActions, OwnPlaylistActions } from '../Items/Actions';
 
 const mapStateToProps = (state) => ({
     Account: state.UserAccountReducer.Account,
@@ -56,6 +56,17 @@ class UserPlaylistConnected extends React.Component {
         });
     };
 
+    onDelete = (Music) => {
+        const { PlaylistId, Musics } = this.state;
+        Axios.delete(`/Music/Playlist/id/${PlaylistId}/Remove`, {
+            data: { MusicsId: [Music._id] },
+        }).then(() => {
+            this.setState({
+                Musics: Musics.filter((m) => m._id !== Music._id),
+            });
+        });
+    };
+
     render() {
         const { Musics, PlaylistName, CreatorName, OwnPlaylist, PlaylistId } = this.state;
 
@@ -64,9 +75,9 @@ class UserPlaylistConnected extends React.Component {
                 <>
                     <MusicGroup
                         Musics={Musics}
-                        DetailType={`${PlaylistName} by ${CreatorName}`}
-                        ContextType={OwnPlaylist ? OWN_PLAYLIST_CONTEXT : PLAYLIST_CONTEXT}
-                        ContextPlaylistId={PlaylistId}
+                        title={`${PlaylistName} by ${CreatorName}`}
+                        Actions={OwnPlaylist ? OwnPlaylistActions : DefaultActions}
+                        OnMusicPlaylistDelete={this.onDelete}
                     />
                     {OwnPlaylist && (
                         <RelatedMusics Musics={Musics} OnAdd={this.onAdd}></RelatedMusics>

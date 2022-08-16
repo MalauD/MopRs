@@ -49,15 +49,15 @@ class SearchPageAlbums extends React.Component {
 
         const values = QueryString.parse(location.search);
 
-        Axios.get(`/Music/Search/Album/Name/${values.q}?maxResults=14&page=${CurrentPage + 1}`).then(
-            (res) => {
-                this.setState((prevState) => ({
-                    Albums: [...prevState.Albums, ...res.data],
-                    CurrentPage: prevState.CurrentPage + 1,
-                    PrevPageEmpty: res.data.length === 0,
-                }));
-            }
-        );
+        Axios.get(
+            `/Music/Search/Album/Name/${values.q}?maxResults=14&page=${CurrentPage + 1}`
+        ).then((res) => {
+            this.setState((prevState) => ({
+                Albums: [...prevState.Albums, ...res.data],
+                CurrentPage: prevState.CurrentPage + 1,
+                PrevPageEmpty: res.data.length === 0,
+            }));
+        });
     };
 
     componentDidMount = () => {
@@ -74,10 +74,10 @@ class SearchPageAlbums extends React.Component {
         return (
             <AlbumGroup
                 Albums={Albums}
-                DetailType="Albums"
-                IsFetching={IsFetchingAlbums}
-                MoreButton={!PrevPageEmpty}
-                OnMoreClick={this.OnMoreClick}
+                title="Albums"
+                isLoading={IsFetchingAlbums}
+                showMore={!PrevPageEmpty}
+                onMoreClick={this.OnMoreClick}
             />
         );
     }

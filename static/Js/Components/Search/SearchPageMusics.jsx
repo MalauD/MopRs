@@ -3,7 +3,6 @@ import Axios from 'axios';
 import React from 'react';
 import PropTypes from 'prop-types';
 import MusicGroup from '../MainComponents/Groups/MusicGroup';
-import { SEARCH_CONTEXT } from '../../Constants/MusicsConstants';
 
 class SearchPageMusics extends React.Component {
     static propTypes = {
@@ -75,11 +74,10 @@ class SearchPageMusics extends React.Component {
         return (
             <MusicGroup
                 Musics={Musics}
-                DetailType="Musics"
-                IsFetching={IsFetchingMusics}
-                ContextType={SEARCH_CONTEXT}
-                MoreButton={!PrevPageEmpty}
-                OnMoreClick={this.OnMoreClick}
+                title="Musics"
+                isLoading={IsFetchingMusics}
+                showMore={!PrevPageEmpty}
+                onMoreClick={this.OnMoreClick}
             />
         );
     }

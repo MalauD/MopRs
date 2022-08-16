@@ -44,7 +44,7 @@ const MusicItemRow = ({
             </Col>
         </td>
         {AccessoryRight}
-        {children.length > 0 && (
+        {children && (
             <td className="align-middle py-3 pr-1 Accessory">
                 <MoreButtonMusic>{children}</MoreButtonMusic>
             </td>

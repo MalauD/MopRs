@@ -1,5 +1,3 @@
-import { PLAYLIST_CONTEXT } from '../Constants/MusicsConstants';
-
 export const CHANGE_PLAYING_MUSIC = 'CHANGE_PLAYING_MUSIC';
 export const CHANGE_PLAYING_ID = 'CHANGE_PLAYING_ID';
 export const ADD_MUSIC = 'ADD_MUSIC';

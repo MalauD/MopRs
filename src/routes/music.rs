@@ -204,7 +204,7 @@ pub async fn get_artist(req: web::Path<i32>) -> MusicResponse {
     let _ = db.bulk_insert_albums(albums).await;
     let _ = db.append_multiple_to_an_artist(albums_id, &req).await;
     //musics.group_by()
-    let compl_artist = db.get_artist(&req).await.unwrap().unwrap();
+    let mut compl_artist = db.get_artist(&req).await.unwrap().unwrap();
     let albums_of_artist = db
         .get_albums(&compl_artist.albums.as_ref().unwrap())
         .await
@@ -243,14 +243,16 @@ pub async fn get_artist(req: web::Path<i32>) -> MusicResponse {
             )
             .await
             .unwrap();
+        compl_artist.top_tracks = Some(tracks.into_iter().map(|x| x.id).collect_vec());
+        compl_artist.related_artists = Some(rel_artists.into_iter().map(|x| x.id).collect_vec());
     };
     let top_tracks = db
-        .get_musics(&compl_artist.top_tracks.unwrap())
+        .get_musics(&compl_artist.top_tracks.unwrap_or_default())
         .await
         .unwrap()
         .unwrap();
     let related = db
-        .get_artists(&compl_artist.related_artists.unwrap())
+        .get_artists(&compl_artist.related_artists.unwrap_or_default())
         .await
         .unwrap()
         .unwrap();

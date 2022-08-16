@@ -46,8 +46,8 @@ class UserPlaylists extends React.Component {
         return (
             <UserPlaylistGroup
                 Playlists={Playlists}
-                DetailType={`Playlists of ${Creator.username}`}
-                IsFetching={IsFetching}
+                title={`Playlists of ${Creator.username}`}
+                isLoading={IsFetching}
                 OnPlaylistDelete={this.handlePlaylistDelete}
             />
         );
