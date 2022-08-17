@@ -16,7 +16,7 @@ export default class SortableMusicContainer extends React.Component {
 
     render() {
         const { title, children, accessories, ...props } = this.props;
-        const MySortableContainer = SortableContainer(({ c }) => (
+        const MySortableContainer = SortableContainer(() => (
             <div className="m-4">
                 <small className="text-muted">
                     <Row className="p-1">
@@ -36,7 +36,7 @@ export default class SortableMusicContainer extends React.Component {
                     </Row>
                 </small>
                 <table className="table table-hover table-borderless">
-                    <tbody>{c}</tbody>
+                    <tbody>{children}</tbody>
                 </table>
             </div>
         ));

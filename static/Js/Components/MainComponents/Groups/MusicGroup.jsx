@@ -46,6 +46,11 @@ class MusicGroupConnected extends React.Component {
         AddMusics(Musics);
     };
 
+    onAddAll = () => {
+        const { AddMusics, Musics } = this.props;
+        AddMusics(Musics);
+    };
+
     render() {
         const { Musics, Actions, Accessories, ...props } = this.props;
 
@@ -55,6 +60,11 @@ class MusicGroupConnected extends React.Component {
 
         const accessories = [
             ...Accessories,
+            <ButtonIcon
+                dataEva="plus-circle-outline"
+                evaOptions={{ fill: '#d6d6d6ff', width: '30px', height: '30px' }}
+                onClick={this.onAddAll}
+            />,
             <ButtonIcon
                 dataEva="play-circle-outline"
                 evaOptions={{ fill: '#d6d6d6ff', width: '30px', height: '30px' }}
