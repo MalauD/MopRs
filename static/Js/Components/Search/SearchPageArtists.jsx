@@ -22,6 +22,14 @@ class SearchPageArtists extends React.Component {
         };
     }
 
+    componentDidMount() {
+        this.SearchArtists();
+    }
+
+    componentDidUpdate() {
+        this.SearchArtists();
+    }
+
     SearchArtists = () => {
         const { location } = this.props;
 
@@ -58,14 +66,6 @@ class SearchPageArtists extends React.Component {
                 PrevPageEmpty: res.data.length === 0,
             }));
         });
-    };
-
-    componentDidMount = () => {
-        this.SearchArtists();
-    };
-
-    componentDidUpdate = () => {
-        this.SearchArtists();
     };
 
     render() {

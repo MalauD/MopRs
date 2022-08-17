@@ -1,9 +1,9 @@
 import React from 'react';
 import { connect } from 'react-redux';
 import PropTypes from 'prop-types';
+import axios from 'axios';
 import ButtonIcon from './ButtonIcon';
 import { LikeMusic as LikeMusicRedux } from '../../Actions/Action';
-import axios from 'axios';
 
 const mapDispatchToProps = (dispatch) => ({
     LikeMusic: (MusicId) => dispatch(LikeMusicRedux(MusicId)),

@@ -24,7 +24,7 @@ class Trending extends React.Component {
     }
 
     componentDidMount() {
-        const { Size, RemoveDups } = this.props;
+        const { Size } = this.props;
 
         Axios.get(`/Music/Trending/Musics?page=0&maxResults=${Size}`).then((res) => {
             this.setState({
@@ -65,7 +65,7 @@ class Trending extends React.Component {
             );
         }
 
-        return <></>;
+        return (null);
     }
 }
 export default Trending;

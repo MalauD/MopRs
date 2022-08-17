@@ -23,27 +23,29 @@ import PlayerFull from './Components/MainComponents/PlayerFull';
 
 Axios.defaults.withCredentials = true;
 
-const App = () => (
-    <Provider store={store}>
-        <Suspense fallback={<div>Loading...</div>}>
-            <HashRouter>
-                <ScrollToTop />
-                <ProtectedRoute path="/" component={TopNav} />
-                <ProtectedRoute exact path="/" component={MainPage} />
-                <Route path="/" component={Player} />
-                <Route path="/Login" component={Login} />
-                <Route path="/Register" component={Register} />
-                <ProtectedRoute path="/Favorites" component={Favorites} />
-                <ProtectedRoute path="/History" component={History} />
-                <ProtectedRoute path="/Search" component={SearchPage} />
-                <ProtectedRoute path="/Player" component={PlayerFull} />
-                <ProtectedRoute path="/Album/:id" component={Album} />
-                <ProtectedRoute path="/Artist/:id" component={Artist} />
-                <ProtectedRoute path="/Playlist/:id" component={UserPlaylist} />
-                <ProtectedRoute path="/User/:id/Playlists" component={UserPlaylists} />
-            </HashRouter>
-        </Suspense>
-    </Provider>
-);
+function App() {
+    return (
+        <Provider store={store}>
+            <Suspense fallback={<div>Loading...</div>}>
+                <HashRouter>
+                    <ScrollToTop />
+                    <ProtectedRoute path="/" component={TopNav} />
+                    <ProtectedRoute exact path="/" component={MainPage} />
+                    <Route path="/" component={Player} />
+                    <Route path="/Login" component={Login} />
+                    <Route path="/Register" component={Register} />
+                    <ProtectedRoute path="/Favorites" component={Favorites} />
+                    <ProtectedRoute path="/History" component={History} />
+                    <ProtectedRoute path="/Search" component={SearchPage} />
+                    <ProtectedRoute path="/Player" component={PlayerFull} />
+                    <ProtectedRoute path="/Album/:id" component={Album} />
+                    <ProtectedRoute path="/Artist/:id" component={Artist} />
+                    <ProtectedRoute path="/Playlist/:id" component={UserPlaylist} />
+                    <ProtectedRoute path="/User/:id/Playlists" component={UserPlaylists} />
+                </HashRouter>
+            </Suspense>
+        </Provider>
+    );
+}
 
 ReactDOM.render(<App />, document.querySelector('#root'));

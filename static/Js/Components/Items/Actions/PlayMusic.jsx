@@ -1,8 +1,8 @@
 import React from 'react';
 import { connect } from 'react-redux';
 import PropTypes from 'prop-types';
-import { ChangePlayingMusic as ChangePlayingMusicRedux } from '../../../Actions/Action';
 import { Dropdown } from 'react-bootstrap';
+import { ChangePlayingMusic as ChangePlayingMusicRedux } from '../../../Actions/Action';
 
 const mapDispatchToProps = (dispatch) => ({
     ChangePlayingMusic: (Music) => {
@@ -14,12 +14,18 @@ class PlayMusicAction extends React.Component {
     static propTypes = {
         Music: PropTypes.shape({}).isRequired,
         ChangePlayingMusic: PropTypes.func.isRequired,
+        OnMusicAdded: PropTypes.func,
+    };
+
+    static defaultProps = {
+        OnMusicAdded: () => {},
     };
 
     onClick = () => {
-        const { ChangePlayingMusic, Music } = this.props;
+        const { ChangePlayingMusic, Music, OnMusicAdded } = this.props;
 
         ChangePlayingMusic(Music);
+        OnMusicAdded(Music);
     };
 
     render() {

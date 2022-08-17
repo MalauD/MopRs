@@ -24,8 +24,6 @@ class Selection extends React.Component {
     }
 
     componentDidMount() {
-        const { Size, RemoveDups } = this.props;
-
         Axios.get(`/Music/Selection/v1`).then((res) => {
             this.setState({
                 Musics: res.data,
@@ -54,13 +52,13 @@ class Selection extends React.Component {
                 <MusicGroup
                     Musics={Musics}
                     title="Selection"
-                    showMore={false}
+                    showMore={!PrevPageEmpty}
                     onMoreClick={this.OnMoreClick}
                 />
             );
         }
 
-        return <></>;
+        return null;
     }
 }
 export default Selection;

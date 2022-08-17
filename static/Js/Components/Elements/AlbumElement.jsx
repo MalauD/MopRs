@@ -25,7 +25,7 @@ class AlbumElementConnected extends React.Component {
             _id: PropTypes.number,
             name: PropTypes.string,
             cover: PropTypes.string,
-            musics: PropTypes.arrayOf(PropTypes.any),
+            musics: PropTypes.arrayOf(PropTypes.shape({})),
             is_complete: PropTypes.bool,
         }).isRequired,
         ClearPlaylist: PropTypes.func.isRequired,
@@ -37,31 +37,16 @@ class AlbumElementConnected extends React.Component {
         history.push(`/Album/${Album._id}`);
     };
 
-    componentWillUnmount = () => {
-        this.setState = () => {};
-    };
-
-    GetAlbumMusics = () => {
-        const { Album } = this.props;
-        const { MusicsId } = Album;
-
-        MusicsId.forEach((value, index, arr) => {
-            /* eslint no-param-reassign: "off" */
-            arr[index].AlbumId = Album;
-        }, MusicsId);
-
-        return MusicsId;
-    };
-
     OnAdd = () => {
-        const { AddMusics } = this.props;
-        AddMusics(this.GetAlbumMusics());
+        const { AddMusics, Album } = this.props;
+        AddMusics(Album.musics);
+        // TODO Album should have musics instead of music id
     };
 
     OnPlay = () => {
-        const { AddMusics, ClearPlaylist } = this.props;
+        const { AddMusics, ClearPlaylist, Album } = this.props;
         ClearPlaylist();
-        AddMusics(this.GetAlbumMusics());
+        AddMusics(Album.musics);
     };
 
     render() {

@@ -1,9 +1,9 @@
 import React from 'react';
+import { withRouter } from 'react-router-dom';
 import Favorites from './Favorites';
 import History from './History';
 import Selection from './Selection';
 import Trending from './Trending';
-import { withRouter } from 'react-router-dom';
 
 class MainPage extends React.Component {
     constructor(props) {

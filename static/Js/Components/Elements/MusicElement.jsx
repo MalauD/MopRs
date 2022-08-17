@@ -24,12 +24,8 @@ class MusicElementConnected extends React.Component {
         ChangePlayingMusic: PropTypes.func.isRequired,
     };
 
-    static defaultProps = {
-        ContextPlaylistId: undefined,
-    };
-
     render() {
-        const { ContextType, Music, ChangePlayingMusic, Actions, ...props } = this.props;
+        const { Music, ChangePlayingMusic, Actions, ...props } = this.props;
         const LikeButtonAccessory = (
             <td className="align-middle">
                 {Music ? <LikeButton MusicId={Music._id} /> : undefined}

@@ -1,7 +1,8 @@
 import React from 'react';
 import { connect } from 'react-redux';
 import PropTypes from 'prop-types';
-import { Row, Col } from 'react-bootstrap';
+import { arrayMoveImmutable } from 'array-move';
+import { SortableElement } from 'react-sortable-hoc';
 import PlaylistElement from '../Elements/PlaylistElement';
 import {
     AddMusic as AddMusicRedux,
@@ -9,8 +10,6 @@ import {
     UpdateCurrentPlaylist as UpdateCurrentPlaylistRedux,
 } from '../../Actions/Action';
 import PlaylistSaverButton from '../Helper/PlaylistSaverButton';
-import { arrayMoveImmutable } from 'array-move';
-import { SortableContainer, SortableElement } from 'react-sortable-hoc';
 import ButtonIcon from '../Helper/ButtonIcon';
 import RelatedMusics from '../MainComponents/RelatedMusics';
 import SortableMusicContainer from './SortableMusicContainer';
@@ -34,8 +33,9 @@ const mapDispatchToProps = (dispatch) => ({
 });
 
 function shuffle(a) {
-    for (let i = a.length - 1; i > 0; i--) {
+    for (let i = a.length - 1; i > 0; i -= 1) {
         const j = Math.floor(Math.random() * (i + 1));
+        /* eslint-disable no-param-reassign */
         [a[i], a[j]] = [a[j], a[i]];
     }
     return a;
@@ -45,9 +45,9 @@ class PlaylistContainerConnected extends React.Component {
     static propTypes = {
         ChangePlayingId: PropTypes.func.isRequired,
         UpdateCurrentPlaylist: PropTypes.func.isRequired,
-        Musics: PropTypes.array.isRequired,
+        Musics: PropTypes.arrayOf(PropTypes.shape({})).isRequired,
         CurrentPlaying: PropTypes.shape({
-            id: PropTypes.string,
+            _id: PropTypes.number.isRequired,
         }),
     };
 
@@ -69,7 +69,7 @@ class PlaylistContainerConnected extends React.Component {
     };
 
     render() {
-        const { Musics, CurrentPlaying, ChangePlayingId, AddMusic } = this.props;
+        const { Musics, CurrentPlaying, ChangePlayingId } = this.props;
 
         const PlaylistSortableElement = SortableElement(({ value }) => (
             <PlaylistElement
@@ -83,7 +83,7 @@ class PlaylistContainerConnected extends React.Component {
 
         const accessories = [
             <ButtonIcon
-                dataEva={'shuffle-2-outline'}
+                dataEva="shuffle-2-outline"
                 onClick={this.onShuffle}
                 evaOptions={{
                     fill: '#d6d6d6ff',
@@ -97,7 +97,7 @@ class PlaylistContainerConnected extends React.Component {
         return (
             <>
                 <SortableMusicContainer
-                    title={'Current playlist'}
+                    title="Current playlist"
                     accessories={accessories}
                     onSortEnd={this.onSortEnd}
                 >
@@ -109,7 +109,7 @@ class PlaylistContainerConnected extends React.Component {
                         />
                     ))}
                 </SortableMusicContainer>
-                <RelatedMusics Musics={Musics} OnAdd={AddMusic}></RelatedMusics>
+                <RelatedMusics Musics={Musics} />
             </>
         );
     }

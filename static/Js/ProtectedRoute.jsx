@@ -54,20 +54,17 @@ class ProtectedRouteConnected extends React.Component {
         const { component: Component, Account, ...props } = this.props;
         const { gotResult } = this.state;
 
-        return (
-            <Route
-                {...props}
-                render={(props) =>
-                    Account ? (
-                        <Component {...props} />
-                    ) : gotResult ? (
-                        <Redirect to="/Login" />
-                    ) : (
-                        <div />
-                    )
+        function renderComponent(p) {
+            if (gotResult) {
+                if (Account) {
+                    return <Component {...p} />;
                 }
-            />
-        );
+                return <Redirect to="/login" />;
+            }
+            return <div />;
+        }
+
+        return <Route {...props} render={(p) => renderComponent(p)} />;
     }
 }
 

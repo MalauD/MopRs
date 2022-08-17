@@ -29,12 +29,7 @@ class AddToPlaylistModalConnected extends React.Component {
         };
     }
 
-    closeModal = () => {
-        const { OnClose } = this.props;
-        OnClose();
-    };
-
-    componentDidMount = () => {
+    componentDidMount() {
         const { Account } = this.props;
         this.setState({
             IsLoading: true,
@@ -45,7 +40,7 @@ class AddToPlaylistModalConnected extends React.Component {
                 IsLoading: false,
             });
         });
-    };
+    }
 
     OnPlaylistSelect = (SelectedPlaylistId) => {
         this.setState({
@@ -61,6 +56,11 @@ class AddToPlaylistModalConnected extends React.Component {
         }).then(() => {
             this.closeModal();
         });
+    };
+
+    closeModal = () => {
+        const { OnClose } = this.props;
+        OnClose();
     };
 
     render() {

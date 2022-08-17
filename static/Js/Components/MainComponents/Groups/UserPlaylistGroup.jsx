@@ -5,7 +5,11 @@ import MediaLayout from '../../Layout/MediaLayout';
 
 class UserPlaylistGroup extends React.Component {
     static propTypes = {
-        Playlists: PropTypes.arrayOf(PropTypes.any).isRequired,
+        Playlists: PropTypes.arrayOf(
+            PropTypes.shape({
+                _id: PropTypes.string.isRequired,
+            })
+        ).isRequired,
         OnPlaylistDelete: PropTypes.func,
     };
 

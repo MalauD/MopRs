@@ -6,12 +6,10 @@ import MusicGroup from './Groups/MusicGroup';
 class Favorites extends React.Component {
     static propTypes = {
         Size: PropTypes.number,
-        Reverse: PropTypes.bool,
     };
 
     static defaultProps = {
         Size: 14,
-        Reverse: true,
     };
 
     constructor(props) {
@@ -24,7 +22,7 @@ class Favorites extends React.Component {
     }
 
     componentDidMount() {
-        const { Size, Reverse } = this.props;
+        const { Size } = this.props;
 
         Axios.get(`/User/LikedMusics?maxResults=${Size}&page=0`).then((res) => {
             this.setState({
@@ -60,7 +58,7 @@ class Favorites extends React.Component {
             );
         }
 
-        return <></>;
+        return null;
     }
 }
 export default Favorites;

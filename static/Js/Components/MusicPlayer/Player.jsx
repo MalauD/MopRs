@@ -11,6 +11,8 @@ import {
 } from '../../Actions/Action';
 import PlayerSlider from './PlayerSlider';
 
+/* eslint react/no-unused-class-component-methods: 0 */
+
 const mapStateToProps = (state) => {
     const { Playlist } = state.MusicPlayerReducer;
     return {
@@ -38,7 +40,6 @@ const mapDispatchToProps = (dispatch) => ({
 });
 
 class PlayerConnected extends React.Component {
-    _isMounted = false;
     static propTypes = {
         history: PropTypes.shape({
             push: PropTypes.func.isRequired,
@@ -74,9 +75,64 @@ class PlayerConnected extends React.Component {
 
     constructor(props) {
         super(props);
+        this._isMounted = false;
         this.state = {
             IsPlaying: true,
         };
+    }
+
+    componentDidMount() {
+        this._isMounted = true;
+        const { UpdateCurrentPlaylist } = this.props;
+        const { IsPlaying } = this.state;
+        if (this.player) {
+            if (IsPlaying) {
+                this.player.play();
+            } else {
+                this.player.pause();
+            }
+        }
+        Axios.get('/User/CurrentPlaylist').then(({ data }) => {
+            UpdateCurrentPlaylist(data.CurrentPlaylist, data.CurrentPlaylistPlaying);
+        });
+        const { mediaSession } = navigator;
+        mediaSession.setActionHandler('play', () => {
+            this.HandlePlay();
+        });
+        mediaSession.setActionHandler('pause', () => {
+            this.HandlePlay();
+        });
+        mediaSession.setActionHandler('seekbackward', (e) => {
+            this.player.currentTime -= e.seekOffset ?? 10;
+        });
+        mediaSession.setActionHandler('seekforward', (e) => {
+            this.player.currentTime += e.seekOffset ?? 10;
+        });
+        mediaSession.setActionHandler('seekto', (e) => {
+            this.player.currentTime = e.seekTime;
+        });
+        mediaSession.setActionHandler('previoustrack', () => {
+            this.HandleBack();
+        });
+        mediaSession.setActionHandler('nexttrack', () => {
+            this.HandleNext();
+        });
+        document.onkeydown = (e) => {
+            if (e.key === ' ' && e.target.tagName.toUpperCase() !== 'INPUT') {
+                e.preventDefault();
+                this.HandlePlay();
+            }
+        };
+        this.OnUpdate();
+    }
+
+    componentDidUpdate() {
+        this.OnUpdate();
+    }
+
+    componentWillUnmount() {
+        this._isMounted = true;
+        clearInterval(this.refreshPlayer);
     }
 
     HandleTimeUpdate = () => {
@@ -95,7 +151,11 @@ class PlayerConnected extends React.Component {
             () => {
                 const { IsPlaying } = this.state;
                 if (this.player) {
-                    IsPlaying ? this.player.play() : this.player.pause();
+                    if (IsPlaying) {
+                        this.player.play();
+                    } else {
+                        this.player.pause();
+                    }
                 }
             }
         );
@@ -114,56 +174,6 @@ class PlayerConnected extends React.Component {
     HandleSliderChange = (PosX) => {
         this.player.currentTime = PosX;
         this.forceUpdate();
-    };
-
-    componentWillUnmount = () => {
-        this._isMounted = true;
-        clearInterval(this.refreshPlayer);
-    };
-
-    componentDidMount = () => {
-        this._isMounted = true;
-        const { UpdateCurrentPlaylist } = this.props;
-        const { IsPlaying } = this.state;
-        if (this.player) {
-            IsPlaying ? this.player.play() : this.player.pause();
-        }
-        Axios.get('/User/CurrentPlaylist').then(({ data }) => {
-            UpdateCurrentPlaylist(data.CurrentPlaylist, data.CurrentPlaylistPlaying);
-        });
-        const { mediaSession } = navigator;
-        mediaSession.setActionHandler('play', () => {
-            this.HandlePlay();
-        });
-        mediaSession.setActionHandler('pause', () => {
-            this.HandlePlay();
-        });
-        mediaSession.setActionHandler('seekbackward', (e) => {
-            this.player.currentTime = this.player.currentTime - (e.seekOffset ?? 10);
-        });
-        mediaSession.setActionHandler('seekforward', (e) => {
-            this.player.currentTime = this.player.currentTime + (e.seekOffset ?? 10);
-        });
-        mediaSession.setActionHandler('seekto', (e) => {
-            this.player.currentTime = e.seekTime;
-        });
-        mediaSession.setActionHandler('previoustrack', () => {
-            this.HandleBack();
-        });
-        mediaSession.setActionHandler('nexttrack', () => {
-            this.HandleNext();
-        });
-        document.onkeydown = (e) => {
-            if (e.key === ' ' && e.target.tagName.toUpperCase() !== 'INPUT') {
-                e.preventDefault();
-                this.HandlePlay();
-            }
-        };
-        this.OnUpdate();
-    };
-
-    componentDidUpdate = () => {
-        this.OnUpdate();
     };
 
     OnUpdate = () => {
@@ -241,94 +251,92 @@ class PlayerConnected extends React.Component {
 
         const PlayingIcon = !IsPlaying ? 'play-circle-outline' : 'pause-circle-outline';
 
-        document.title = PlayingMusic ? PlayingMusic.title + ' - mop' : 'mop';
+        document.title = PlayingMusic ? `${PlayingMusic.title} - mop` : 'mop';
 
         if (PlayingMusic) {
             return (
-                <>
-                    <Navbar fixed="bottom" className="px-2 mh-50 pt-0">
-                        <div id="Player" className="d-flex flex-column w-100 overflow-auto">
-                            <Row className="w-100 mx-0 py-0">
-                                <PlayerSlider
-                                    Time={this.player ? this.player.currentTime : 0}
-                                    EndTime={this.GetSliderMaxValue()}
-                                    OnSliderChange={this.HandleSliderChange}
-                                />
-                                <Image
-                                    className="PlayerImage my-auto"
-                                    rounded
-                                    height="75em"
-                                    src={PlayingMusic.image_url}
-                                />
+                <Navbar fixed="bottom" className="px-2 mh-50 pt-0">
+                    <div id="Player" className="d-flex flex-column w-100 overflow-auto">
+                        <Row className="w-100 mx-0 py-0">
+                            <PlayerSlider
+                                Time={this.player ? this.player.currentTime : 0}
+                                EndTime={this.GetSliderMaxValue()}
+                                OnSliderChange={this.HandleSliderChange}
+                            />
+                            <Image
+                                className="PlayerImage my-auto"
+                                rounded
+                                height="75em"
+                                src={PlayingMusic.image_url}
+                            />
 
-                                <Col
-                                    className="my-1 mt-0 col-md-auto  text-truncate"
-                                    onClick={this.HandleOpenPlaylist}
-                                >
-                                    <h6>{PlayingMusic.title}</h6>
-                                    <p>{PlayingMusic.artist_name}</p>
-                                </Col>
-                                <ButtonIcon
-                                    buttonClass="my-auto mx-2 ml-auto p-0"
-                                    iconFontSize="1.75rem"
-                                    onClick={this.HandleBack}
-                                    style={{ transform: 'scale(-1)' }}
-                                    evaOptions={{
-                                        fill: '#d6d6d6ff',
-                                        width: '30px',
-                                        height: '30px',
-                                    }}
-                                    dataEva={'skip-forward-outline'}
-                                />
-
-                                <ButtonIcon
-                                    buttonClass="my-auto mx-2 p-0"
-                                    iconFontSize="1.75rem"
-                                    onClick={this.HandlePlay}
-                                    evaOptions={{
-                                        fill: '#d6d6d6ff',
-                                        width: '30px',
-                                        height: '30px',
-                                    }}
-                                    dataEva={PlayingIcon}
-                                />
-
-                                <ButtonIcon
-                                    buttonClass="my-auto ml-2 p-0 mr-0"
-                                    iconFontSize="1.75rem"
-                                    onClick={this.HandleNext}
-                                    evaOptions={{
-                                        fill: '#d6d6d6ff',
-                                        width: '30px',
-                                        height: '30px',
-                                    }}
-                                    dataEva={'skip-forward-outline'}
-                                />
-
-                                <Button
-                                    variant=""
-                                    className="my-auto ml-1 mt-1 d-none d-lg-block"
-                                    onClick={this.HandleOpenPlaylist}
-                                >
-                                    {NextMusic ? `Next: ${NextMusic.title}` : 'Queue'}
-                                </Button>
-                            </Row>
-                            <audio
-                                ref={(ref) => {
-                                    this.player = ref;
-                                }}
-                                src={MusicFilePath}
-                                onTimeUpdate={this.HandleTimeUpdate}
-                                onEnded={this.OnPlayerEnd}
-                                onPlay={this.OnPlay}
-                                onPause={this.OnPause}
-                                autoPlay
+                            <Col
+                                className="my-1 mt-0 col-md-auto  text-truncate"
+                                onClick={this.HandleOpenPlaylist}
                             >
-                                No html5 player
-                            </audio>
-                        </div>
-                    </Navbar>
-                </>
+                                <h6>{PlayingMusic.title}</h6>
+                                <p>{PlayingMusic.artist_name}</p>
+                            </Col>
+                            <ButtonIcon
+                                buttonClass="my-auto mx-2 ml-auto p-0"
+                                iconFontSize="1.75rem"
+                                onClick={this.HandleBack}
+                                style={{ transform: 'scale(-1)' }}
+                                evaOptions={{
+                                    fill: '#d6d6d6ff',
+                                    width: '30px',
+                                    height: '30px',
+                                }}
+                                dataEva="skip-forward-outline"
+                            />
+
+                            <ButtonIcon
+                                buttonClass="my-auto mx-2 p-0"
+                                iconFontSize="1.75rem"
+                                onClick={this.HandlePlay}
+                                evaOptions={{
+                                    fill: '#d6d6d6ff',
+                                    width: '30px',
+                                    height: '30px',
+                                }}
+                                dataEva={PlayingIcon}
+                            />
+
+                            <ButtonIcon
+                                buttonClass="my-auto ml-2 p-0 mr-0"
+                                iconFontSize="1.75rem"
+                                onClick={this.HandleNext}
+                                evaOptions={{
+                                    fill: '#d6d6d6ff',
+                                    width: '30px',
+                                    height: '30px',
+                                }}
+                                dataEva="skip-forward-outline"
+                            />
+
+                            <Button
+                                variant=""
+                                className="my-auto ml-1 mt-1 d-none d-lg-block"
+                                onClick={this.HandleOpenPlaylist}
+                            >
+                                {NextMusic ? `Next: ${NextMusic.title}` : 'Queue'}
+                            </Button>
+                        </Row>
+                        <audio
+                            ref={(ref) => {
+                                this.player = ref;
+                            }}
+                            src={MusicFilePath}
+                            onTimeUpdate={this.HandleTimeUpdate}
+                            onEnded={this.OnPlayerEnd}
+                            onPlay={this.OnPlay}
+                            onPause={this.OnPause}
+                            autoPlay
+                        >
+                            No html5 player
+                        </audio>
+                    </div>
+                </Navbar>
             );
         }
         return <div />;

@@ -1,8 +1,8 @@
 import React from 'react';
 import Axios from 'axios';
 import PropTypes from 'prop-types';
-import MusicGroup from './Groups/MusicGroup';
 import { connect } from 'react-redux';
+import MusicGroup from './Groups/MusicGroup';
 import RelatedMusics from './RelatedMusics';
 import { DefaultActions, OwnPlaylistActions } from '../Items/Actions';
 
@@ -31,7 +31,7 @@ class UserPlaylistConnected extends React.Component {
         };
     }
 
-    componentDidMount = () => {
+    componentDidMount() {
         const { match, Account } = this.props;
 
         Axios.get(`/Music/Playlist/id/${match.params.id}`).then((res) => {
@@ -43,16 +43,16 @@ class UserPlaylistConnected extends React.Component {
                 OwnPlaylist: Account._id === res.data.creator._id,
             });
         });
-    };
+    }
 
     onAdd = (Music) => {
         const { PlaylistId } = this.state;
         Axios.post(`/Music/Playlist/id/${PlaylistId}/Add`, {
             MusicsId: [Music._id],
         }).then(() => {
-            this.setState({
-                Musics: [...this.state.Musics, Music],
-            });
+            this.setState((prevState) => ({
+                Musics: [...prevState.Musics, Music],
+            }));
         });
     };
 
@@ -68,7 +68,7 @@ class UserPlaylistConnected extends React.Component {
     };
 
     render() {
-        const { Musics, PlaylistName, CreatorName, OwnPlaylist, PlaylistId } = this.state;
+        const { Musics, PlaylistName, CreatorName, OwnPlaylist } = this.state;
 
         if (Musics) {
             return (
@@ -79,14 +79,12 @@ class UserPlaylistConnected extends React.Component {
                         Actions={OwnPlaylist ? OwnPlaylistActions : DefaultActions}
                         OnMusicPlaylistDelete={this.onDelete}
                     />
-                    {OwnPlaylist && (
-                        <RelatedMusics Musics={Musics} OnAdd={this.onAdd}></RelatedMusics>
-                    )}
+                    {OwnPlaylist && <RelatedMusics Musics={Musics} OnAdd={this.onAdd} />}
                 </>
             );
         }
 
-        return <></>;
+        return null;
     }
 }
 

@@ -16,12 +16,11 @@ class Album extends React.Component {
         super(props);
         this.state = {
             Musics: undefined,
-            AlbumImageDz: undefined,
             AlbumName: '',
         };
     }
 
-    componentDidMount = () => {
+    componentDidMount() {
         const { match } = this.props;
 
         Axios.get(`/Music/Album/id/${match.params.id}`).then((res) => {
@@ -30,7 +29,7 @@ class Album extends React.Component {
                 AlbumName: res.data.name,
             });
         });
-    };
+    }
 
     render() {
         const { Musics, AlbumName } = this.state;
@@ -39,7 +38,7 @@ class Album extends React.Component {
             return <MusicGroup Musics={Musics} title={AlbumName} />;
         }
 
-        return <></>;
+        return null;
     }
 }
 

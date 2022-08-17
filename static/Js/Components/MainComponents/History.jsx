@@ -60,7 +60,7 @@ class History extends React.Component {
             );
         }
 
-        return <></>;
+        return null;
     }
 }
 export default History;

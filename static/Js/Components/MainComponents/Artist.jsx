@@ -29,22 +29,22 @@ class Artist extends React.Component {
         };
     }
 
-    componentWillReceiveProps(nextProps) {
+    componentDidMount() {
+        const { match } = this.props;
+        const ArtistId = match.params.id;
+        this.fetchArtist(ArtistId);
+    }
+
+    UNSAFE_componentWillReceiveProps(nextProps) {
         const { ArtistId } = this.state;
         const NewArtistId = nextProps.match.params.id;
 
-        if (ArtistId != NewArtistId && ArtistId !== undefined) {
+        if (ArtistId !== NewArtistId && ArtistId !== undefined) {
             this.fetchArtist(NewArtistId);
         }
     }
 
-    componentDidMount = () => {
-        const ArtistId = this.props.match.params.id;
-        this.fetchArtist(ArtistId);
-    };
-
     fetchArtist = (artist_id) => {
-        const { match } = this.props;
         this.setState({ isFetching: true });
         Axios.get(`/Music/Artist/id/${artist_id}`).then((res) => {
             this.setState({

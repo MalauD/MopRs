@@ -22,6 +22,14 @@ class SearchPageMusics extends React.Component {
         };
     }
 
+    componentDidMount() {
+        this.SearchMusics();
+    }
+
+    componentDidUpdate() {
+        this.SearchMusics();
+    }
+
     SearchMusics = () => {
         const { location } = this.props;
 
@@ -58,14 +66,6 @@ class SearchPageMusics extends React.Component {
                 PrevPageEmpty: res.data.length === 0,
             }));
         });
-    };
-
-    componentDidMount = () => {
-        this.SearchMusics();
-    };
-
-    componentDidUpdate = () => {
-        this.SearchMusics();
     };
 
     render() {

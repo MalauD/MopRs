@@ -1,6 +1,6 @@
 import React from 'react';
-import PlaylistContainer from './../Containers/PlaylistContainer';
 import { withRouter } from 'react-router-dom';
+import PlaylistContainer from "../Containers/PlaylistContainer";
 
 class PlayerFull extends React.Component {
     constructor(props) {
@@ -10,9 +10,7 @@ class PlayerFull extends React.Component {
 
     render() {
         return (
-            <>
-                <PlaylistContainer />
-            </>
+            <PlaylistContainer />
         );
     }
 }

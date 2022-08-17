@@ -22,6 +22,14 @@ class SearchPageAlbums extends React.Component {
         };
     }
 
+    componentDidMount() {
+        this.SearchAlbums();
+    }
+
+    componentDidUpdate() {
+        this.SearchAlbums();
+    }
+
     SearchAlbums = () => {
         const { location } = this.props;
 
@@ -58,14 +66,6 @@ class SearchPageAlbums extends React.Component {
                 PrevPageEmpty: res.data.length === 0,
             }));
         });
-    };
-
-    componentDidMount = () => {
-        this.SearchAlbums();
-    };
-
-    componentDidUpdate = () => {
-        this.SearchAlbums();
     };
 
     render() {

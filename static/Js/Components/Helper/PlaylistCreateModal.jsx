@@ -7,7 +7,7 @@ import Axios from 'axios';
 class PlaylistCreateModal extends React.Component {
     static propTypes = {
         OnClose: PropTypes.func.isRequired,
-        MusicsId: PropTypes.arrayOf(PropTypes.string).isRequired,
+        MusicsId: PropTypes.arrayOf(PropTypes.number).isRequired,
         history: PropTypes.shape({ push: PropTypes.func }).isRequired,
     };
 
@@ -25,11 +25,9 @@ class PlaylistCreateModal extends React.Component {
         const { history, MusicsId } = this.props;
         this.setState({ IsLoading: true });
 
-        Axios.post('/Music/Playlist/Create', { Name, IsPublic, MusicsId })
-            .then((res) => {
-                history.push(`/Playlist/${res.data.CreatedPlaylistId}`);
-            })
-            .catch((err) => console.log(err));
+        Axios.post('/Music/Playlist/Create', { Name, IsPublic, MusicsId }).then((res) => {
+            history.push(`/Playlist/${res.data.CreatedPlaylistId}`);
+        });
     };
 
     closeModal = () => {

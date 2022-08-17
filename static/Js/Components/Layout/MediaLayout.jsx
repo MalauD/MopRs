@@ -1,13 +1,13 @@
 import React from 'react';
-import { Button, Col, Row, Spinner } from 'react-bootstrap';
+import { Button, Spinner } from 'react-bootstrap';
 import PropTypes from 'prop-types';
 
 class MediaLayout extends React.Component {
     static propTypes = {
         title: PropTypes.string.isRequired,
         isLoading: PropTypes.bool,
-        accessories: PropTypes.arrayOf(PropTypes.any),
-        children: PropTypes.object.isRequired,
+        accessories: PropTypes.arrayOf(PropTypes.element),
+        children: PropTypes.element.isRequired,
         showMore: PropTypes.bool,
         onMoreClick: PropTypes.func,
     };

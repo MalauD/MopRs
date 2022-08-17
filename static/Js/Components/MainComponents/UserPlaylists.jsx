@@ -21,7 +21,7 @@ class UserPlaylists extends React.Component {
         };
     }
 
-    componentDidMount = () => {
+    componentDidMount() {
         const { match } = this.props;
         this.setState({
             IsFetching: true,

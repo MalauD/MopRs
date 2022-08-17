@@ -23,13 +23,13 @@ class MusicGroupConnected extends React.Component {
     static propTypes = {
         ClearPlaylist: PropTypes.func.isRequired,
         AddMusics: PropTypes.func.isRequired,
-        Musics: PropTypes.arrayOf(PropTypes.any).isRequired,
+        Musics: PropTypes.arrayOf(PropTypes.shape({ _id: PropTypes.number.isRequired })).isRequired,
         isLoading: PropTypes.bool,
         title: PropTypes.string.isRequired,
         showMore: PropTypes.bool,
         onMoreClick: PropTypes.func,
         Actions: PropTypes.func,
-        Accessories: PropTypes.arrayOf(PropTypes.any),
+        Accessories: PropTypes.arrayOf(PropTypes.element),
     };
 
     static defaultProps = {
@@ -49,14 +49,14 @@ class MusicGroupConnected extends React.Component {
     render() {
         const { Musics, Actions, Accessories, ...props } = this.props;
 
-        const MusicItems = Musics.map((m) => {
-            return <MusicElement key={m._id} Music={m} Actions={Actions} {...props} />;
-        });
+        const MusicItems = Musics.map((m) => (
+            <MusicElement key={m._id} Music={m} Actions={Actions} {...props} />
+        ));
 
-        let accessories = [
+        const accessories = [
             ...Accessories,
             <ButtonIcon
-                dataEva={'play-circle-outline'}
+                dataEva="play-circle-outline"
                 evaOptions={{ fill: '#d6d6d6ff', width: '30px', height: '30px' }}
                 onClick={this.onPlayAll}
             />,

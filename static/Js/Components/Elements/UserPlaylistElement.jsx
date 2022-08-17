@@ -28,12 +28,13 @@ class UserPlaylistElementConnected extends React.Component {
             push: PropTypes.func.isRequired,
         }).isRequired,
         Playlist: PropTypes.shape({
-            _id: PropTypes.any,
+            _id: PropTypes.string,
             creator: PropTypes.shape({
+                _id: PropTypes.string,
                 username: PropTypes.string,
             }),
             name: PropTypes.string,
-            musics: PropTypes.arrayOf(PropTypes.any),
+            musics: PropTypes.arrayOf(PropTypes.shape({ image_url: PropTypes.string })),
         }).isRequired,
         AccountId: PropTypes.string.isRequired,
         ClearPlaylist: PropTypes.func.isRequired,

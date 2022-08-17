@@ -24,11 +24,9 @@ class PlaylistSaverButton extends React.Component {
         const { MusicsId, history } = this.props;
         const { Name, IsPublic } = this.state;
 
-        Axios.post('/Music/Playlist/Create', { Name, IsPublic, MusicsId })
-            .then((res) => {
-                history.push(`/Playlist/${res.data.CreatedPlaylistId}`);
-            })
-            .catch((err) => console.log(err));
+        Axios.post('/Music/Playlist/Create', { Name, IsPublic, MusicsId }).then((res) => {
+            history.push(`/Playlist/${res.data.CreatedPlaylistId}`);
+        });
     };
 
     closeModal = () => {
@@ -53,7 +51,7 @@ class PlaylistSaverButton extends React.Component {
         return (
             <>
                 <ButtonIcon
-                    dataEva={'save'}
+                    dataEva="save"
                     onClick={this.openModal}
                     evaOptions={{ fill: '#d6d6d6ff', width: '30px', height: '30px' }}
                 />

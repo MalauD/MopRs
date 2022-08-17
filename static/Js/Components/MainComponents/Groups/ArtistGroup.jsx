@@ -5,7 +5,11 @@ import MediaLayout from '../../Layout/MediaLayout';
 
 class ArtistGroup extends React.Component {
     static propTypes = {
-        Artists: PropTypes.arrayOf(PropTypes.any).isRequired,
+        Artists: PropTypes.arrayOf(
+            PropTypes.shape({
+                _id: PropTypes.number.isRequired,
+            })
+        ).isRequired,
     };
 
     render() {

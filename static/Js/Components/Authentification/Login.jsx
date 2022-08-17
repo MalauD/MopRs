@@ -87,6 +87,13 @@ function LoginConnected({ history, dispatch }) {
     );
 }
 
+LoginConnected.propTypes = {
+    history: PropTypes.shape({
+        push: PropTypes.func.isRequired,
+    }).isRequired,
+    dispatch: PropTypes.func.isRequired,
+};
+
 const Login = connect()(LoginConnected);
 
 export default Login;

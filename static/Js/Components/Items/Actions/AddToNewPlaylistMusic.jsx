@@ -1,11 +1,13 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import PlaylistCreateModal from '../../Helper/PlaylistCreateModal';
 import { Dropdown } from 'react-bootstrap';
+import PlaylistCreateModal from '../../Helper/PlaylistCreateModal';
 
 export default class AddToNewPlaylistAction extends React.Component {
     static propTypes = {
-        Music: PropTypes.shape({}).isRequired,
+        Music: PropTypes.shape({
+            _id: PropTypes.number.isRequired,
+        }).isRequired,
     };
 
     constructor(props) {

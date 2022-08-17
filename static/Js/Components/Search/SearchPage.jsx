@@ -4,13 +4,13 @@ import SearchPageArtists from './SearchPageArtists';
 import SearchPageMusics from './SearchPageMusics';
 import SearchPagePlaylists from './SearchPagePlaylists';
 
-const SearchPage = (props) => (
-    <>
+function SearchPage(props) {
+  return <>
         <SearchPageMusics {...props} />
         <SearchPageAlbums {...props} />
         <SearchPageArtists {...props} />
         <SearchPagePlaylists {...props} />
     </>
-);
+}
 
 export default SearchPage;

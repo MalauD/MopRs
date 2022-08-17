@@ -3,7 +3,7 @@ import Draggable from 'react-draggable';
 import PropTypes from 'prop-types';
 import useResize from './Helper/useResize';
 
-const PlayerSlider = ({ Time, EndTime, OnSliderChange }) => {
+function PlayerSlider({ Time, EndTime, OnSliderChange }) {
     const ContainerRef = useRef(null);
     const { width } = useResize(ContainerRef);
     const [IsDragging, SetIsDragging] = useState(false);
@@ -44,7 +44,7 @@ const PlayerSlider = ({ Time, EndTime, OnSliderChange }) => {
             </Draggable>
         </div>
     );
-};
+}
 
 PlayerSlider.propTypes = {
     Time: PropTypes.number.isRequired,
