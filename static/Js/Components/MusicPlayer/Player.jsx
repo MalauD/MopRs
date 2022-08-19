@@ -138,7 +138,7 @@ class PlayerConnected extends React.Component {
     HandleTimeUpdate = () => {
         const { mediaSession } = navigator;
         mediaSession.setPositionState({
-            duration: this.player.duration,
+            duration: Number.isFinite(this.player.duration) ? this.player.duration : 0,
             playbackRate: 1,
             position: this.player.currentTime,
         });
