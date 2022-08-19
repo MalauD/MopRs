@@ -20,12 +20,21 @@ class MusicElementConnected extends React.Component {
             file_path: PropTypes.string,
             image_url: PropTypes.string,
         }).isRequired,
-        Actions: PropTypes.func.isRequired,
+        Actions: PropTypes.func,
         ChangePlayingMusic: PropTypes.func.isRequired,
+        UseDragHandle: PropTypes.bool,
+        ShowLikeButton: PropTypes.bool,
+    };
+
+    static defaultProps = {
+        UseDragHandle: false,
+        ShowLikeButton: true,
+        Actions: undefined,
     };
 
     render() {
-        const { Music, ChangePlayingMusic, Actions, ...props } = this.props;
+        const { Music, ChangePlayingMusic, Actions, UseDragHandle, ShowLikeButton, ...props } =
+            this.props;
         const LikeButtonAccessory = (
             <td className="align-middle">
                 {Music ? <LikeButton MusicId={Music._id} /> : undefined}
@@ -37,9 +46,10 @@ class MusicElementConnected extends React.Component {
                 Title={Music.title}
                 Artist={Music.artist_name}
                 onClick={() => ChangePlayingMusic(Music)}
-                AccessoryRight={LikeButtonAccessory}
+                UseDragHandle={UseDragHandle}
+                AccessoryRight={ShowLikeButton ? LikeButtonAccessory : null}
             >
-                <Actions Music={Music} {...props} />
+                {Actions ? <Actions Music={Music} {...props} /> : null}
             </MusicItemRow>
         );
     }

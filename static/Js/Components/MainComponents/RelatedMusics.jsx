@@ -1,8 +1,11 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import axios from 'axios';
+import isEqual from 'lodash.isequal';
+import difference from 'lodash.difference';
 import ButtonIcon from '../Helper/ButtonIcon';
 import MusicGroup from './Groups/MusicGroup';
+import { DefaultActions } from '../Items/Actions';
 
 export default class RelatedMusics extends React.Component {
     static propTypes = {
@@ -11,18 +14,17 @@ export default class RelatedMusics extends React.Component {
                 _id: PropTypes.number.isRequired,
             })
         ).isRequired,
-        OnAdd: PropTypes.func,
+        Actions: PropTypes.func,
     };
 
     static defaultProps = {
-        OnAdd: () => {},
+        Actions: DefaultActions,
     };
 
     constructor(props) {
         super(props);
         this.state = {
             RelatedMusicsData: [],
-            RelatedMusicAdded: false,
             isLoading: false,
         };
     }
@@ -33,14 +35,21 @@ export default class RelatedMusics extends React.Component {
 
     componentDidUpdate(prevProps) {
         const { Musics } = this.props;
-        const { RelatedMusicAdded } = this.state;
-        if (prevProps.Musics !== Musics) {
-            if (!RelatedMusicAdded) {
-                this.getNewRelatedMusics();
-            } else {
-                this.setState({
-                    RelatedMusicAdded: false,
-                });
+        const { RelatedMusicsData } = this.state;
+        const prevIds = prevProps.Musics.map((music) => music._id);
+        const currentIds = Musics.map((music) => music._id);
+        if (!isEqual([...prevIds].sort(), [...currentIds].sort())) {
+            const diff = difference(currentIds, prevIds);
+            if (diff.length > 0) {
+                if (RelatedMusicsData.map((m) => m._id).indexOf(diff[0]) === -1) {
+                    this.getNewRelatedMusics();
+                } else {
+                    this.setState((prevState) => ({
+                        RelatedMusicsData: prevState.RelatedMusicsData.filter(
+                            (m) => m._id !== diff[0]
+                        ),
+                    }));
+                }
             }
         }
     }
@@ -63,20 +72,9 @@ export default class RelatedMusics extends React.Component {
         this.getNewRelatedMusics();
     };
 
-    onAdd = (Music) => {
-        const { RelatedMusicsData } = this.state;
-        const { OnAdd } = this.props;
-
-        OnAdd(Music);
-        this.setState({
-            RelatedMusicAdded: true,
-            RelatedMusicsData: RelatedMusicsData.filter((m) => m._id !== Music._id),
-        });
-    };
-
     render() {
-        const { RelatedMusicsData } = this.state;
-        const { isLoading } = this.state;
+        const { RelatedMusicsData, isLoading } = this.state;
+        const { Actions, ...props } = this.props;
 
         const Accessories = [
             <ButtonIcon
@@ -92,11 +90,12 @@ export default class RelatedMusics extends React.Component {
 
         return (
             <MusicGroup
+                {...props}
                 Musics={RelatedMusicsData}
                 title="Related"
                 isLoading={isLoading}
                 Accessories={Accessories}
-                OnMusicAdded={this.onAdd}
+                Actions={Actions}
             />
         );
     }

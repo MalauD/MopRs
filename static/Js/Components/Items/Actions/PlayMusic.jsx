@@ -14,18 +14,18 @@ class PlayMusicAction extends React.Component {
     static propTypes = {
         Music: PropTypes.shape({}).isRequired,
         ChangePlayingMusic: PropTypes.func.isRequired,
-        OnMusicAdded: PropTypes.func,
+        OnMusicPlay: PropTypes.func,
     };
 
     static defaultProps = {
-        OnMusicAdded: () => {},
+        OnMusicPlay: () => {},
     };
 
     onClick = () => {
-        const { ChangePlayingMusic, Music, OnMusicAdded } = this.props;
+        const { ChangePlayingMusic, Music, OnMusicPlay } = this.props;
 
         ChangePlayingMusic(Music);
-        OnMusicAdded(Music);
+        OnMusicPlay(Music);
     };
 
     render() {

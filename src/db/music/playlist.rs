@@ -115,4 +115,20 @@ impl MongoClient {
             .await?;
         Ok(())
     }
+
+    pub async fn edit_musics_playlist(
+        &self,
+        playlist_id: ObjectId,
+        new_musics: &Vec<i32>,
+    ) -> Result<()> {
+        let coll = self._database.collection::<Playlist>("Playlist");
+        let _r = coll
+            .update_one(
+                doc! {"_id": playlist_id},
+                doc! {"$set": {"musics": new_musics}},
+                None,
+            )
+            .await?;
+        Ok(())
+    }
 }

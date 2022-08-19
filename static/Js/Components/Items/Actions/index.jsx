@@ -6,6 +6,7 @@ import AddToNewPlaylistMusic from './AddToNewPlaylistMusic';
 import PlayNextMusic from './PlayNextMusic';
 import AddToPlaylistMusic from './AddToPlaylistMusic';
 import DeletePlaylist from './DeletePlaylistMusic';
+import AddPlaylistMusic from './AddPlaylistMusic';
 
 function DefaultActions(props) {
     return (
@@ -37,4 +38,22 @@ function OwnPlaylistActions(props) {
     );
 }
 
-export { DefaultActions, OwnPlaylistActions };
+function OwnPlaylistRelatedActions(props) {
+    return (
+        <>
+            <AddPlaylistMusic {...props} />
+            <Dropdown.Divider />
+            <PlayMusic {...props} />
+            <PlayNextMusic {...props} />
+            <Dropdown.Divider />
+            <AddMusic {...props} />
+            <Dropdown.Divider />
+            <AddToNewPlaylistMusic {...props} />
+            <AddToPlaylistMusic {...props} />
+            <Dropdown.Divider />
+            <DeletePlaylist {...props} />
+        </>
+    );
+}
+
+export { DefaultActions, OwnPlaylistActions, OwnPlaylistRelatedActions };

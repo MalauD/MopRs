@@ -1,6 +1,7 @@
 import React from 'react';
 import { connect } from 'react-redux';
 import PropTypes from 'prop-types';
+import { SortableElement } from 'react-sortable-hoc';
 import {
     ClearPlaylist as ClearPlaylistRedux,
     AddMultipleMusics as AddMultipleMusicsRedux,
@@ -9,6 +10,7 @@ import MusicElement from '../../Elements/MusicElement';
 import ButtonIcon from '../../Helper/ButtonIcon';
 import MediaLayout from '../../Layout/MediaLayout';
 import { DefaultActions } from '../../Items/Actions';
+import SortableMusicContainer from '../../Containers/SortableMusicContainer';
 
 const mapDispatchToProps = (dispatch) => ({
     ClearPlaylist: () => {
@@ -30,6 +32,7 @@ class MusicGroupConnected extends React.Component {
         onMoreClick: PropTypes.func,
         Actions: PropTypes.func,
         Accessories: PropTypes.arrayOf(PropTypes.element),
+        AllowSort: PropTypes.bool,
     };
 
     static defaultProps = {
@@ -38,7 +41,15 @@ class MusicGroupConnected extends React.Component {
         onMoreClick: () => {},
         Actions: DefaultActions,
         Accessories: [],
+        AllowSort: false,
     };
+
+    constructor(props) {
+        super(props);
+        this.state = {
+            isInSorting: false,
+        };
+    }
 
     onPlayAll = () => {
         const { ClearPlaylist, AddMusics, Musics } = this.props;
@@ -51,12 +62,27 @@ class MusicGroupConnected extends React.Component {
         AddMusics(Musics);
     };
 
-    render() {
-        const { Musics, Actions, Accessories, ...props } = this.props;
+    onToggleSort = () => {
+        this.setState((prevState) => ({
+            isInSorting: !prevState.isInSorting,
+        }));
+    };
 
-        const MusicItems = Musics.map((m) => (
-            <MusicElement key={m._id} Music={m} Actions={Actions} {...props} />
+    render() {
+        const { Musics, Actions, Accessories, AllowSort, ...props } = this.props;
+        const { isInSorting } = this.state;
+
+        const MusicElementSortable = SortableElement(({ value }) => (
+            <MusicElement UseDragHandle ShowLikeButton={false} Music={value} />
         ));
+
+        const MusicItems = Musics.map((m, index) =>
+            isInSorting ? (
+                <MusicElementSortable key={m._id} index={index} value={m} />
+            ) : (
+                <MusicElement key={m._id} Music={m} Actions={Actions} {...props} />
+            )
+        );
 
         const accessories = [
             ...Accessories,
@@ -72,7 +98,21 @@ class MusicGroupConnected extends React.Component {
             />,
         ];
 
-        return (
+        if (AllowSort) {
+            accessories.push(
+                <ButtonIcon
+                    dataEva={isInSorting ? 'edit' : 'edit-outline'}
+                    evaOptions={{ fill: '#d6d6d6ff', width: '30px', height: '30px' }}
+                    onClick={this.onToggleSort}
+                />
+            );
+        }
+
+        return isInSorting ? (
+            <SortableMusicContainer accessories={accessories} {...props}>
+                {MusicItems}
+            </SortableMusicContainer>
+        ) : (
             <MediaLayout accessories={accessories} {...props}>
                 <table className="table table-hover table-borderless">
                     <tbody>{MusicItems}</tbody>

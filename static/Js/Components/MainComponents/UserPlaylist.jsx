@@ -2,9 +2,10 @@ import React from 'react';
 import Axios from 'axios';
 import PropTypes from 'prop-types';
 import { connect } from 'react-redux';
+import { arrayMoveImmutable } from 'array-move';
 import MusicGroup from './Groups/MusicGroup';
 import RelatedMusics from './RelatedMusics';
-import { DefaultActions, OwnPlaylistActions } from '../Items/Actions';
+import { DefaultActions, OwnPlaylistActions, OwnPlaylistRelatedActions } from '../Items/Actions';
 
 const mapStateToProps = (state) => ({
     Account: state.UserAccountReducer.Account,
@@ -67,6 +68,23 @@ class UserPlaylistConnected extends React.Component {
         });
     };
 
+    onSortEnd = ({ oldIndex, newIndex }) => {
+        const { Musics, PlaylistId } = this.state;
+        const newMusicsPlaylist = arrayMoveImmutable(Musics, oldIndex, newIndex);
+        this.setState({
+            Musics: newMusicsPlaylist,
+        });
+        Axios.post(`/Music/Playlist/id/${PlaylistId}/Edit`, {
+            MusicsId: newMusicsPlaylist.map((m) => m._id),
+        })
+            .then(() => {})
+            .catch(() => {
+                this.setState({
+                    Musics,
+                });
+            });
+    };
+
     render() {
         const { Musics, PlaylistName, CreatorName, OwnPlaylist } = this.state;
 
@@ -77,9 +95,18 @@ class UserPlaylistConnected extends React.Component {
                         Musics={Musics}
                         title={`${PlaylistName} by ${CreatorName}`}
                         Actions={OwnPlaylist ? OwnPlaylistActions : DefaultActions}
+                        AllowSort={OwnPlaylist}
+                        onSortEnd={this.onSortEnd}
                         OnMusicPlaylistDelete={this.onDelete}
                     />
-                    {OwnPlaylist && <RelatedMusics Musics={Musics} OnAdd={this.onAdd} />}
+                    {OwnPlaylist && (
+                        <RelatedMusics
+                            Musics={Musics}
+                            Actions={OwnPlaylistRelatedActions}
+                            CurrentPlaylistTitle={PlaylistName}
+                            OnPlaylistMusicAdded={this.onAdd}
+                        />
+                    )}
                 </>
             );
         }
