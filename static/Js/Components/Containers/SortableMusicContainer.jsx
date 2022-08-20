@@ -25,7 +25,7 @@ export default class SortableMusicContainer extends React.Component {
         ));
 
         return (
-            <MySortableContainer useDragHandle {...props}>
+            <MySortableContainer useDragHandle useWindowAsScrollContainer {...props}>
                 {children}
             </MySortableContainer>
         );
