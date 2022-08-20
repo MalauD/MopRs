@@ -29,19 +29,39 @@ function App() {
             <Suspense fallback={<div>Loading...</div>}>
                 <HashRouter>
                     <ScrollToTop />
-                    <ProtectedRoute path="/" component={TopNav} />
-                    <ProtectedRoute exact path="/" component={MainPage} />
+                    <Route path="/">
+                        <ProtectedRoute Component={TopNav} />
+                    </Route>
+                    <Route exact path="/">
+                        <ProtectedRoute Component={MainPage} />
+                    </Route>
                     <Route path="/" component={Player} />
                     <Route path="/Login" component={Login} />
                     <Route path="/Register" component={Register} />
-                    <ProtectedRoute path="/Favorites" component={Favorites} />
-                    <ProtectedRoute path="/History" component={History} />
-                    <ProtectedRoute path="/Search" component={SearchPage} />
-                    <ProtectedRoute path="/Player" component={PlayerFull} />
-                    <ProtectedRoute path="/Album/:id" component={Album} />
-                    <ProtectedRoute path="/Artist/:id" component={Artist} />
-                    <ProtectedRoute path="/Playlist/:id" component={UserPlaylist} />
-                    <ProtectedRoute path="/User/:id/Playlists" component={UserPlaylists} />
+                    <Route path="/Favorites">
+                        <ProtectedRoute Component={Favorites} />
+                    </Route>
+                    <Route path="/History">
+                        <ProtectedRoute Component={History} />
+                    </Route>
+                    <Route path="/Search">
+                        <ProtectedRoute Component={SearchPage} />
+                    </Route>
+                    <Route path="/Player">
+                        <ProtectedRoute Component={PlayerFull} />
+                    </Route>
+                    <Route path="/Album/:id">
+                        <ProtectedRoute Component={Album} />
+                    </Route>
+                    <Route path="/Artist/:id">
+                        <ProtectedRoute Component={Artist} />
+                    </Route>
+                    <Route path="/Playlist/:id">
+                        <ProtectedRoute Component={UserPlaylist} />
+                    </Route>
+                    <Route path="/User/:id/Playlists">
+                        <ProtectedRoute Component={UserPlaylists} />
+                    </Route>
                 </HashRouter>
             </Suspense>
         </Provider>

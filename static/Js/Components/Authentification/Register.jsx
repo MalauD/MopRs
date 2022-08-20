@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
+import QueryString from 'query-string';
 import { Form, Button, Row } from 'react-bootstrap';
 import { useForm } from 'react-hook-form';
 import Axios from 'axios';
 import PropTypes from 'prop-types';
 import { connect } from 'react-redux';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { AddMyAccount } from '../../Actions/Action';
 
 function RegisterConnected({ history, dispatch }) {
@@ -13,8 +14,11 @@ function RegisterConnected({ history, dispatch }) {
         handleSubmit,
         formState: { errors },
     } = useForm();
+    const location = useLocation();
 
     const [externalError, setexternalError] = useState('');
+
+    const values = QueryString.parse(location.search);
 
     const onSubmit = (data) => {
         Axios.post('/User/Register', data)
@@ -25,10 +29,10 @@ function RegisterConnected({ history, dispatch }) {
                             if (res2.data.Account) {
                                 dispatch(AddMyAccount(res2.data.Account));
                             }
-                            history.push('/');
+                            history.push(values.follow || '/');
                         })
                         .catch(() => {
-                            history.push('/');
+                            history.push(values.follow || '/');
                         });
                 } else {
                     setexternalError('Invalid account');
@@ -78,7 +82,7 @@ function RegisterConnected({ history, dispatch }) {
                     </Button>
                 </div>
                 <div className="col-md-auto">
-                    <Link className="my-auto" to="/Login">
+                    <Link className="my-auto" to={`/Login?follow=${values.follow || '/'}`}>
                         Use an existing account
                     </Link>
                 </div>
