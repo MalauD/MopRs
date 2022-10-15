@@ -42,6 +42,10 @@ pub fn config_music(cfg: &mut web::ServiceConfig) {
             .route("/Album/id/{id}", web::get().to(get_album))
             .route("/Artist/id/{id}", web::get().to(get_artist))
             .route("/Playlist/Create", web::post().to(create_playlist))
+            .route(
+                "/Playlist/Create/Deezer",
+                web::post().to(create_playlist_deezer),
+            )
             .route("/Playlist/id/{id}", web::get().to(get_playlist))
             .route("/Playlist/id/{id}", web::delete().to(delete_playlist))
             .route("/Playlist/id/{id}/Add", web::post().to(add_music_playlist))
@@ -65,11 +69,11 @@ pub async fn search_music(
 ) -> MusicResponse {
     let db = get_mongo(None).await;
     let dz = get_dz_client(None).await.read().await;
-    let res = dz.search_music(req.clone()).await.unwrap();
+    let res = dz.search_music(req.clone()).await?;
     let _ = index_search_musics_result(&res).await;
     //musics.group_by()
-    let searched_musics = db.search_music(req.into_inner(), &pagination).await;
-    Ok(HttpResponse::Ok().json(searched_musics.unwrap().unwrap()))
+    let searched_musics = db.search_music(req.into_inner(), &pagination).await?;
+    Ok(HttpResponse::Ok().json(searched_musics.unwrap_or_default()))
 }
 
 pub async fn search_album(
@@ -78,11 +82,11 @@ pub async fn search_album(
 ) -> MusicResponse {
     let db = get_mongo(None).await;
     let dz = get_dz_client(None).await.read().await;
-    let res = dz.search_music(req.clone()).await.unwrap();
+    let res = dz.search_music(req.clone()).await?;
     let _ = index_search_musics_result(&res).await;
     //musics.group_by()
-    let searched_albums = db.search_album(req.into_inner(), &pagination).await;
-    Ok(HttpResponse::Ok().json(searched_albums.unwrap().unwrap()))
+    let searched_albums = db.search_album(req.into_inner(), &pagination).await?;
+    Ok(HttpResponse::Ok().json(searched_albums.unwrap_or_default()))
 }
 
 pub async fn search_artist(
@@ -91,11 +95,11 @@ pub async fn search_artist(
 ) -> MusicResponse {
     let db = get_mongo(None).await;
     let dz = get_dz_client(None).await.read().await;
-    let res = dz.search_music(req.clone()).await.unwrap();
+    let res = dz.search_music(req.clone()).await?;
     let _ = index_search_musics_result(&res).await;
     //musics.group_by()
-    let searched_artists = db.search_artist(req.into_inner(), &pagination).await;
-    Ok(HttpResponse::Ok().json(searched_artists.unwrap().unwrap()))
+    let searched_artists = db.search_artist(req.into_inner(), &pagination).await?;
+    Ok(HttpResponse::Ok().json(searched_artists.unwrap()))
 }
 
 pub async fn search_playlist(
@@ -107,18 +111,14 @@ pub async fn search_playlist(
 
     let playlists = db
         .search_playlist(req.into_inner(), &pagination)
-        .await
-        .unwrap()
-        .unwrap();
+        .await?
+        .unwrap_or_default();
 
     let mut pop_playlists: Vec<PopulatedPlaylist> = Vec::with_capacity(playlists.len());
     for playlist in playlists.iter().cloned() {
         if playlist.is_authorized_read(&user.clone().id().unwrap()) {
             //Something else might be faster
-            let musics = db
-                .get_musics(&playlist.musics.as_ref().unwrap())
-                .await
-                .unwrap();
+            let musics = db.get_musics(&playlist.musics.as_ref().unwrap()).await?;
             //TODO add correct user..
             let mut playlist_pop = PopulatedPlaylist::from_playlist(playlist, user.clone());
             playlist_pop.musics = musics;
@@ -133,22 +133,23 @@ pub async fn trending_musics(pagination: web::Query<PaginationOptions>) -> Music
     let db = get_mongo(None).await;
     let dz = get_dz_client(None).await.read().await;
 
-    let charts = db.get_chart_today().await.unwrap();
+    let charts = db.get_chart_today().await?;
     let charts = match charts {
         Some(c) => c,
         None => {
-            let chart = dz.get_most_popular().await.unwrap();
+            let chart = dz.get_most_popular().await?;
             let _ = index_search_musics_result(&SearchMusicsResult {
                 data: chart.clone().tracks.data,
+                next: None,
             })
             .await;
             let ch = Chart::from(chart);
-            let _ = db.insert_chart(&ch).await.unwrap();
+            let _ = db.insert_chart(&ch).await?;
             ch
         }
     };
     let vec: Vec<i32> = pagination.trim_vec(&charts.musics);
-    let musics = db.get_musics(&vec).await.unwrap();
+    let musics = db.get_musics(&vec).await?;
 
     Ok(HttpResponse::Ok().json(musics))
 }
@@ -156,8 +157,8 @@ pub async fn trending_musics(pagination: web::Query<PaginationOptions>) -> Music
 pub async fn get_album(req: web::Path<i32>) -> MusicResponse {
     let db = get_mongo(None).await;
     let dz = get_dz_client(None).await.read().await;
-    let res = dz.get_album_musics(req.clone()).await.unwrap();
-    let album = db.get_album(&req).await.unwrap().unwrap();
+    let res = dz.get_album_musics(req.clone()).await?;
+    let album = db.get_album(&req).await?.unwrap();
     let musics: Vec<Music> = res
         .data
         .clone()
@@ -172,11 +173,10 @@ pub async fn get_album(req: web::Path<i32>) -> MusicResponse {
     let _ = db.bulk_insert_musics(musics).await;
     let _ = db.set_album_musics(music_ids, &req).await;
     //musics.group_by()
-    let compl_album = db.get_album(&req).await.unwrap().unwrap();
+    let compl_album = db.get_album(&req).await?.unwrap();
     let musics_of_album = db
         .get_musics(&compl_album.musics.as_ref().unwrap())
-        .await
-        .unwrap()
+        .await?
         .unwrap();
     let mut pop_album = PopulatedAlbum::from(compl_album);
     pop_album.musics = Some(musics_of_album);
@@ -185,18 +185,16 @@ pub async fn get_album(req: web::Path<i32>) -> MusicResponse {
 
 pub async fn like_music(req: web::Path<i32>, user: User) -> MusicResponse {
     let db = get_mongo(None).await;
-    let u = db.get_user(&user.id().unwrap()).await.unwrap().unwrap();
-    let res = db.like_music(&u, &req).await.unwrap();
-    db.modify_like_count(&req, if res { 1 } else { -1 })
-        .await
-        .unwrap();
+    let u = db.get_user(&user.id().unwrap()).await?.unwrap();
+    let res = db.like_music(&u, &req).await?;
+    db.modify_like_count(&req, if res { 1 } else { -1 }).await?;
     Ok(HttpResponse::Ok().finish())
 }
 
 pub async fn get_artist(req: web::Path<i32>) -> MusicResponse {
     let db = get_mongo(None).await;
     let dz = get_dz_client(None).await.read().await;
-    let res = dz.get_artist_albums(&req).await.unwrap();
+    let res = dz.get_artist_albums(&req).await?;
     let albums: Vec<Album> = res
         .data
         .clone()
@@ -208,11 +206,10 @@ pub async fn get_artist(req: web::Path<i32>) -> MusicResponse {
     let _ = db.bulk_insert_albums(albums).await;
     let _ = db.append_multiple_to_an_artist(albums_id, &req).await;
     //musics.group_by()
-    let mut compl_artist = db.get_artist(&req).await.unwrap().unwrap();
+    let mut compl_artist = db.get_artist(&req).await?.unwrap();
     let albums_of_artist = db
         .get_albums(&compl_artist.albums.as_ref().unwrap())
-        .await
-        .unwrap()
+        .await?
         .unwrap();
     let mut pop_artist = PopulatedArtist::from(compl_artist.clone());
     pop_artist.albums = Some(albums_of_artist);
@@ -221,8 +218,8 @@ pub async fn get_artist(req: web::Path<i32>) -> MusicResponse {
         || compl_artist.top_tracks.is_none()
         || compl_artist.related_artists.is_none()
     {
-        let related = dz.get_related_artists(&req).await.unwrap();
-        let top_tracks = dz.get_artist_top_tracks(&req).await.unwrap();
+        let related = dz.get_related_artists(&req).await?;
+        let top_tracks = dz.get_artist_top_tracks(&req).await?;
 
         let rel_artists: Vec<Artist> = related
             .data
@@ -245,20 +242,17 @@ pub async fn get_artist(req: web::Path<i32>) -> MusicResponse {
                 &req,
                 &tracks.clone().into_iter().map(|x| x.id).collect_vec(),
             )
-            .await
-            .unwrap();
+            .await?;
         compl_artist.top_tracks = Some(tracks.into_iter().map(|x| x.id).collect_vec());
         compl_artist.related_artists = Some(rel_artists.into_iter().map(|x| x.id).collect_vec());
     };
     let top_tracks = db
         .get_musics(&compl_artist.top_tracks.unwrap_or_default())
-        .await
-        .unwrap()
+        .await?
         .unwrap();
     let related = db
         .get_artists(&compl_artist.related_artists.unwrap_or_default())
-        .await
-        .unwrap()
+        .await?
         .unwrap();
 
     pop_artist.related_artists = Some(related);
@@ -271,8 +265,7 @@ pub async fn get_playlist(req: web::Path<String>, user: User) -> MusicResponse {
     let db = get_mongo(None).await;
     let playlist = db
         .get_playlist(&ObjectId::parse_str(&*req).unwrap())
-        .await
-        .unwrap();
+        .await?;
     if playlist.is_none() {
         return Ok(HttpResponse::NotFound().finish());
     }
@@ -281,10 +274,7 @@ pub async fn get_playlist(req: web::Path<String>, user: User) -> MusicResponse {
         return Ok(HttpResponse::Unauthorized().finish());
     }
 
-    let musics = db
-        .get_musics(&playlist.musics.as_ref().unwrap())
-        .await
-        .unwrap();
+    let musics = db.get_musics(&playlist.musics.as_ref().unwrap()).await?;
     let user = db.get_user(&playlist.creator()).await.unwrap();
     let mut playlist_pop = PopulatedPlaylist::from_playlist(playlist, user.unwrap());
     playlist_pop.musics = musics;
@@ -304,8 +294,7 @@ pub async fn add_music_playlist(
     let db = get_mongo(None).await;
     let playlist = db
         .get_playlist(&ObjectId::parse_str(&*req).unwrap())
-        .await
-        .unwrap();
+        .await?;
     if playlist.is_none() {
         return Ok(HttpResponse::NotFound().finish());
     }
@@ -325,8 +314,7 @@ pub async fn edit_music_playlist(
     let db = get_mongo(None).await;
     let playlist = db
         .get_playlist(&ObjectId::parse_str(&*req).unwrap())
-        .await
-        .unwrap();
+        .await?;
     if playlist.is_none() {
         return Ok(HttpResponse::NotFound().finish());
     }
@@ -346,8 +334,7 @@ pub async fn remove_music_playlist(
     let db = get_mongo(None).await;
     let playlist = db
         .get_playlist(&ObjectId::parse_str(&*req).unwrap())
-        .await
-        .unwrap();
+        .await?;
     if playlist.is_none() {
         return Ok(HttpResponse::NotFound().finish());
     }
@@ -377,12 +364,43 @@ pub async fn create_playlist(user: User, pl: web::Json<CreatePlaylistBody>) -> M
     Ok(HttpResponse::Ok().json(&json!({ "CreatedPlaylistId": id.to_hex() })))
 }
 
+#[derive(Deserialize)]
+pub struct CreatePlaylistDeezerBody {
+    #[serde(rename = "Name")]
+    pub name: String,
+    #[serde(rename = "DeezerId")]
+    pub deezer_id: i32,
+    #[serde(rename = "IsPublic")]
+    pub is_public: bool,
+}
+
+pub async fn create_playlist_deezer(
+    user: User,
+    pl: web::Json<CreatePlaylistDeezerBody>,
+) -> MusicResponse {
+    let db = get_mongo(None).await;
+    let dz = get_dz_client(None).await.read().await;
+
+    let music_dz_ids = dz.get_playlist_musics(&pl.deezer_id).await?;
+
+    let musics: Vec<i32> = index_search_musics_result(&music_dz_ids)
+        .await
+        .unwrap()
+        .into_iter()
+        .map(|m| m.id)
+        .collect();
+
+    let id = db
+        .create_playlist(pl.name.clone(), &musics, pl.is_public, &user)
+        .await?;
+    Ok(HttpResponse::Ok().json(&json!({ "CreatedPlaylistId": id.to_hex() })))
+}
+
 pub async fn delete_playlist(req: web::Path<String>, user: User) -> MusicResponse {
     let db = get_mongo(None).await;
     let playlist = db
         .get_playlist(&ObjectId::parse_str(&*req).unwrap())
-        .await
-        .unwrap();
+        .await?;
     if playlist.is_none() {
         return Ok(HttpResponse::NotFound().finish());
     }
@@ -390,7 +408,7 @@ pub async fn delete_playlist(req: web::Path<String>, user: User) -> MusicRespons
     if !playlist.is_authorized_write(&user.id().unwrap()) {
         return Ok(HttpResponse::Unauthorized().finish());
     }
-    let _ = db.remove_playlist(&playlist.id).await.unwrap();
+    let _ = db.remove_playlist(&playlist.id).await?;
     Ok(HttpResponse::Ok().finish())
 }
 
@@ -458,7 +476,7 @@ struct RelMusicsReq {
 async fn get_related_musics(_user: User, pl: web::Json<RelMusicsReq>) -> MusicResponse {
     let db = get_mongo(None).await;
     let rel = get_related_to(&pl.music_ids, 20).await;
-    let pop_rel = db.get_musics(&rel).await.unwrap().unwrap_or_default();
+    let pop_rel = db.get_musics(&rel).await?.unwrap_or_default();
     Ok(HttpResponse::Ok().json(&json!({ "RelatedMusics": pop_rel })))
 }
 

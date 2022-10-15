@@ -5,12 +5,15 @@ use thiserror::Error;
 pub enum MusicError {
     #[error("DatabaseError: something went wrong with mongodb")]
     DatabaseError(#[from] mongodb::error::Error),
+    #[error("Something went wrong with the request")]
+    ApiBackendError(#[from] reqwest::Error),
 }
 
 impl ResponseError for MusicError {
     fn status_code(&self) -> StatusCode {
         match *self {
-            Self::DatabaseError(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            MusicError::DatabaseError(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            MusicError::ApiBackendError(_) => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
 

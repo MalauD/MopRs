@@ -2,7 +2,7 @@ use block_modes::{block_padding::NoPadding, BlockMode, Cbc};
 use blowfish::Blowfish;
 use log::info;
 use once_cell::sync::OnceCell;
-use reqwest::Client;
+use reqwest::{Client, Result};
 use serde_json::json;
 use tokio::sync::{Mutex, RwLock};
 
@@ -70,73 +70,62 @@ impl DeezerClient {
         format!("arl={};sid={}", self.cred.arl, self.cred.sid)
     }
 
-    pub async fn init_session(&mut self) -> Result<(), String> {
+    pub async fn init_session(&mut self) -> Result<()> {
         let response: InitSessionResult = self
             .http_client
             .get("http://www.deezer.com/ajax/gw-light.php?method=deezer.ping&api_version=1.0&api_token")
             .header("cookie", self.get_cookie())
             .send()
-            .await
-            .expect("Failed to init session")
+            .await?
             .json()
-            .await
-            .expect("Failed to parse session");
+            .await?;
 
         self.cred.set_sid(response.results.session);
         Ok(())
     }
 
-    pub async fn init_user(&mut self) -> Result<(), String> {
+    pub async fn init_user(&mut self) -> Result<()> {
         let response : serde_json::Value = self
             .http_client
             .get("http://www.deezer.com/ajax/gw-light.php?api_token=null&method=deezer.getUserData&api_version=1.0&input=3") 
             .header("cookie", self.get_cookie())
             .send()
-            .await
-            .expect("Failed to init session")
+            .await?
             .json()
-            .await
-            .expect("Failed to parse session");
+            .await?;
         let res = response.get("results").unwrap();
         self.cred
             .set_token(res.get("checkForm").unwrap().as_str().unwrap().to_string());
         Ok(())
     }
 
-    pub async fn get_music_by_id_unofficial(&self, id: i32) -> Result<StreamMusic, String> {
+    pub async fn get_music_by_id_unofficial(&self, id: i32) -> Result<StreamMusic> {
         let url = format!(
             "http://www.deezer.com/ajax/gw-light.php?api_token={}&api_version=1.0&input=3&method=song.getData",
             self.cred.token
         );
-        if let Ok(response) = self
+        Ok(self
             .http_client
             .post(url)
             .json(&json!({ "sng_id": id }))
             .header("cookie", self.get_cookie())
             .send()
-            .await
-            .expect("Failed to get music")
+            .await?
             .json::<UnofficialMusicResult>()
-            .await
-        {
-            Ok(response.results)
-        } else {
-            Err("Failed to get music".to_string())
-        }
+            .await?
+            .results)
     }
 
-    pub async fn download_music(&self, id: i32) -> Result<Vec<u8>, String> {
+    pub async fn download_music(&self, id: i32) -> Result<Vec<u8>> {
         let m = self.get_music_by_id_unofficial(id).await?;
         let response = self
             .http_client
             .get(m.get_url())
             .header("cookie", self.get_cookie())
             .send()
-            .await
-            .expect("Failed to get music")
+            .await?
             .bytes()
-            .await
-            .expect("Failed to get music");
+            .await?;
 
         let chunks = response.chunks(2048);
         let mut decrypted_file: Vec<u8> = Vec::with_capacity(chunks.len());
@@ -173,108 +162,79 @@ impl DeezerClient {
         Ok(decrypted_file)
     }
 
-    pub async fn search_music(&self, search: String) -> Result<SearchMusicsResult, String> {
+    pub async fn search_music(&self, search: String) -> Result<SearchMusicsResult> {
         let url = format!("{}/search?q={}", self.base_url, search);
-        let response: SearchMusicsResult = self
-            .http_client
-            .get(&url)
-            .send()
-            .await
-            .expect("Failed to get musics from Deezer Api")
-            .json()
-            .await
-            .expect("Failed to parse music from Deezer Api");
+        let response: SearchMusicsResult = self.http_client.get(&url).send().await?.json().await?;
         Ok(response)
     }
 
-    pub async fn get_album_musics(&self, album_id: i32) -> Result<AlbumTracksResult, String> {
-        let url = format!("{}/album/{}/tracks", self.base_url, album_id);
-        let mut response = self.get_album_musics_aux(&url).await;
-        if let Some(ref next_url) = response.next {
-            let mut musics = self.get_album_musics_aux(next_url).await;
+    pub async fn get_album_musics(&self, album_id: i32) -> Result<AlbumTracksResult> {
+        let url = format!("{}/album/{}/tracks?limit=50", self.base_url, album_id);
+        let mut response = self.get_album_musics_aux(&url).await?;
+        while let Some(ref next_url) = response.next {
+            let mut musics = self.get_album_musics_aux(next_url).await?;
             response.data.append(&mut musics.data);
+            response.next = musics.next;
         }
         Ok(response.clone())
     }
 
-    async fn get_album_musics_aux(&self, url: &String) -> AlbumTracksResult {
-        let response: AlbumTracksResult = self
-            .http_client
-            .get(url)
-            .send()
-            .await
-            .expect("Failed to get musics from Deezer Api")
-            .json()
-            .await
-            .expect("Failed to parse music from Deezer Api");
-        response
+    async fn get_album_musics_aux(&self, url: &String) -> Result<AlbumTracksResult> {
+        let response: AlbumTracksResult = self.http_client.get(url).send().await?.json().await?;
+        Ok(response)
     }
 
-    pub async fn get_artist_albums(&self, artist_id: &i32) -> Result<ArtistAlbumsResult, String> {
-        let url = format!("{}/artist/{}/albums", self.base_url, artist_id);
-        let mut response = self.get_artist_albums_aux(&url).await;
-        if let Some(ref next_url) = response.next {
-            let mut albums = self.get_artist_albums_aux(next_url).await;
+    pub async fn get_artist_albums(&self, artist_id: &i32) -> Result<ArtistAlbumsResult> {
+        let url = format!("{}/artist/{}/albums?limit=50", self.base_url, artist_id);
+        let mut response = self.get_artist_albums_aux(&url).await?;
+        while let Some(ref next_url) = response.next {
+            let mut albums = self.get_artist_albums_aux(next_url).await?;
             response.data.append(&mut albums.data);
+            response.next = albums.next;
         }
         Ok(response)
     }
 
-    async fn get_artist_albums_aux(&self, url: &String) -> ArtistAlbumsResult {
-        let response: ArtistAlbumsResult = self
-            .http_client
-            .get(url)
-            .send()
-            .await
-            .expect("Failed to get albums from Deezer Api")
-            .json()
-            .await
-            .expect("Failed to parse albums from Deezer Api");
-        response
+    async fn get_artist_albums_aux(&self, url: &String) -> Result<ArtistAlbumsResult> {
+        let response: ArtistAlbumsResult = self.http_client.get(url).send().await?.json().await?;
+        Ok(response)
     }
 
-    pub async fn get_most_popular(&self) -> Result<ChartResult, String> {
+    pub async fn get_most_popular(&self) -> Result<ChartResult> {
         let url = format!("{}/chart?limit=100", self.base_url);
-        let response: ChartResult = self
-            .http_client
-            .get(url)
-            .send()
-            .await
-            .expect("Failed to get chart from Deezer Api")
-            .json()
-            .await
-            .expect("Failed to parse charts from Deezer Api");
+        let response: ChartResult = self.http_client.get(url).send().await?.json().await?;
         Ok(response)
     }
 
-    pub async fn get_related_artists(&self, artist_id: &i32) -> Result<RelatedArtists, String> {
+    pub async fn get_related_artists(&self, artist_id: &i32) -> Result<RelatedArtists> {
         let url = format!("{}/artist/{}/related", self.base_url, artist_id);
-        let response: RelatedArtists = self
-            .http_client
-            .get(url)
-            .send()
-            .await
-            .expect("Failed to get related artists from Deezer Api")
-            .json()
-            .await
-            .expect("Failed to parse related artists from Deezer Api");
+        let response: RelatedArtists = self.http_client.get(url).send().await?.json().await?;
         Ok(response)
     }
 
-    pub async fn get_artist_top_tracks(
-        &self,
-        artist_id: &i32,
-    ) -> Result<ArtistTopTracksResult, String> {
+    pub async fn get_artist_top_tracks(&self, artist_id: &i32) -> Result<ArtistTopTracksResult> {
         let url = format!("{}/artist/{}/top?limit=50", self.base_url, artist_id);
-        let response: ArtistTopTracksResult = self
-            .http_client
-            .get(url)
-            .send()
-            .await
-            .expect("Failed to get top tracks of artist from Deezer Api")
-            .json()
-            .await
-            .expect("Failed to parse top tracks of artists from Deezer Api");
+        let response: ArtistTopTracksResult =
+            self.http_client.get(url).send().await?.json().await?;
+        Ok(response)
+    }
+
+    async fn get_playlist_musics_aux(&self, url: &String) -> Result<SearchMusicsResult> {
+        let response: SearchMusicsResult = self.http_client.get(url).send().await?.json().await?;
+        Ok(response)
+    }
+
+    pub async fn get_playlist_musics(&self, playlist_id: &i32) -> Result<SearchMusicsResult> {
+        let url = format!(
+            "{}/playlist/{}/tracks?limit=100",
+            self.base_url, playlist_id
+        );
+        let mut response = self.get_playlist_musics_aux(&url).await?;
+        while let Some(ref next_url) = response.next {
+            let mut musics = self.get_playlist_musics_aux(next_url).await?;
+            response.data.append(&mut musics.data);
+            response.next = musics.next;
+        }
         Ok(response)
     }
 }

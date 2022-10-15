@@ -5,6 +5,7 @@ use super::StreamMusic;
 #[derive(Debug, Deserialize, Serialize)]
 pub struct SearchMusicsResult {
     pub data: Vec<SearchMusicsResultItem>,
+    pub next: Option<String>,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
