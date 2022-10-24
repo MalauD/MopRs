@@ -9,4 +9,5 @@ pub struct AppSettings {
     pub redis_service_port: String,
     pub redis_password: Option<String>,
     pub redis_username: Option<String>,
+    pub session_key: Option<String>,
 }

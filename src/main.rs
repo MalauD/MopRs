@@ -40,7 +40,11 @@ async fn main() -> std::io::Result<()> {
 
     let config: AppSettings = envy::from_env().unwrap();
 
-    let secret_key = Key::generate();
+    let secret_key = if let Some(key) = config.session_key.clone() {
+        Key::from(key.as_bytes())
+    } else {
+        Key::generate()
+    };
 
     let redis_config = config.clone();
     let redis_connection_string = if let Some(redis_pasword) = redis_config.redis_password {
