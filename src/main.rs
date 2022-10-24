@@ -77,10 +77,12 @@ async fn main() -> std::io::Result<()> {
         App::new()
             .app_data(Data::new(config.clone()))
             .wrap(IdentityMiddleware::default())
-            .wrap(SessionMiddleware::new(
-                redis_store.clone(),
-                secret_key.clone(),
-            ))
+            .wrap(
+                SessionMiddleware::builder(redis_store.clone(), secret_key.clone())
+                    .cookie_secure(false)
+                    .cookie_name("mop-id".to_string())
+                    .build(),
+            )
             .route("/", web::get().to(index))
             .route("/health", web::get().to(health))
             .configure(config_user)
