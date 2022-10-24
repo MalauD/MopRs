@@ -1,6 +1,8 @@
 use actix_files::{Files, NamedFile};
-use actix_identity::{CookieIdentityPolicy, IdentityService};
+use actix_identity::IdentityMiddleware;
+use actix_session::{storage::RedisSessionStore, SessionMiddleware};
 use actix_web::{
+    cookie::Key,
     web::{self, Data},
     App, HttpRequest, HttpResponse, HttpServer, Result,
 };
@@ -38,6 +40,20 @@ async fn main() -> std::io::Result<()> {
 
     let config: AppSettings = envy::from_env().unwrap();
 
+    let secret_key = Key::generate();
+
+    let redis_store = RedisSessionStore::new(
+        format!(
+            "redis://{}:{}",
+            config.redis_service_host, config.redis_service_port,
+        )
+        .as_str(),
+    )
+    .await
+    .unwrap();
+
+    info!(target:"mop-rs::redis","Connected to redis");
+
     let _ = get_dz_client(Some(config.arl.clone())).await;
 
     let db = get_mongo(Some(config.mongo_url.clone())).await;
@@ -50,10 +66,10 @@ async fn main() -> std::io::Result<()> {
     HttpServer::new(move || {
         App::new()
             .app_data(Data::new(config.clone()))
-            .wrap(IdentityService::new(
-                CookieIdentityPolicy::new(&[0; 32])
-                    .name("mop-id")
-                    .secure(false),
+            .wrap(IdentityMiddleware::default())
+            .wrap(SessionMiddleware::new(
+                redis_store.clone(),
+                secret_key.clone(),
             ))
             .route("/", web::get().to(index))
             .route("/health", web::get().to(health))

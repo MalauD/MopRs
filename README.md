@@ -102,6 +102,7 @@ You will need the following software:
 
 -   MinIO instance running
 -   MongoDB database running
+-   Redis server running
 
 <!-- Installation -->
 
@@ -142,6 +143,22 @@ You will need the following software:
 <!-- Installation -->
 
 ### Installation
+
+#### Install redis on cluster
+
+First install redis operator using
+
+```
+helm upgrade redis-operator ot-helm/redis-operator --install --namespace default
+```
+
+Then install redis standalone
+
+```
+helm upgrade redis ot-helm/redis --install --namespace default  -f .kube/redis_values.yaml
+```
+
+#### Applying yaml files
 
 You will just need to apply `.yaml` files in `.kube` directory
 

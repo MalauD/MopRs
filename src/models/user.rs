@@ -130,7 +130,7 @@ impl FromRequest for User {
         let fut = Identity::from_request(req, pl);
         Box::pin(async move {
             let db = get_mongo(None).await;
-            if let Some(identity) = fut.await?.identity() {
+            if let Ok(identity) = fut.await?.id() {
                 if let Some(user) = db
                     .get_user(&ObjectId::parse_str(identity).unwrap())
                     .await
