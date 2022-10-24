@@ -25,4 +25,4 @@ COPY --from=builder /app/target/release/mop-rs .
 RUN mkdir static
 COPY --from=npmbuilder /static ./static
 RUN apt-get update && apt-get install -y ca-certificates && update-ca-certificates
-ENTRYPOINT ["./mop-rs"]
+ENTRYPOINT ["RUST_LOG=info ./mop-rs"]
