@@ -453,8 +453,7 @@ pub async fn get_music(
                 ))
                 .append_header(("Accept-Ranges", "bytes"))
                 .append_header(("Content-Type", "audio/mpeg"))
-                .append_header(("Content-Length", t.len().to_string()))
-                .body(t[range.0 as usize..range.1 as usize].to_vec()))
+                .body(t[range.0 as usize..=range.1 as usize].to_vec()))
         } else {
             Ok(HttpResponse::Ok()
                 .append_header(("Content-Type", "audio/mpeg"))
