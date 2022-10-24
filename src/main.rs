@@ -42,15 +42,25 @@ async fn main() -> std::io::Result<()> {
 
     let secret_key = Key::generate();
 
-    let redis_store = RedisSessionStore::new(
+    let redis_config = config.clone();
+    let redis_connection_string = if let Some(redis_pasword) = redis_config.redis_password {
+        format!(
+            "redis://{}:{}@{}:{}",
+            redis_config.redis_username.unwrap_or("default".to_string()),
+            redis_pasword,
+            redis_config.redis_service_host,
+            redis_config.redis_service_port,
+        )
+    } else {
         format!(
             "redis://{}:{}",
-            config.redis_service_host, config.redis_service_port,
+            redis_config.redis_service_host, redis_config.redis_service_port,
         )
-        .as_str(),
-    )
-    .await
-    .unwrap();
+    };
+
+    let redis_store = RedisSessionStore::new(redis_connection_string)
+        .await
+        .unwrap();
 
     info!(target:"mop-rs::redis","Connected to redis");
 

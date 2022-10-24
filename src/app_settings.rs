@@ -7,4 +7,6 @@ pub struct AppSettings {
     pub mongo_url: String,
     pub redis_service_host: String,
     pub redis_service_port: String,
+    pub redis_password: Option<String>,
+    pub redis_username: Option<String>,
 }
