@@ -1,8 +1,8 @@
 use actix_files::{Files, NamedFile};
 use actix_identity::IdentityMiddleware;
-use actix_session::{storage::RedisSessionStore, SessionMiddleware};
+use actix_session::{config::PersistentSession, storage::RedisSessionStore, SessionMiddleware};
 use actix_web::{
-    cookie::Key,
+    cookie::{time::Duration, Key},
     web::{self, Data},
     App, HttpRequest, HttpResponse, HttpServer, Result,
 };
@@ -85,6 +85,9 @@ async fn main() -> std::io::Result<()> {
                 SessionMiddleware::builder(redis_store.clone(), secret_key.clone())
                     .cookie_secure(false)
                     .cookie_name("mop-id".to_string())
+                    .session_lifecycle(PersistentSession::default().session_ttl(Duration::seconds(
+                        config.session_duration.unwrap_or(24 * 60 * 60),
+                    )))
                     .build(),
             )
             .route("/", web::get().to(index))
