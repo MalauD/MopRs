@@ -13,6 +13,7 @@ use crate::{app_settings::AppSettings, db::get_mongo, deezer::get_dz_client, s3:
 mod app_settings;
 mod db;
 mod deezer;
+mod handlers;
 mod models;
 mod routes;
 mod s3;

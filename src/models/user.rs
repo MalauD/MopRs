@@ -144,3 +144,29 @@ impl FromRequest for User {
         })
     }
 }
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct PublicUser {
+    #[serde(
+        rename = "_id",
+        skip_serializing_if = "Option::is_none",
+        serialize_with = "serialize_option_oid_hex"
+    )]
+    id: Option<ObjectId>,
+    pub username: String,
+    liked_musics: Vec<i32>,
+    current_playlist: Vec<i32>,
+    current_playing: i32,
+}
+
+impl From<User> for PublicUser {
+    fn from(user: User) -> Self {
+        PublicUser {
+            id: user.id(),
+            username: user.get_username(),
+            liked_musics: user.liked_musics().to_vec(),
+            current_playlist: user.current_playlist().to_vec(),
+            current_playing: user.current_playing(),
+        }
+    }
+}
