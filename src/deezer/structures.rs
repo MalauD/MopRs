@@ -73,6 +73,7 @@ pub struct ArtistAlbumsResult {
 pub struct ArtistAlbumsResultItem {
     pub id: i32,
     pub title: String,
+    #[serde(deserialize_with = "parse_cover")]
     pub cover_big: String,
 }
 
