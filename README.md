@@ -148,13 +148,13 @@ You will need the following software:
 
 First install redis operator using
 
-```
+```bash
 helm upgrade redis-operator ot-helm/redis-operator --install --namespace default
 ```
 
 Then install redis standalone
 
-```
+```bash
 helm upgrade redis ot-helm/redis --install --namespace default  -f .kube/redis_values.yaml
 ```
 
@@ -167,6 +167,25 @@ You will just need to apply `.yaml` files in `.kube` directory
 ```
 
 Your app should be available at 80
+
+#### Setup cluster monitoring
+
+You can monitor your cluster using grafana & prometheus by doing the following operations
+```bash
+kubectl create namespace monitoring
+helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+helm repo update
+helm install prometheus prometheus-community/kube-prometheus-stack --namespace monitoring
+```
+
+To access prometheus use
+```bash
+sudo kubectl port-forward svc/prometheus-kube-prometheus-prometheus -n monitoring 9090
+```
+and for grafana 
+```bash
+sudo kubectl port-forward svc/prometheus-grafana -n monitoring 3000:80
+```
 
 <!-- Contributing -->
 
