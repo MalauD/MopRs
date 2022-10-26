@@ -2,7 +2,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use bson::oid::ObjectId;
 use bson::serde_helpers::serialize_object_id_as_hex_string;
-use chrono::Utc;
+use chrono::{Duration, Utc};
 use mongodb::bson::DateTime;
 use serde::{Deserialize, Serialize};
 
@@ -114,6 +114,15 @@ pub struct Artist {
     pub related_artists: Option<Vec<i32>>,
     #[serde(with = "bson::serde_helpers::chrono_datetime_as_bson_datetime")]
     pub last_update: chrono::DateTime<Utc>,
+}
+
+impl Artist {
+    pub fn should_update(&self, interval: Duration) -> bool {
+        Utc::now() - self.last_update > interval
+            || self.top_tracks.is_none()
+            || self.related_artists.is_none()
+            || self.albums.is_none()
+    }
 }
 
 #[derive(Deserialize, Serialize, Clone)]

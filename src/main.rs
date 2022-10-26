@@ -1,8 +1,9 @@
+use actix::Actor;
 use actix_files::{Files, NamedFile};
 use actix_identity::IdentityMiddleware;
 use actix_session::{config::PersistentSession, storage::RedisSessionStore, SessionMiddleware};
 use actix_web::{
-    cookie::{time::Duration, Key},
+    cookie::Key,
     web::{self, Data},
     App, HttpRequest, HttpResponse, HttpServer, Result,
 };
@@ -10,8 +11,15 @@ use dotenv::dotenv;
 use log::info;
 use routes::{config_music, config_user};
 
-use crate::{app_settings::AppSettings, db::get_mongo, deezer::get_dz_client, s3::get_s3};
+use crate::{
+    actors::ArtistScraperActor,
+    app_settings::{get_settings, AppSettings},
+    db::get_mongo,
+    deezer::get_dz_client,
+    s3::get_s3,
+};
 
+mod actors;
 mod app_settings;
 mod db;
 mod deezer;
@@ -39,6 +47,7 @@ async fn main() -> std::io::Result<()> {
     const PORT: i32 = 8080;
 
     let config: AppSettings = envy::from_env().unwrap();
+    let _ = get_settings(Some(config.clone())).await;
 
     let secret_key = if let Some(key) = config.session_key.clone() {
         Key::from(key.as_bytes())
@@ -77,17 +86,20 @@ async fn main() -> std::io::Result<()> {
     let c = db.get_musics_count().await.unwrap();
     info!(target:"mop-rs::mongo","{} musics in database", c);
 
+    let addr = ArtistScraperActor {}.start();
+
     HttpServer::new(move || {
         App::new()
             .app_data(Data::new(config.clone()))
+            .app_data(Data::new(addr.clone()))
             .wrap(IdentityMiddleware::default())
             .wrap(
                 SessionMiddleware::builder(redis_store.clone(), secret_key.clone())
                     .cookie_secure(false)
                     .cookie_name("mop-id".to_string())
-                    .session_lifecycle(PersistentSession::default().session_ttl(Duration::seconds(
-                        config.session_duration.unwrap_or(24 * 60 * 60),
-                    )))
+                    .session_lifecycle(
+                        PersistentSession::default().session_ttl(config.get_session_duration()),
+                    )
                     .build(),
             )
             .route("/", web::get().to(index))
