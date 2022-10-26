@@ -1,6 +1,6 @@
 use crate::{
     actors::{ArtistScraperActor, ArtistScraperMessage},
-    app_settings::get_settings,
+    app_settings::get_settings_sync,
     db::get_mongo,
     deezer::get_dz_client,
     models::{Album, Artist, PopulatedArtist},
@@ -17,7 +17,7 @@ pub async fn get_artist(
 ) -> MusicResponse {
     let db = get_mongo(None).await;
     let dz = get_dz_client(None).await.read().await;
-    let config = get_settings(None).await;
+    let config = get_settings_sync();
 
     let mut compl_artist = db.get_artist(&req).await?.unwrap();
     let mut pop_artist = PopulatedArtist::from(compl_artist.clone());

@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use chrono::Utc;
+use chrono::{Utc, Duration};
 use mongodb::{
     bson::doc,
     error::Result,
@@ -189,5 +189,19 @@ impl MongoClient {
         )
         .await?;
         Ok(())
+    }
+
+    pub async fn get_outdated_artist(&self, duration: Duration) -> Result<Vec<Artist>> {
+        let coll = self._database.collection::<Artist>("Artist");
+        let mut cursor = coll
+            .find(doc! {"last_update": {"$lt": Utc::now() - duration}}, None)
+            .await?;
+        let mut result = Vec::<Artist>::new();
+        while let Some(value) = cursor.next().await {
+            if let Ok(res) = value {
+                result.push(res);
+            }
+        }
+        Ok(result)
     }
 }

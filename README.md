@@ -106,20 +106,22 @@ You will need the following software:
 
 ### Environment variables description
 
-| Variable                        | Description                                                              | Default                 |
-| ------------------------------- | ------------------------------------------------------------------------ | ----------------------- |
-| `S3_URL`                        | Url used to connect to s3                                                |                         |
-| `ARL`                           | Arl token used to download music from deezer                             |                         |
-| `MONGO_URL`                     | Url used to connect to mongo database                                    |                         |
-| `REDIS_SERVICE_HOST`            | Address used to connect to redis                                         |                         |
-| `REDIS_SERVICE_PORT`            | Port for redis connection                                                |                         |
-| `REDIS_PASSWORD`                | Password in case redis is secured                                        |                         |
-| `REDIS_USERNAME`                | Username in case redis is secured                                        |                         |
-| `SESSION_KEY`                   | Key used for cookie generation                                           | Generated at each start |
-| `SESSION_DURATION`              | Duration of user session (s)                                             | `3600\*24\*7`           |
-| `ARTIST_UPDATE_INTERVAL`        | Specify interval at which an artist top tracks, related.. is updated (s) | `3600`                  |
-| `ARTIST_SCRAPE_UPDATE_INTERVAL` | Same as above but for the scraper (s)                                    | `3600\*24\*3`           |
-| `ARTIST_SCRAPE_COOLDOWN`        | Cooldown used to not overflow deezer api (ms)                            | `100`                   |
+| Variable                                 | Description                                                              | Default                 |
+| ---------------------------------------- | ------------------------------------------------------------------------ | ----------------------- |
+| `S3_URL`                                 | Url used to connect to s3                                                |                         |
+| `ARL`                                    | Arl token used to download music from deezer                             |                         |
+| `MONGO_URL`                              | Url used to connect to mongo database                                    |                         |
+| `REDIS_SERVICE_HOST`                     | Address used to connect to redis                                         |                         |
+| `REDIS_SERVICE_PORT`                     | Port for redis connection                                                |                         |
+| `REDIS_PASSWORD`                         | Password in case redis is secured                                        |                         |
+| `REDIS_USERNAME`                         | Username in case redis is secured                                        |                         |
+| `SESSION_KEY`                            | Key used for cookie generation                                           | Generated at each start |
+| `SESSION_DURATION`                       | Duration of user session (s)                                             | `3600\*24\*7`           |
+| `ARTIST_UPDATE_INTERVAL`                 | Specify interval at which an artist top tracks, related.. is updated (s) | `3600`                  |
+| `ARTIST_SCRAPE_UPDATE_INTERVAL`          | Same as above but for the scraper (s)                                    | `3600\*24\*3`           |
+| `ARTIST_SCRAPE_COOLDOWN`                 | Cooldown used to not overflow deezer api (ms)                            | `100`                   |
+| `ARTIST_PERIODIC_SCRAPE_CHECK_INTERVAL`  | Interval at which all artists in db are checked to be updated or not (s) | 60\*30                  |
+| `ARTIST_PERIODIC_SCRAPE_UPDATE_INTERVAL` | Same as `ARTIST_UPDATE_INTERVAL` but for periodic scraping (s)           | 3600\*24\*7             |
 
 <!-- Installation -->
 

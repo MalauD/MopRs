@@ -16,6 +16,14 @@ fn default_artist_scrape_update_interval() -> Duration {
     Duration::from_secs(60 * 60 * 24 * 3)
 }
 
+fn default_artist_periodic_scrape_check_interval() -> Duration {
+    Duration::from_secs(60 * 30)
+}
+
+fn default_artist_periodic_scrape_update_interval() -> Duration {
+    Duration::from_secs(60 * 60 * 24 * 7)
+}
+
 fn default_artist_scrape_cooldown() -> Duration {
     Duration::from_millis(100)
 }
@@ -40,6 +48,12 @@ pub struct AppSettings {
     #[serde(default = "default_artist_scrape_update_interval")]
     #[serde_as(as = "DurationSeconds<u64>")]
     pub artist_scrape_update_interval: Duration,
+    #[serde(default = "default_artist_periodic_scrape_check_interval")]
+    #[serde_as(as = "DurationSeconds<u64>")]
+    pub artist_periodic_scrape_check_interval: Duration,
+    #[serde(default = "default_artist_periodic_scrape_update_interval")]
+    #[serde_as(as = "DurationSeconds<u64>")]
+    pub artist_periodic_scrape_update_interval: Duration,
     #[serde(default = "default_artist_scrape_cooldown")]
     #[serde_as(as = "DurationMilliSeconds<u64>")]
     pub artist_scrape_cooldown: Duration,
@@ -56,6 +70,10 @@ impl AppSettings {
 
     pub fn get_artist_scrape_update_interval(&self) -> chrono::Duration {
         chrono::Duration::from_std(self.artist_scrape_update_interval).unwrap()
+    }
+
+    pub fn get_artist_periodic_scrape_update_interval(&self) -> chrono::Duration {
+        chrono::Duration::from_std(self.artist_periodic_scrape_update_interval).unwrap()
     }
 }
 
@@ -77,5 +95,9 @@ pub async fn get_settings(base_settings: Option<AppSettings>) -> &'static AppSet
         }
     }
     drop(initialized);
+    APP_SETTINGS.get().unwrap()
+}
+
+pub fn get_settings_sync() -> &'static AppSettings {
     APP_SETTINGS.get().unwrap()
 }
