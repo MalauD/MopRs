@@ -1,6 +1,8 @@
+use actix::Addr;
 use itertools::Itertools;
 
 use crate::{
+    actors::{ArtistScraperActor, ArtistScraperMessage},
     db::get_mongo,
     deezer,
     models::{Album, Artist, Music},
@@ -8,6 +10,7 @@ use crate::{
 
 pub async fn index_search_musics_result(
     res: &deezer::SearchMusicsResult,
+    artist_scraper_addr: &Addr<ArtistScraperActor>,
 ) -> Result<Vec<Music>, String> {
     let db = get_mongo(None).await;
     let artists: Vec<Artist> = res
@@ -17,6 +20,7 @@ pub async fn index_search_musics_result(
         .map(|x| Artist::from(x))
         .unique_by(|x| x.id)
         .collect_vec();
+
     let albums: Vec<(i32, Album)> = res
         .data
         .clone()
@@ -47,6 +51,11 @@ pub async fn index_search_musics_result(
         }
     };
     actix_rt::spawn(lazy_update);
+
+    for artist in artists.clone() {
+        artist_scraper_addr.do_send(ArtistScraperMessage(artist));
+    }
+
     Ok(musics.into_iter().map(|x| x.1).collect())
 }
 

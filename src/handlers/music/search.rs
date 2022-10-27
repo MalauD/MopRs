@@ -1,6 +1,8 @@
+use actix::Addr;
 use actix_web::{web, HttpResponse};
 
 use crate::{
+    actors::ArtistScraperActor,
     db::{get_mongo, PaginationOptions},
     deezer::get_dz_client,
     models::{PopulatedPlaylist, User},
@@ -11,11 +13,12 @@ use super::{index_search_musics_result, MusicResponse};
 pub async fn search_music(
     req: web::Path<String>,
     pagination: web::Query<PaginationOptions>,
+    scraper: web::Data<Addr<ArtistScraperActor>>,
 ) -> MusicResponse {
     let db = get_mongo(None).await;
     let dz = get_dz_client(None).await.read().await;
     let res = dz.search_music(req.clone()).await?;
-    let _ = index_search_musics_result(&res).await;
+    let _ = index_search_musics_result(&res, scraper.get_ref()).await;
     //musics.group_by()
     let searched_musics = db.search_music(req.into_inner(), &pagination).await?;
     Ok(HttpResponse::Ok().json(searched_musics.unwrap_or_default()))
@@ -24,11 +27,12 @@ pub async fn search_music(
 pub async fn search_album(
     req: web::Path<String>,
     pagination: web::Query<PaginationOptions>,
+    scraper: web::Data<Addr<ArtistScraperActor>>,
 ) -> MusicResponse {
     let db = get_mongo(None).await;
     let dz = get_dz_client(None).await.read().await;
     let res = dz.search_music(req.clone()).await?;
-    let _ = index_search_musics_result(&res).await;
+    let _ = index_search_musics_result(&res, scraper.get_ref()).await;
     //musics.group_by()
     let searched_albums = db.search_album(req.into_inner(), &pagination).await?;
     Ok(HttpResponse::Ok().json(searched_albums.unwrap_or_default()))
@@ -37,11 +41,12 @@ pub async fn search_album(
 pub async fn search_artist(
     req: web::Path<String>,
     pagination: web::Query<PaginationOptions>,
+    scraper: web::Data<Addr<ArtistScraperActor>>,
 ) -> MusicResponse {
     let db = get_mongo(None).await;
     let dz = get_dz_client(None).await.read().await;
     let res = dz.search_music(req.clone()).await?;
-    let _ = index_search_musics_result(&res).await;
+    let _ = index_search_musics_result(&res, scraper.get_ref()).await;
     //musics.group_by()
     let searched_artists = db.search_artist(req.into_inner(), &pagination).await?;
     Ok(HttpResponse::Ok().json(searched_artists.unwrap()))

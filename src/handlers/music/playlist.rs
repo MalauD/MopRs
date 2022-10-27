@@ -1,9 +1,11 @@
+use actix::Addr;
 use actix_web::{web, HttpResponse};
 use bson::oid::ObjectId;
 use serde::Deserialize;
 use serde_json::json;
 
 use crate::{
+    actors::ArtistScraperActor,
     db::get_mongo,
     deezer::get_dz_client,
     models::{PopulatedPlaylist, User},
@@ -127,13 +129,14 @@ pub struct CreatePlaylistDeezerBody {
 pub async fn create_playlist_deezer(
     user: User,
     pl: web::Json<CreatePlaylistDeezerBody>,
+    scraper: web::Data<Addr<ArtistScraperActor>>,
 ) -> MusicResponse {
     let db = get_mongo(None).await;
     let dz = get_dz_client(None).await.read().await;
 
     let music_dz_ids = dz.get_playlist_musics(&pl.deezer_id).await?;
 
-    let musics: Vec<i32> = index_search_musics_result(&music_dz_ids)
+    let musics: Vec<i32> = index_search_musics_result(&music_dz_ids, scraper.get_ref())
         .await
         .unwrap()
         .into_iter()
