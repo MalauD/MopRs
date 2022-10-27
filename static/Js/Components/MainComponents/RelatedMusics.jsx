@@ -60,7 +60,7 @@ export default class RelatedMusics extends React.Component {
         this.setState({
             isLoading: true,
         });
-        axios.post('/Music/Related', { MusicIds }).then((res) => {
+        axios.post('/Music/Related', { MusicIds, Exclude: MusicIds }).then((res) => {
             this.setState({
                 RelatedMusicsData: res.data.RelatedMusics,
                 isLoading: false,
