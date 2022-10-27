@@ -204,7 +204,7 @@ class PlayerConnected extends React.Component {
         const { NextMusic, ChangePlayingId, CurrentMusicId, AddMultipleMusics, MusicIds } =
             this.props;
         if (!NextMusic) {
-            Axios.post('/Music/Related', { MusicIds }).then((res) => {
+            Axios.post('/Music/Related', { MusicIds, Exclude: MusicIds }).then((res) => {
                 AddMultipleMusics(res.data.RelatedMusics);
                 if (res.data.length !== 0) {
                     ChangePlayingId(CurrentMusicId + 1);
