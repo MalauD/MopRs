@@ -9,16 +9,18 @@ import { DefaultActions } from '../Items/Actions';
 
 export default class RelatedMusics extends React.Component {
     static propTypes = {
-        Musics: PropTypes.arrayOf(
-            PropTypes.shape({
-                _id: PropTypes.number.isRequired,
-            })
-        ).isRequired,
+        MusicIds: PropTypes.arrayOf(PropTypes.number).isRequired,
         Actions: PropTypes.func,
+        Title: PropTypes.string,
+        Limit: PropTypes.number,
+        ExcludePassedIds: PropTypes.bool,
     };
 
     static defaultProps = {
         Actions: DefaultActions,
+        Title: 'Related',
+        Limit: 20,
+        ExcludePassedIds: true
     };
 
     constructor(props) {
@@ -34,12 +36,11 @@ export default class RelatedMusics extends React.Component {
     }
 
     componentDidUpdate(prevProps) {
-        const { Musics } = this.props;
+        const { MusicIds } = this.props;
         const { RelatedMusicsData } = this.state;
-        const prevIds = prevProps.Musics.map((music) => music._id);
-        const currentIds = Musics.map((music) => music._id);
-        if (!isEqual([...prevIds].sort(), [...currentIds].sort())) {
-            const diff = difference(currentIds, prevIds);
+        const prevIds = prevProps.MusicIds;
+        if (!isEqual([...prevIds].sort(), [...MusicIds].sort())) {
+            const diff = difference(MusicIds, prevIds);
             if (diff.length > 0) {
                 if (RelatedMusicsData.map((m) => m._id).indexOf(diff[0]) === -1) {
                     this.getNewRelatedMusics();
@@ -55,12 +56,11 @@ export default class RelatedMusics extends React.Component {
     }
 
     getNewRelatedMusics = () => {
-        const { Musics } = this.props;
-        const MusicIds = Musics.map((m) => m._id);
+        const { MusicIds, Limit, ExcludePassedIds } = this.props;
         this.setState({
             isLoading: true,
         });
-        axios.post('/Music/Related', { MusicIds, Exclude: MusicIds }).then((res) => {
+        axios.post('/Music/Related', { MusicIds, Exclude: ExcludePassedIds ? MusicIds : [], Limit }).then((res) => {
             this.setState({
                 RelatedMusicsData: res.data.RelatedMusics,
                 isLoading: false,
@@ -74,7 +74,7 @@ export default class RelatedMusics extends React.Component {
 
     render() {
         const { RelatedMusicsData, isLoading } = this.state;
-        const { Actions, ...props } = this.props;
+        const { Actions, Title, ...props } = this.props;
 
         const Accessories = [
             <ButtonIcon
@@ -92,7 +92,7 @@ export default class RelatedMusics extends React.Component {
             <MusicGroup
                 {...props}
                 Musics={RelatedMusicsData}
-                title="Related"
+                title={Title}
                 isLoading={isLoading}
                 Accessories={Accessories}
                 Actions={Actions}

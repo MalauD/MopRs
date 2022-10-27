@@ -101,7 +101,7 @@ class UserPlaylistConnected extends React.Component {
                     />
                     {OwnPlaylist && (
                         <RelatedMusics
-                            Musics={Musics}
+                            MusicIds={Musics.map((m) => m._id)}
                             Actions={OwnPlaylistRelatedActions}
                             CurrentPlaylistTitle={PlaylistName}
                             OnPlaylistMusicAdded={this.onAdd}

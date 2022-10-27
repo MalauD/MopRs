@@ -46,7 +46,8 @@ pub async fn get_related_to(base_music_ids: &Vec<i32>, exclude: &Vec<i32>, limit
 //O(nlog(n)) n: size of vec
 fn remove_from_sorted_vec(sorted_vec: &mut Vec<i32>, vec: &Vec<i32>) {
     for i in vec {
-        let index = sorted_vec.binary_search(i).unwrap();
-        sorted_vec.swap_remove(index);
+        if let Ok(index) = sorted_vec.binary_search(i) {
+            sorted_vec.swap_remove(index);
+        }
     }
 }

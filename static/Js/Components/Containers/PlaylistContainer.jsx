@@ -109,7 +109,7 @@ class PlaylistContainerConnected extends React.Component {
                         />
                     ))}
                 </SortableMusicContainer>
-                <RelatedMusics Musics={Musics} />
+                <RelatedMusics MusicIds={Musics.map((m) => m._id)} />
             </>
         );
     }
