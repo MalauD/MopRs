@@ -6,7 +6,7 @@ use reqwest::{Client, Result};
 use serde_json::json;
 use tokio::sync::{Mutex, RwLock};
 
-use crate::{deezer::SearchMusicsResult, s3::get_s3};
+use crate::{deezer::SearchMusicsResult, models::DeezerId, s3::get_s3};
 
 use super::{
     AlbumTracksResult, ArtistAlbumsResult, ArtistTopTracksResult, ChartResult, InitSessionResult,
@@ -99,7 +99,7 @@ impl DeezerClient {
         Ok(())
     }
 
-    pub async fn get_music_by_id_unofficial(&self, id: i32) -> Result<StreamMusic> {
+    pub async fn get_music_by_id_unofficial(&self, id: DeezerId) -> Result<StreamMusic> {
         let url = format!(
             "http://www.deezer.com/ajax/gw-light.php?api_token={}&api_version=1.0&input=3&method=song.getData",
             self.cred.token
@@ -116,7 +116,7 @@ impl DeezerClient {
             .results)
     }
 
-    pub async fn download_music(&self, id: i32) -> Result<Vec<u8>> {
+    pub async fn download_music(&self, id: DeezerId) -> Result<Vec<u8>> {
         let m = self.get_music_by_id_unofficial(id).await?;
         let response = self
             .http_client
@@ -168,7 +168,7 @@ impl DeezerClient {
         Ok(response)
     }
 
-    pub async fn get_album_musics(&self, album_id: i32) -> Result<AlbumTracksResult> {
+    pub async fn get_album_musics(&self, album_id: DeezerId) -> Result<AlbumTracksResult> {
         let url = format!("{}/album/{}/tracks?limit=50", self.base_url, album_id);
         let mut response = self.get_album_musics_aux(&url).await?;
         while let Some(ref next_url) = response.next {
@@ -184,7 +184,7 @@ impl DeezerClient {
         Ok(response)
     }
 
-    pub async fn get_artist_albums(&self, artist_id: &i32) -> Result<ArtistAlbumsResult> {
+    pub async fn get_artist_albums(&self, artist_id: &DeezerId) -> Result<ArtistAlbumsResult> {
         let url = format!("{}/artist/{}/albums?limit=50", self.base_url, artist_id);
         let mut response = self.get_artist_albums_aux(&url).await?;
         while let Some(ref next_url) = response.next {
@@ -206,13 +206,16 @@ impl DeezerClient {
         Ok(response)
     }
 
-    pub async fn get_related_artists(&self, artist_id: &i32) -> Result<RelatedArtists> {
+    pub async fn get_related_artists(&self, artist_id: &DeezerId) -> Result<RelatedArtists> {
         let url = format!("{}/artist/{}/related", self.base_url, artist_id);
         let response: RelatedArtists = self.http_client.get(url).send().await?.json().await?;
         Ok(response)
     }
 
-    pub async fn get_artist_top_tracks(&self, artist_id: &i32) -> Result<ArtistTopTracksResult> {
+    pub async fn get_artist_top_tracks(
+        &self,
+        artist_id: &DeezerId,
+    ) -> Result<ArtistTopTracksResult> {
         let url = format!("{}/artist/{}/top?limit=50", self.base_url, artist_id);
         let response: ArtistTopTracksResult =
             self.http_client.get(url).send().await?.json().await?;
@@ -224,7 +227,7 @@ impl DeezerClient {
         Ok(response)
     }
 
-    pub async fn get_playlist_musics(&self, playlist_id: &i32) -> Result<SearchMusicsResult> {
+    pub async fn get_playlist_musics(&self, playlist_id: &DeezerId) -> Result<SearchMusicsResult> {
         let url = format!(
             "{}/playlist/{}/tracks?limit=100",
             self.base_url, playlist_id

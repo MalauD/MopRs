@@ -1,6 +1,6 @@
 use crate::{
     db::MongoClient,
-    models::{User, UserReq},
+    models::{User, UserReq, DeezerId},
 };
 use bson::oid::ObjectId;
 use mongodb::{bson::doc, error::Result};
@@ -30,7 +30,7 @@ impl MongoClient {
             .map(|c| c != 0)
     }
 
-    pub async fn like_music(&self, user: &User, music_id: &i32) -> Result<bool> {
+    pub async fn like_music(&self, user: &User, music_id: &DeezerId) -> Result<bool> {
         let coll = self._database.collection::<User>("User");
         if user.liked_musics().contains(music_id) {
             let _ = coll
@@ -56,7 +56,7 @@ impl MongoClient {
     pub async fn set_current_playlist_musics(
         &self,
         user: &User,
-        musics_id: &Vec<i32>,
+        musics_id: &Vec<DeezerId>,
     ) -> Result<()> {
         let coll = self._database.collection::<User>("User");
         coll.update_one(
@@ -68,7 +68,7 @@ impl MongoClient {
         Ok(())
     }
 
-    pub async fn set_current_playlist_index(&self, user: &User, index: &i32) -> Result<()> {
+    pub async fn set_current_playlist_index(&self, user: &User, index: &DeezerId) -> Result<()> {
         let coll = self._database.collection::<User>("User");
         coll.update_one(
             doc! {"_id": user.id().unwrap()},
@@ -79,7 +79,7 @@ impl MongoClient {
         Ok(())
     }
 
-    pub async fn add_to_history(&self, user: &User, music_id: &i32) -> Result<()> {
+    pub async fn add_to_history(&self, user: &User, music_id: &DeezerId) -> Result<()> {
         let coll = self._database.collection::<User>("User");
 
         let _ = coll

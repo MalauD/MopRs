@@ -1,10 +1,10 @@
 use actix_web::{web, HttpResponse};
 
-use crate::{db::get_mongo, models::User};
+use crate::{db::get_mongo, models::{User, DeezerId}};
 
 use super::MusicResponse;
 
-pub async fn like_music(req: web::Path<i32>, user: User) -> MusicResponse {
+pub async fn like_music(req: web::Path<DeezerId>, user: User) -> MusicResponse {
     let db = get_mongo(None).await;
     let u = db.get_user(&user.id().unwrap()).await?.unwrap();
     let res = db.like_music(&u, &req).await?;

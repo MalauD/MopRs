@@ -13,29 +13,31 @@ use crate::deezer::{
 
 use super::User;
 
+pub type DeezerId = i64;
+
 #[derive(Deserialize, Serialize, Clone)]
 pub struct Music {
     #[serde(rename = "_id")]
-    pub id: i32,
+    pub id: DeezerId,
     pub title: String,
     pub artist_name: String,
     pub published_date: DateTime,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub track_number: Option<i32>,
+    pub track_number: Option<i64>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub disc_number: Option<i32>,
+    pub disc_number: Option<i64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub file_path: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub image_url: Option<String>,
-    pub views: i32,
-    pub likes: i32,
-    pub rank: i32,
+    pub views: i64,
+    pub likes: i64,
+    pub rank: i64,
     pub last_view: DateTime,
 }
 
 impl Music {
-    pub fn get_rank(&self) -> &i32 {
+    pub fn get_rank(&self) -> &i64 {
         &self.rank
     }
 }
@@ -43,29 +45,29 @@ impl Music {
 #[derive(Deserialize, Serialize, Clone)]
 pub struct Album {
     #[serde(rename = "_id")]
-    pub id: i32,
+    pub id: DeezerId,
     name: String,
     pub cover: String,
     is_complete: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub musics: Option<Vec<i32>>,
+    pub musics: Option<Vec<DeezerId>>,
 }
 
 #[derive(Deserialize, Serialize, Clone)]
 pub struct Chart {
     #[serde(rename = "_id")]
-    pub id: i32,
+    pub id: DeezerId,
     #[serde(with = "bson::serde_helpers::chrono_datetime_as_bson_datetime")]
     published_date: chrono::DateTime<Utc>,
-    pub musics: Vec<i32>,
-    pub albums: Vec<i32>,
-    pub artists: Vec<i32>,
+    pub musics: Vec<DeezerId>,
+    pub albums: Vec<DeezerId>,
+    pub artists: Vec<DeezerId>,
 }
 
 #[derive(Deserialize, Serialize, Clone)]
 pub struct PopulatedAlbum {
     #[serde(rename = "_id")]
-    pub id: i32,
+    pub id: DeezerId,
     name: String,
     pub cover: String,
     is_complete: bool,
@@ -79,7 +81,7 @@ impl From<ChartResult> for Chart {
             id: SystemTime::now()
                 .duration_since(UNIX_EPOCH)
                 .expect("Time went backwards")
-                .as_secs() as i32,
+                .as_secs() as DeezerId,
             published_date: Utc::now(),
             musics: ch.tracks.data.iter().map(|x| x.id).collect(),
             albums: ch.albums.data.iter().map(|x| x.id).collect(),
@@ -103,15 +105,15 @@ impl From<Album> for PopulatedAlbum {
 #[derive(Deserialize, Serialize, Clone)]
 pub struct Artist {
     #[serde(rename = "_id")]
-    pub id: i32,
+    pub id: DeezerId,
     pub name: String,
     picture: String,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub albums: Option<Vec<i32>>,
+    pub albums: Option<Vec<DeezerId>>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub top_tracks: Option<Vec<i32>>,
+    pub top_tracks: Option<Vec<DeezerId>>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub related_artists: Option<Vec<i32>>,
+    pub related_artists: Option<Vec<DeezerId>>,
     #[serde(with = "bson::serde_helpers::chrono_datetime_as_bson_datetime")]
     pub last_update: chrono::DateTime<Utc>,
 }
@@ -128,7 +130,7 @@ impl Artist {
 #[derive(Deserialize, Serialize, Clone)]
 pub struct PopulatedArtist {
     #[serde(rename = "_id")]
-    pub id: i32,
+    pub id: DeezerId,
     name: String,
     pub picture: String,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -279,7 +281,7 @@ pub struct Playlist {
     creator: ObjectId,
     public: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub musics: Option<Vec<i32>>,
+    pub musics: Option<Vec<DeezerId>>,
 }
 
 impl Playlist {
@@ -288,7 +290,7 @@ impl Playlist {
         name: String,
         creator: ObjectId,
         public: bool,
-        musics: Option<Vec<i32>>,
+        musics: Option<Vec<DeezerId>>,
     ) -> Self {
         Self {
             id,

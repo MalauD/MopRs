@@ -2,7 +2,7 @@ use actix_web::{web, HttpResponse};
 use serde::Deserialize;
 use serde_json::json;
 
-use crate::{db::get_mongo, models::User, suggestion::get_related_to};
+use crate::{db::get_mongo, models::{User, DeezerId}, suggestion::get_related_to};
 
 use super::MusicResponse;
 
@@ -13,9 +13,9 @@ fn get_default_related_limit() -> i32 {
 #[derive(Deserialize)]
 pub struct RelMusicsReq {
     #[serde(rename = "MusicIds")]
-    pub music_ids: Vec<i32>,
+    pub music_ids: Vec<DeezerId>,
     #[serde(rename = "Exclude", default = "Vec::default")]
-    pub exclude: Vec<i32>,
+    pub exclude: Vec<DeezerId>,
     #[serde(rename = "Limit", default = "get_default_related_limit")]
     pub limit: i32
 }

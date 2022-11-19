@@ -1,4 +1,4 @@
-use crate::{db::get_mongo, tools::UserError};
+use crate::{db::get_mongo, tools::UserError, models::DeezerId};
 use actix_identity::Identity;
 use actix_web::{dev::Payload, error::ErrorUnauthorized, Error, FromRequest, HttpRequest};
 use futures::Future;
@@ -37,10 +37,10 @@ pub struct User {
     pub username: String,
     #[serde(with = "serde_bytes")]
     pub credential: Vec<u8>,
-    liked_musics: Vec<i32>,
-    current_playlist: Vec<i32>,
-    current_playing: i32,
-    viewed_musics: Vec<i32>,
+    liked_musics: Vec<DeezerId>,
+    current_playlist: Vec<DeezerId>,
+    current_playing: DeezerId,
+    viewed_musics: Vec<DeezerId>,
 }
 
 fn serialize_option_oid_hex<S>(x: &Option<ObjectId>, s: S) -> Result<S::Ok, S::Error>
@@ -102,22 +102,22 @@ impl User {
     }
 
     /// Get a reference to the user's liked musics.
-    pub fn liked_musics(&self) -> &[i32] {
+    pub fn liked_musics(&self) -> &[DeezerId] {
         self.liked_musics.as_ref()
     }
 
     /// Get a reference to the user's current playlist.
-    pub fn current_playlist(&self) -> &[i32] {
+    pub fn current_playlist(&self) -> &[DeezerId] {
         self.current_playlist.as_ref()
     }
 
     /// Get a reference to the user's current playing.
-    pub fn current_playing(&self) -> i32 {
+    pub fn current_playing(&self) -> DeezerId {
         self.current_playing
     }
 
     /// Get a reference to the user's viewed musics.
-    pub fn viewed_musics(&self) -> &[i32] {
+    pub fn viewed_musics(&self) -> &[DeezerId] {
         self.viewed_musics.as_ref()
     }
 }
@@ -154,9 +154,9 @@ pub struct PublicUser {
     )]
     id: Option<ObjectId>,
     pub username: String,
-    liked_musics: Vec<i32>,
-    current_playlist: Vec<i32>,
-    current_playing: i32,
+    liked_musics: Vec<DeezerId>,
+    current_playlist: Vec<DeezerId>,
+    current_playing: DeezerId,
 }
 
 impl From<User> for PublicUser {

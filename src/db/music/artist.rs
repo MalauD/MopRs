@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use chrono::{Utc, Duration};
+use chrono::{Duration, Utc};
 use mongodb::{
     bson::doc,
     error::Result,
@@ -11,7 +11,7 @@ use tokio_stream::StreamExt;
 
 use crate::{
     db::{MongoClient, PaginationOptions},
-    models::{Artist, Playlist},
+    models::{Artist, Playlist, DeezerId},
 };
 
 impl MongoClient {
@@ -47,7 +47,7 @@ impl MongoClient {
         Ok(())
     }
 
-    pub async fn append_to_artist(&self, album_id: &i32, artist_id: &i32) -> Result<()> {
+    pub async fn append_to_artist(&self, album_id: &DeezerId, artist_id: &DeezerId) -> Result<()> {
         let coll = self._database.collection::<Artist>("Artist");
         coll.update_one(
             doc! {"_id": artist_id },
@@ -106,12 +106,12 @@ impl MongoClient {
         Ok(Some(result))
     }
 
-    pub async fn get_artist(&self, artist_id: &i32) -> Result<Option<Artist>> {
+    pub async fn get_artist(&self, artist_id: &DeezerId) -> Result<Option<Artist>> {
         let coll = self._database.collection::<Artist>("Artist");
         Ok(coll.find_one(doc! {"_id": artist_id}, None).await?)
     }
 
-    pub async fn get_artists(&self, artist_ids: &Vec<i32>) -> Result<Option<Vec<Artist>>> {
+    pub async fn get_artists(&self, artist_ids: &Vec<DeezerId>) -> Result<Option<Vec<Artist>>> {
         let coll = self._database.collection::<Artist>("Artist");
         let mut cursor = coll.find(doc! {"_id": {"$in": artist_ids}}, None).await?;
         let mut result_hash = HashMap::with_capacity(artist_ids.len());
@@ -152,8 +152,8 @@ impl MongoClient {
 
     pub async fn append_multiple_to_an_artist(
         &self,
-        album_ids: Vec<i32>,
-        artist_id: &i32,
+        album_ids: Vec<DeezerId>,
+        artist_id: &DeezerId,
     ) -> Result<()> {
         let coll = self._database.collection::<Artist>("Artist");
         coll.update_one(
@@ -167,8 +167,8 @@ impl MongoClient {
 
     pub async fn set_related_artists(
         &self,
-        artist_id: &i32,
-        related_artists: Vec<i32>,
+        artist_id: &DeezerId,
+        related_artists: Vec<DeezerId>,
     ) -> Result<()> {
         let coll = self._database.collection::<Artist>("Artist");
         coll.update_one(
@@ -180,7 +180,11 @@ impl MongoClient {
         Ok(())
     }
 
-    pub async fn set_top_tracks(&self, artist_id: &i32, top_tracks: &Vec<i32>) -> Result<()> {
+    pub async fn set_top_tracks(
+        &self,
+        artist_id: &DeezerId,
+        top_tracks: &Vec<DeezerId>,
+    ) -> Result<()> {
         let coll = self._database.collection::<Artist>("Artist");
         coll.update_one(
             doc! {"_id": artist_id },

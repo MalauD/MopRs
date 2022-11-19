@@ -5,12 +5,12 @@ use actix_web::{http::header::Range, web, HttpRequest, HttpResponse};
 use crate::{
     db::get_mongo,
     deezer::{get_dz_client, refresh_dz_client},
-    models::User,
+    models::{User, DeezerId},
     s3::get_s3,
 };
 
 pub async fn get_music(
-    req: web::Path<i32>,
+    req: web::Path<DeezerId>,
     user: User,
     httpreq: HttpRequest,
 ) -> actix_web::Result<HttpResponse> {

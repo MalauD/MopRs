@@ -5,7 +5,7 @@ use crate::{
     actors::ArtistScraperActor,
     db::{get_mongo, PaginationOptions},
     deezer::{get_dz_client, SearchMusicsResult},
-    models::Chart,
+    models::{Chart, DeezerId},
 };
 
 use super::{index_search_musics_result, MusicResponse};
@@ -35,7 +35,7 @@ pub async fn trending_musics(
             ch
         }
     };
-    let vec: Vec<i32> = pagination.trim_vec(&charts.musics);
+    let vec: Vec<DeezerId> = pagination.trim_vec(&charts.musics);
     let musics = db.get_musics(&vec).await?;
 
     Ok(HttpResponse::Ok().json(musics))

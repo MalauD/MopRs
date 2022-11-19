@@ -2,7 +2,7 @@ use actix_web::{web, HttpResponse};
 use serde::Deserialize;
 use serde_json::json;
 
-use crate::{db::get_mongo, models::User};
+use crate::{db::get_mongo, models::{User, DeezerId}};
 
 use super::UserResponse;
 
@@ -18,7 +18,7 @@ pub async fn get_current_playlist(user: User) -> UserResponse {
 #[derive(Deserialize)]
 pub struct PlaylistMusics {
     #[serde(rename = "CurrentPlaylist")]
-    pub current_playlist: Vec<i32>,
+    pub current_playlist: Vec<DeezerId>,
 }
 
 pub async fn set_current_playlist_musics(
@@ -36,7 +36,7 @@ pub async fn set_current_playlist_musics(
 #[derive(Deserialize)]
 pub struct CurrentPlaylistPlaying {
     #[serde(rename = "CurrentPlaylistPlaying")]
-    pub current_playlist_playing: i32,
+    pub current_playlist_playing: DeezerId,
 }
 
 pub async fn set_current_playlist_playing(

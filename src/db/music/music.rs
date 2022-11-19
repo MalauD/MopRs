@@ -10,7 +10,7 @@ use mongodb::{
 
 use crate::{
     db::{MongoClient, PaginationOptions},
-    models::Music,
+    models::{Music, DeezerId},
 };
 
 impl MongoClient {
@@ -73,7 +73,7 @@ impl MongoClient {
         Ok(Some(result))
     }
 
-    pub async fn get_musics(&self, music_ids: &Vec<i32>) -> Result<Option<Vec<Music>>> {
+    pub async fn get_musics(&self, music_ids: &Vec<DeezerId>) -> Result<Option<Vec<Music>>> {
         let coll = self._database.collection::<Music>("Music");
         let mut cursor = coll.find(doc! {"_id": {"$in": music_ids}}, None).await?;
         let mut result_hash = HashMap::with_capacity(music_ids.len());
@@ -89,7 +89,7 @@ impl MongoClient {
         return Ok(Some(final_arranged));
     }
 
-    pub async fn modify_like_count(&self, music_id: &i32, inc: i32) -> Result<()> {
+    pub async fn modify_like_count(&self, music_id: &DeezerId, inc: DeezerId) -> Result<()> {
         let coll = self._database.collection::<Music>("Music");
         coll.update_one(doc! {"_id": music_id}, doc! {"$inc": {"likes": inc}}, None)
             .await?;

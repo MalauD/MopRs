@@ -1,14 +1,14 @@
 use crate::{
     db::get_mongo,
     deezer::get_dz_client,
-    models::{Music, PopulatedAlbum},
+    models::{Music, PopulatedAlbum, DeezerId},
 };
 use actix_web::{web, HttpResponse};
 use itertools::Itertools;
 
 use super::MusicResponse;
 
-pub async fn get_album(req: web::Path<i32>) -> MusicResponse {
+pub async fn get_album(req: web::Path<DeezerId>) -> MusicResponse {
     let db = get_mongo(None).await;
     let dz = get_dz_client(None).await.read().await;
     let res = dz.get_album_musics(req.clone()).await?;

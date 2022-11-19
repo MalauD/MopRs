@@ -1,5 +1,7 @@
 use serde::{Deserialize, Deserializer, Serialize};
 
+use crate::models::DeezerId;
+
 use super::StreamMusic;
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -10,24 +12,24 @@ pub struct SearchMusicsResult {
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct SearchMusicsResultItem {
-    pub id: i32,
+    pub id: DeezerId,
     pub title: String,
-    pub rank: i32,
-    pub duration: i32,
+    pub rank: i64,
+    pub duration: i64,
     pub artist: SearchMusicsResultItemArtist,
     pub album: SearchMusicsResultItemAlbum,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct SearchMusicsResultItemArtist {
-    pub id: i32,
+    pub id: DeezerId,
     pub name: String,
     pub picture_big: String,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct SearchMusicsResultItemAlbum {
-    pub id: i32,
+    pub id: DeezerId,
     pub title: String,
     #[serde(deserialize_with = "parse_cover")]
     pub cover_big: String,
@@ -48,18 +50,18 @@ pub struct AlbumTracksResult {
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct AlbumTracksResultItem {
-    pub id: i32,
+    pub id: DeezerId,
     pub title: String,
-    pub rank: i32,
-    pub duration: i32,
-    pub track_position: i32,
-    pub disk_number: i32,
+    pub rank: i64,
+    pub duration: i64,
+    pub track_position: i64,
+    pub disk_number: i64,
     pub artist: AlbumTracksResultArtist,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct AlbumTracksResultArtist {
-    pub id: i32,
+    pub id: DeezerId,
     pub name: String,
 }
 
@@ -71,7 +73,7 @@ pub struct ArtistAlbumsResult {
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct ArtistAlbumsResultItem {
-    pub id: i32,
+    pub id: DeezerId,
     pub title: String,
     #[serde(deserialize_with = "parse_cover")]
     pub cover_big: String,
@@ -126,17 +128,17 @@ pub struct ArtistTopTracksResult {
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct ArtistTopTracksItem {
-    pub id: i32,
+    pub id: DeezerId,
     pub title: String,
-    pub rank: i32,
-    pub duration: i32,
+    pub rank: i64,
+    pub duration: i64,
     pub album: ArtistTopTracksItemAlbum,
     pub artist: ArtistTopTracksItemArtist,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct ArtistTopTracksItemAlbum {
-    pub id: i32,
+    pub id: DeezerId,
     pub title: String,
     #[serde(deserialize_with = "parse_cover")]
     pub cover_big: String,
@@ -144,6 +146,6 @@ pub struct ArtistTopTracksItemAlbum {
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct ArtistTopTracksItemArtist {
-    pub id: i32,
+    pub id: DeezerId,
     pub name: String,
 }

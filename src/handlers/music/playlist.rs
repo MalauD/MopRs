@@ -8,7 +8,7 @@ use crate::{
     actors::ArtistScraperActor,
     db::get_mongo,
     deezer::get_dz_client,
-    models::{PopulatedPlaylist, User},
+    models::{PopulatedPlaylist, User, DeezerId},
 };
 
 use super::{index_search_musics_result, MusicResponse};
@@ -35,7 +35,7 @@ pub async fn get_playlist(req: web::Path<String>, user: User) -> MusicResponse {
 #[derive(Deserialize)]
 pub struct AddRemoveMusicBody {
     #[serde(rename = "MusicsId")]
-    pub musics: Vec<i32>,
+    pub musics: Vec<DeezerId>,
 }
 
 pub async fn add_music_playlist(
@@ -103,7 +103,7 @@ pub struct CreatePlaylistBody {
     #[serde(rename = "Name")]
     pub name: String,
     #[serde(rename = "MusicsId")]
-    pub musics: Vec<i32>,
+    pub musics: Vec<DeezerId>,
     #[serde(rename = "IsPublic")]
     pub is_public: bool,
 }
@@ -121,7 +121,7 @@ pub struct CreatePlaylistDeezerBody {
     #[serde(rename = "Name")]
     pub name: String,
     #[serde(rename = "DeezerId")]
-    pub deezer_id: i32,
+    pub deezer_id: DeezerId,
     #[serde(rename = "IsPublic")]
     pub is_public: bool,
 }
@@ -136,7 +136,7 @@ pub async fn create_playlist_deezer(
 
     let music_dz_ids = dz.get_playlist_musics(&pl.deezer_id).await?;
 
-    let musics: Vec<i32> = index_search_musics_result(&music_dz_ids, scraper.get_ref())
+    let musics: Vec<DeezerId> = index_search_musics_result(&music_dz_ids, scraper.get_ref())
         .await
         .unwrap()
         .into_iter()

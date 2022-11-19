@@ -5,7 +5,7 @@ use crate::{
     actors::{ArtistScraperActor, ArtistScraperMessage},
     db::get_mongo,
     deezer,
-    models::{Album, Artist, Music},
+    models::{Album, Artist, Music, DeezerId},
 };
 
 pub async fn index_search_musics_result(
@@ -21,14 +21,14 @@ pub async fn index_search_musics_result(
         .unique_by(|x| x.id)
         .collect_vec();
 
-    let albums: Vec<(i32, Album)> = res
+    let albums: Vec<(DeezerId, Album)> = res
         .data
         .clone()
         .into_iter()
         .map(|x| (x.artist.id, Album::from(x)))
         .unique_by(|x| x.1.id)
         .collect_vec();
-    let musics: Vec<(i32, Music)> = res
+    let musics: Vec<(DeezerId, Music)> = res
         .data
         .clone()
         .into_iter()
@@ -61,17 +61,17 @@ pub async fn index_search_musics_result(
 
 pub async fn index_artist_top_tracks(
     res: &deezer::ArtistTopTracksResult,
-    artist_id: &i32,
+    artist_id: &DeezerId,
 ) -> Result<Vec<Music>, String> {
     let db = get_mongo(None).await;
-    let albums: Vec<(i32, Album)> = res
+    let albums: Vec<(DeezerId, Album)> = res
         .data
         .clone()
         .into_iter()
         .map(|x| (*artist_id, Album::from(x)))
         .unique_by(|x| x.1.id)
         .collect_vec();
-    let musics: Vec<(i32, Music)> = res
+    let musics: Vec<(DeezerId, Music)> = res
         .data
         .clone()
         .into_iter()

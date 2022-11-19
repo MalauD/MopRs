@@ -8,7 +8,7 @@ use tokio_stream::StreamExt;
 
 use crate::{
     db::{MongoClient, PaginationOptions},
-    models::Album,
+    models::{Album, DeezerId},
 };
 
 impl MongoClient {
@@ -44,7 +44,7 @@ impl MongoClient {
         Ok(())
     }
 
-    pub async fn append_to_album(&self, music_id: &i32, album_id: &i32) -> Result<()> {
+    pub async fn append_to_album(&self, music_id: &DeezerId, album_id: &DeezerId) -> Result<()> {
         let coll = self._database.collection::<Album>("Album");
         coll.update_one(
             doc! {"_id": album_id },
@@ -55,7 +55,11 @@ impl MongoClient {
         Ok(())
     }
 
-    pub async fn set_album_musics(&self, music_ids: Vec<i32>, album_id: &i32) -> Result<()> {
+    pub async fn set_album_musics(
+        &self,
+        music_ids: Vec<DeezerId>,
+        album_id: &DeezerId,
+    ) -> Result<()> {
         let coll = self._database.collection::<Album>("Album");
         coll.update_one(
             doc! {"_id": album_id },
@@ -90,12 +94,12 @@ impl MongoClient {
         Ok(Some(result))
     }
 
-    pub async fn get_album(&self, album_id: &i32) -> Result<Option<Album>> {
+    pub async fn get_album(&self, album_id: &DeezerId) -> Result<Option<Album>> {
         let coll = self._database.collection::<Album>("Album");
         Ok(coll.find_one(doc! {"_id": album_id}, None).await?)
     }
 
-    pub async fn get_albums(&self, album_ids: &Vec<i32>) -> Result<Option<Vec<Album>>> {
+    pub async fn get_albums(&self, album_ids: &Vec<DeezerId>) -> Result<Option<Vec<Album>>> {
         let coll = self._database.collection::<Album>("Album");
         let mut cursor = coll.find(doc! {"_id": {"$in": album_ids}}, None).await?;
         let mut result = Vec::<Album>::with_capacity(30);

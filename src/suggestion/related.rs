@@ -1,8 +1,13 @@
 use crate::db::get_mongo;
+use crate::models::DeezerId;
 use rand::seq::SliceRandom;
 use rand::thread_rng;
 
-pub async fn get_related_to(base_music_ids: &Vec<i32>, exclude: &Vec<i32>, limit: i32) -> Vec<i32> {
+pub async fn get_related_to(
+    base_music_ids: &Vec<DeezerId>,
+    exclude: &Vec<DeezerId>,
+    limit: i32,
+) -> Vec<DeezerId> {
     let db = get_mongo(None).await;
     let base_musics = db.get_musics(base_music_ids).await.unwrap().unwrap();
     let base_musics_artists = db
@@ -44,7 +49,7 @@ pub async fn get_related_to(base_music_ids: &Vec<i32>, exclude: &Vec<i32>, limit
 }
 
 //O(nlog(n)) n: size of vec
-fn remove_from_sorted_vec(sorted_vec: &mut Vec<i32>, vec: &Vec<i32>) {
+fn remove_from_sorted_vec(sorted_vec: &mut Vec<DeezerId>, vec: &Vec<DeezerId>) {
     for i in vec {
         if let Ok(index) = sorted_vec.binary_search(i) {
             sorted_vec.swap_remove(index);

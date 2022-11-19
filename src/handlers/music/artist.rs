@@ -3,7 +3,7 @@ use crate::{
     app_settings::get_settings_sync,
     db::get_mongo,
     deezer::get_dz_client,
-    models::{Album, Artist, PopulatedArtist},
+    models::{Album, Artist, PopulatedArtist, DeezerId},
 };
 use actix::Addr;
 use actix_web::{web, HttpResponse};
@@ -12,7 +12,7 @@ use itertools::Itertools;
 use super::{index_artist_top_tracks, MusicResponse};
 
 pub async fn get_artist(
-    req: web::Path<i32>,
+    req: web::Path<DeezerId>,
     scraper: web::Data<Addr<ArtistScraperActor>>,
 ) -> MusicResponse {
     let db = get_mongo(None).await;
