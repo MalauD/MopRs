@@ -22,14 +22,6 @@ class SearchPageAlbums extends React.Component {
         };
     }
 
-    componentDidMount() {
-        this.SearchAlbums();
-    }
-
-    componentDidUpdate() {
-        this.SearchAlbums();
-    }
-
     SearchAlbums = () => {
         const { location } = this.props;
 
@@ -38,7 +30,6 @@ class SearchPageAlbums extends React.Component {
         const values = QueryString.parse(location.search);
 
         if (values.q !== PrevSearch && !IsFetchingAlbums) {
-            this.setState({ IsFetchingAlbums: true });
             Axios.get(`/Music/Search/Album/Name/${values.q}?page=0&maxResults=14`).then((res) => {
                 this.setState({
                     Albums: res.data,

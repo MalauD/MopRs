@@ -48,31 +48,6 @@ impl MongoClient {
         Ok(())
     }
 
-    pub async fn search_music(
-        &self,
-        search: String,
-        pagination: &PaginationOptions,
-    ) -> Result<Option<Vec<Music>>> {
-        let coll = self._database.collection::<Music>("Music");
-        let find_option = FindOptions::builder()
-            .limit(pagination.get_max_results() as i64)
-            .skip(Some(
-                (pagination.get_page() * pagination.get_max_results()) as u64,
-            ))
-            .build();
-        let mut cursor = coll
-            .find(doc! { "$text": { "$search": search } }, find_option)
-            .await?;
-        let mut result = Vec::<Music>::with_capacity(pagination.get_max_results().max(20));
-        while let Some(value) = cursor.next().await {
-            if let Ok(res) = value {
-                result.push(res);
-            }
-        }
-        result.sort_by(|x, y| y.get_rank().cmp(x.get_rank()));
-        Ok(Some(result))
-    }
-
     pub async fn get_musics(&self, music_ids: &Vec<DeezerId>) -> Result<Option<Vec<Music>>> {
         let coll = self._database.collection::<Music>("Music");
         let mut cursor = coll.find(doc! {"_id": {"$in": music_ids}}, None).await?;

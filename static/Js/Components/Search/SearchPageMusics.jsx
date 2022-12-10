@@ -9,6 +9,11 @@ class SearchPageMusics extends React.Component {
         location: PropTypes.shape({
             search: PropTypes.string.isRequired,
         }).isRequired,
+        onSearchEnd: PropTypes.func,
+    };
+
+    static defaultProps = {
+        onSearchEnd: () => {},
     };
 
     constructor(props) {
@@ -31,7 +36,7 @@ class SearchPageMusics extends React.Component {
     }
 
     SearchMusics = () => {
-        const { location } = this.props;
+        const { location, onSearchEnd } = this.props;
 
         const { IsFetchingMusics, PrevSearch } = this.state;
 
@@ -40,6 +45,7 @@ class SearchPageMusics extends React.Component {
         if (values.q !== PrevSearch && !IsFetchingMusics) {
             this.setState({ IsFetchingMusics: true });
             Axios.get(`/Music/Search/Music/Name/${values.q}?maxResults=14&page=0`).then((res) => {
+                onSearchEnd();
                 this.setState({
                     Musics: res.data,
                     IsFetchingMusics: false,

@@ -8,10 +8,10 @@ use crate::{
     actors::ArtistScraperActor,
     db::get_mongo,
     deezer::get_dz_client,
-    models::{PopulatedPlaylist, User, DeezerId},
+    models::{DeezerId, PopulatedPlaylist, User},
 };
 
-use super::{index_search_musics_result, MusicResponse};
+use super::{index_search_musics_result, IndexType, MusicResponse};
 
 pub async fn get_playlist(req: web::Path<String>, user: User) -> MusicResponse {
     let db = get_mongo(None).await;
@@ -136,12 +136,13 @@ pub async fn create_playlist_deezer(
 
     let music_dz_ids = dz.get_playlist_musics(&pl.deezer_id).await?;
 
-    let musics: Vec<DeezerId> = index_search_musics_result(&music_dz_ids, scraper.get_ref())
-        .await
-        .unwrap()
-        .into_iter()
-        .map(|m| m.id)
-        .collect();
+    let musics: Vec<DeezerId> =
+        index_search_musics_result(&music_dz_ids, scraper.get_ref(), IndexType::None)
+            .await
+            .unwrap()
+            .into_iter()
+            .map(|m| m.id)
+            .collect();
 
     let id = db
         .create_playlist(pl.name.clone(), &musics, pl.is_public, &user)

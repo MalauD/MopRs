@@ -7,6 +7,8 @@ pub enum MusicError {
     DatabaseError(#[from] mongodb::error::Error),
     #[error("Something went wrong with the request")]
     ApiBackendError(#[from] reqwest::Error),
+    #[error("Something went wrong with the meilisearch request")]
+    SearchBackendError(#[from] meilisearch_sdk::errors::Error),
 }
 
 impl ResponseError for MusicError {
@@ -14,6 +16,7 @@ impl ResponseError for MusicError {
         match *self {
             MusicError::DatabaseError(_) => StatusCode::INTERNAL_SERVER_ERROR,
             MusicError::ApiBackendError(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            MusicError::SearchBackendError(_) => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
 

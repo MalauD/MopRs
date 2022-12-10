@@ -70,30 +70,6 @@ impl MongoClient {
         Ok(())
     }
 
-    pub async fn search_album(
-        &self,
-        search: String,
-        pagination: &PaginationOptions,
-    ) -> Result<Option<Vec<Album>>> {
-        let coll = self._database.collection::<Album>("Album");
-        let find_option = FindOptions::builder()
-            .limit(pagination.get_max_results() as i64)
-            .skip(Some(
-                (pagination.get_page() * pagination.get_max_results()) as u64,
-            ))
-            .build();
-        let mut cursor = coll
-            .find(doc! { "$text": { "$search": search } }, find_option)
-            .await?;
-        let mut result = Vec::<Album>::with_capacity(pagination.get_max_results().max(20));
-        while let Some(value) = cursor.next().await {
-            if let Ok(res) = value {
-                result.push(res);
-            }
-        }
-        Ok(Some(result))
-    }
-
     pub async fn get_album(&self, album_id: &DeezerId) -> Result<Option<Album>> {
         let coll = self._database.collection::<Album>("Album");
         Ok(coll.find_one(doc! {"_id": album_id}, None).await?)

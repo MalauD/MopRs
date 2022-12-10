@@ -3,7 +3,8 @@ use crate::{
     app_settings::get_settings_sync,
     db::get_mongo,
     deezer::get_dz_client,
-    models::{Album, Artist, PopulatedArtist, DeezerId},
+    models::{Album, Artist, DeezerId, PopulatedArtist},
+    search::get_meilisearch,
 };
 use actix::Addr;
 use actix_web::{web, HttpResponse};
@@ -17,6 +18,7 @@ pub async fn get_artist(
 ) -> MusicResponse {
     let db = get_mongo(None).await;
     let dz = get_dz_client(None).await.read().await;
+    let search = get_meilisearch(None).await;
     let config = get_settings_sync();
 
     let mut compl_artist = db.get_artist(&req).await?.unwrap();
@@ -32,7 +34,8 @@ pub async fn get_artist(
             .unique_by(|x| x.id)
             .collect_vec();
         let albums_id = albums.clone().into_iter().map(|x| x.id).collect_vec();
-        let _ = db.bulk_insert_albums(albums).await;
+        let _ = db.bulk_insert_albums(albums.clone()).await;
+        let _ = search.index_albums(albums).await?;
         let _ = db.append_multiple_to_an_artist(albums_id, &req).await;
         //musics.group_by()
 
@@ -48,6 +51,8 @@ pub async fn get_artist(
             .collect_vec();
 
         let _ = db.bulk_insert_artists(&rel_artists).await;
+        let _ = search.index_artists(rel_artists.clone()).await?;
+
         let _ = db
             .set_related_artists(
                 &req,

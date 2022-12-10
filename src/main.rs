@@ -17,6 +17,7 @@ use crate::{
     db::get_mongo,
     deezer::get_dz_client,
     s3::get_s3,
+    search::{get_meilisearch, MeilisearchConfig},
 };
 
 mod actors;
@@ -27,6 +28,7 @@ mod handlers;
 mod models;
 mod routes;
 mod s3;
+mod search;
 mod suggestion;
 mod tools;
 
@@ -78,6 +80,12 @@ async fn main() -> std::io::Result<()> {
     info!(target:"mop-rs::redis","Connected to redis");
 
     let _ = get_dz_client(Some(config.arl.clone())).await;
+
+    let _ = get_meilisearch(Some(MeilisearchConfig::new(
+        config.meilisearch_host.clone(),
+        config.meilisearch_api_key.clone(),
+    )))
+    .await;
 
     let db = get_mongo(Some(config.mongo_url.clone())).await;
 

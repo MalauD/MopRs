@@ -22,14 +22,6 @@ class SearchPageArtists extends React.Component {
         };
     }
 
-    componentDidMount() {
-        this.SearchArtists();
-    }
-
-    componentDidUpdate() {
-        this.SearchArtists();
-    }
-
     SearchArtists = () => {
         const { location } = this.props;
 

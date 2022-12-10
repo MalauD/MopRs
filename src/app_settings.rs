@@ -34,6 +34,8 @@ pub struct AppSettings {
     pub s3_url: String,
     pub arl: String,
     pub mongo_url: String,
+    pub meilisearch_host: String,
+    pub meilisearch_api_key: String,
     pub redis_service_host: String,
     pub redis_service_port: String,
     pub redis_password: Option<String>,

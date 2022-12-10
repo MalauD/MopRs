@@ -8,7 +8,7 @@ use crate::{
     models::{Chart, DeezerId},
 };
 
-use super::{index_search_musics_result, MusicResponse};
+use super::{index_search_musics_result, IndexType, MusicResponse};
 
 pub async fn trending_musics(
     pagination: web::Query<PaginationOptions>,
@@ -28,6 +28,7 @@ pub async fn trending_musics(
                     next: None,
                 },
                 scraper.get_ref(),
+                IndexType::None,
             )
             .await;
             let ch = Chart::from(chart);

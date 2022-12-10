@@ -50,6 +50,8 @@ This is deezer client providing multiple features like having multiple users, mu
     <li><a href="https://actix.rs/">Actix</a></li>
     <li><a href="https://github.com/seanmonstar/reqwest">Reqwest</a></li>
     <li><a href="https://www.mongodb.com/docs/drivers/rust/">MongoDB Rust Driver</a></li>
+    <li><a href="https://redis.io/">Redis</a></li>
+    <li><a href="https://www.meilisearch.com/">Meilisearch</a></li>
   </ul>
 </details>
 
@@ -78,18 +80,6 @@ This is deezer client providing multiple features like having multiple users, mu
 -   Suggestion to complete playlists
 -   Trending musics
 
-<!-- Env Variables -->
-
-### Environment Variables
-
-To run this project, you will need to add the following environment variables to your .env file
-
-`S3_URL`
-
-`ARL`
-
-`MONGO_URL`
-
 <!-- Getting Started -->
 
 ## Getting Started without Kubernetes
@@ -103,8 +93,11 @@ You will need the following software:
 -   MinIO instance running
 -   MongoDB database running
 -   Redis server running
+-   Meilisearch instance running
 
 ### Environment variables description
+
+You can store your environment variables in the `.env` file. Here is a quick overview of all env variables available:
 
 | Variable                                 | Description                                                              | Default                 |
 | ---------------------------------------- | ------------------------------------------------------------------------ | ----------------------- |
@@ -115,6 +108,8 @@ You will need the following software:
 | `REDIS_SERVICE_PORT`                     | Port for redis connection                                                |                         |
 | `REDIS_PASSWORD`                         | Password in case redis is secured                                        |                         |
 | `REDIS_USERNAME`                         | Username in case redis is secured                                        |                         |
+| `MEILISEARCH_HOST`                       | Address to meilisearch instance                                          |                         |
+| `MEILISEARCH_API_KEY`                    | Key to access meilisearch instance                                       |                         |
 | `SESSION_KEY`                            | Key used for cookie generation                                           | Generated at each start |
 | `SESSION_DURATION`                       | Duration of user session (s)                                             | `3600\*24\*7`           |
 | `ARTIST_UPDATE_INTERVAL`                 | Specify interval at which an artist top tracks, related.. is updated (s) | `3600`                  |
@@ -175,6 +170,11 @@ Then install redis standalone
 
 ```bash
 helm upgrade redis ot-helm/redis --install --namespace default  -f .kube/redis_values.yaml
+```
+
+And finally install meilisearch
+```bash
+helm upgrade -i mop-meilisearch meilisearch/meilisearch -f .kube/meilisearch_values.yaml
 ```
 
 #### Applying yaml files

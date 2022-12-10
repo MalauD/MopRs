@@ -6,9 +6,10 @@ use crate::{
     db::{get_mongo, PaginationOptions},
     deezer::get_dz_client,
     models::{PopulatedPlaylist, User},
+    search::get_meilisearch,
 };
 
-use super::{index_search_musics_result, MusicResponse};
+use super::{index_search_musics_result, IndexType, MusicResponse};
 
 pub async fn search_music(
     req: web::Path<String>,
@@ -16,11 +17,18 @@ pub async fn search_music(
     scraper: web::Data<Addr<ArtistScraperActor>>,
 ) -> MusicResponse {
     let db = get_mongo(None).await;
+    let search = get_meilisearch(None).await;
     let dz = get_dz_client(None).await.read().await;
-    let res = dz.search_music(req.clone()).await?;
-    let _ = index_search_musics_result(&res, scraper.get_ref()).await;
-    //musics.group_by()
-    let searched_musics = db.search_music(req.into_inner(), &pagination).await?;
+
+    if pagination.get_page() == 0 {
+        let res = dz.search_music(req.clone()).await?;
+        let _ = index_search_musics_result(&res, scraper.get_ref(), IndexType::Music).await;
+        //musics.group_by()
+    }
+    let search_res = search
+        .search_musics(req.into_inner(), pagination.into_inner())
+        .await?;
+    let searched_musics = db.get_musics(&search_res).await?;
     Ok(HttpResponse::Ok().json(searched_musics.unwrap_or_default()))
 }
 
@@ -30,11 +38,18 @@ pub async fn search_album(
     scraper: web::Data<Addr<ArtistScraperActor>>,
 ) -> MusicResponse {
     let db = get_mongo(None).await;
+    let search = get_meilisearch(None).await;
     let dz = get_dz_client(None).await.read().await;
-    let res = dz.search_music(req.clone()).await?;
-    let _ = index_search_musics_result(&res, scraper.get_ref()).await;
-    //musics.group_by()
-    let searched_albums = db.search_album(req.into_inner(), &pagination).await?;
+    /*
+    if pagination.get_page() == 0 {}
+        let res = dz.search_music(req.clone()).await?;
+        let _ = index_search_musics_result(&res, scraper.get_ref(), IndexType::Album).await;
+    }
+    //musics.group_by() */
+    let search_res = search
+        .search_albums(req.into_inner(), pagination.into_inner())
+        .await?;
+    let searched_albums = db.get_albums(&search_res).await?;
     Ok(HttpResponse::Ok().json(searched_albums.unwrap_or_default()))
 }
 
@@ -44,11 +59,19 @@ pub async fn search_artist(
     scraper: web::Data<Addr<ArtistScraperActor>>,
 ) -> MusicResponse {
     let db = get_mongo(None).await;
+    let search = get_meilisearch(None).await;
     let dz = get_dz_client(None).await.read().await;
-    let res = dz.search_music(req.clone()).await?;
-    let _ = index_search_musics_result(&res, scraper.get_ref()).await;
-    //musics.group_by()
-    let searched_artists = db.search_artist(req.into_inner(), &pagination).await?;
+
+    /*
+    if pagination.get_page() == 0 {
+        let res = dz.search_music(req.clone()).await?;
+        let _ = index_search_musics_result(&res, scraper.get_ref(), IndexType::Artist).await;
+    }
+    //musics.group_by() */
+    let search_res = search
+        .search_artists(req.into_inner(), pagination.into_inner())
+        .await?;
+    let searched_artists = db.get_artists(&search_res).await?;
     Ok(HttpResponse::Ok().json(searched_artists.unwrap()))
 }
 

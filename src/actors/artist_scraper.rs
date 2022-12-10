@@ -1,6 +1,7 @@
 use crate::app_settings::get_settings_sync;
 use crate::deezer::get_dz_client;
 use crate::handlers::index_artist_top_tracks;
+use crate::search::get_meilisearch;
 use crate::tools::MusicError;
 use crate::{db::get_mongo, models::Artist};
 use actix::clock::sleep;
@@ -17,6 +18,7 @@ impl ArtistScraperActor {
             info!("Scraping artist: {}", artist.name);
             let mut compl_artist = artist.clone();
             let db = get_mongo(None).await;
+            let search = get_meilisearch(None).await;
             let dz = get_dz_client(None).await.read().await;
 
             let related = dz.get_related_artists(&artist.id).await.unwrap();
@@ -30,6 +32,7 @@ impl ArtistScraperActor {
                 .unique_by(|x| x.id)
                 .collect_vec();
             let _ = db.bulk_insert_artists(&rel_artists).await;
+            let _ = search.index_artists(rel_artists.clone()).await;
             let _ = db
                 .set_related_artists(
                     &artist.id,

@@ -46,7 +46,7 @@ impl Music {
 pub struct Album {
     #[serde(rename = "_id")]
     pub id: DeezerId,
-    name: String,
+    pub name: String,
     pub cover: String,
     is_complete: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -107,7 +107,7 @@ pub struct Artist {
     #[serde(rename = "_id")]
     pub id: DeezerId,
     pub name: String,
-    picture: String,
+    pub picture: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub albums: Option<Vec<DeezerId>>,
     #[serde(skip_serializing_if = "Option::is_none")]
