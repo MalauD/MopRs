@@ -1,6 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import { Dropdown } from 'react-bootstrap';
+import fileDownload from 'js-file-download';
 
 export default class DownloadMusic extends React.Component {
     static propTypes = {
@@ -11,7 +12,10 @@ export default class DownloadMusic extends React.Component {
 
     onClick = () => {
         const { Music } = this.props;
-        window.open(`/Music/Download/${Music._id}.mp3`, '_blank');
+        Axios.get(`/Music/Download/${Music._id}.mp3`, { responseType: 'blob' })
+            .then((response) => {
+                fileDownload(response.data, `${Music._id}.mp3`);
+            });
     };
 
     render() {
