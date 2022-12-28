@@ -7,6 +7,7 @@ import PlayNextMusic from './PlayNextMusic';
 import AddToPlaylistMusic from './AddToPlaylistMusic';
 import DeletePlaylist from './DeletePlaylistMusic';
 import AddPlaylistMusic from './AddPlaylistMusic';
+import DownloadMusic from './DownloadMusic';
 
 function DefaultActions(props) {
     return (
@@ -18,6 +19,8 @@ function DefaultActions(props) {
             <Dropdown.Divider />
             <AddToNewPlaylistMusic {...props} />
             <AddToPlaylistMusic {...props} />
+            <Dropdown.Divider />
+            <DownloadMusic {...props}/>
         </>
     );
 }

@@ -40,6 +40,7 @@ pub fn config_music(cfg: &mut web::ServiceConfig) {
                 web::delete().to(remove_music_playlist),
             )
             .route("/cdn/{id}", web::get().to(get_music))
+            .route("/Download/{id}.mp3", web::get().to(get_music_tagged))
             .route("/Like/Music/{id}", web::get().to(like_music))
             .route("/Related", web::post().to(get_related_musics)),
     );

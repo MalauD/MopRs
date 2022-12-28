@@ -3,6 +3,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use bson::oid::ObjectId;
 use bson::serde_helpers::serialize_object_id_as_hex_string;
 use chrono::{Duration, Utc};
+use id3::{Tag, TagLike};
 use mongodb::bson::DateTime;
 use serde::{Deserialize, Serialize};
 

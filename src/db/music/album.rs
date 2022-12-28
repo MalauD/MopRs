@@ -86,4 +86,9 @@ impl MongoClient {
         }
         return Ok(Some(result));
     }
+
+    pub async fn get_album_of_music(&self, music_id: &DeezerId) -> Result<Option<Album>> {
+        let coll = self._database.collection::<Album>("Album");
+        Ok(coll.find_one(doc! {"musics": music_id}, None).await?)
+    }
 }

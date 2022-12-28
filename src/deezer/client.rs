@@ -240,4 +240,15 @@ impl DeezerClient {
         }
         Ok(response)
     }
+
+    pub async fn get_cover(&self, url: &String) -> Result<Vec<u8>> {
+        Ok(self
+            .http_client
+            .get(url)
+            .send()
+            .await?
+            .bytes()
+            .await?
+            .to_vec())
+    }
 }
