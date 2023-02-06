@@ -1,7 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import { SortableContainer } from 'react-sortable-hoc';
-import MediaLayout from '../Layout/MediaLayout';
+import MediaLayout from '../../Layout/MediaLayout';
 
 export default class SortableMusicContainer extends React.Component {
     static propTypes = {

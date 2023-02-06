@@ -20,6 +20,7 @@ function MusicItemRow({
     children,
     AccessoryRight,
     UseDragHandle,
+    Highlight,
 }) {
     return (
         <tr className="w-100 m-0 p-0 PointerCursor MusicItemRow">
@@ -32,7 +33,13 @@ function MusicItemRow({
                 {UseDragHandle && <DragHandle />}
             </td>
             <td className="p-0 py-2 pl-0 align-middle" onClick={onClick} style={{ width: '50px' }}>
-                <ImgBootstrap className="PlayerImage my-auto" rounded height="50em" src={ImageDz} />
+                <ImgBootstrap
+                    className="PlayerImage my-auto"
+                    style={{ border: Highlight ? 'solid 2px #cc506c' : 'none' }}
+                    rounded
+                    height="50em"
+                    src={ImageDz}
+                />
             </td>
             <td className="p-0 py-2 pl-3 pr-0 align-top" onClick={onClick}>
                 <Col className="pl-0">
@@ -62,6 +69,7 @@ MusicItemRow.propTypes = {
     children: PropTypes.oneOfType([PropTypes.arrayOf(PropTypes.node), PropTypes.node]),
     AccessoryRight: PropTypes.node,
     UseDragHandle: PropTypes.bool,
+    Highlight: PropTypes.bool,
 };
 
 MusicItemRow.defaultProps = {
@@ -69,6 +77,7 @@ MusicItemRow.defaultProps = {
     children: null,
     AccessoryRight: null,
     UseDragHandle: false,
+    Highlight: false,
 };
 
 export default MusicItemRow;

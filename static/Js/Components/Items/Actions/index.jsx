@@ -20,7 +20,7 @@ function DefaultActions(props) {
             <AddToNewPlaylistMusic {...props} />
             <AddToPlaylistMusic {...props} />
             <Dropdown.Divider />
-            <DownloadMusic {...props}/>
+            <DownloadMusic {...props} />
         </>
     );
 }
@@ -35,6 +35,8 @@ function OwnPlaylistActions(props) {
             <Dropdown.Divider />
             <AddToNewPlaylistMusic {...props} />
             <AddToPlaylistMusic {...props} />
+            <Dropdown.Divider />
+            <DownloadMusic {...props} />
             <Dropdown.Divider />
             <DeletePlaylist {...props} />
         </>
@@ -54,9 +56,22 @@ function OwnPlaylistRelatedActions(props) {
             <AddToNewPlaylistMusic {...props} />
             <AddToPlaylistMusic {...props} />
             <Dropdown.Divider />
+            <DownloadMusic {...props} />
+            <Dropdown.Divider />
             <DeletePlaylist {...props} />
         </>
     );
 }
 
-export { DefaultActions, OwnPlaylistActions, OwnPlaylistRelatedActions };
+function CurrentPlaylistActions(props) {
+    return (
+        <>
+            <AddToNewPlaylistMusic {...props} />
+            <AddToPlaylistMusic {...props} />
+            <Dropdown.Divider />
+            <DownloadMusic {...props} />
+        </>
+    );
+}
+
+export { DefaultActions, OwnPlaylistActions, OwnPlaylistRelatedActions, CurrentPlaylistActions };

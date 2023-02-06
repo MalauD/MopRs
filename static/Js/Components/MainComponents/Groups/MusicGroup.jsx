@@ -5,12 +5,13 @@ import { SortableElement } from 'react-sortable-hoc';
 import {
     ClearPlaylist as ClearPlaylistRedux,
     AddMultipleMusics as AddMultipleMusicsRedux,
+    ChangePlayingMusic as ChangePlayingMusicRedux,
 } from '../../../Actions/Action';
 import MusicElement from '../../Elements/MusicElement';
 import ButtonIcon from '../../Helper/ButtonIcon';
 import MediaLayout from '../../Layout/MediaLayout';
 import { DefaultActions } from '../../Items/Actions';
-import SortableMusicContainer from '../../Containers/SortableMusicContainer';
+import SortableMusicContainer from './SortableMusicContainer';
 
 const mapDispatchToProps = (dispatch) => ({
     ClearPlaylist: () => {
@@ -19,11 +20,15 @@ const mapDispatchToProps = (dispatch) => ({
     AddMusics: (Musics) => {
         dispatch(AddMultipleMusicsRedux(Musics));
     },
+    ChangePlayingMusic: (Music) => {
+        dispatch(ChangePlayingMusicRedux(Music));
+    },
 });
 
 class MusicGroupConnected extends React.Component {
     static propTypes = {
         ClearPlaylist: PropTypes.func.isRequired,
+        ChangePlayingMusic: PropTypes.func.isRequired,
         AddMusics: PropTypes.func.isRequired,
         Musics: PropTypes.arrayOf(PropTypes.shape({ _id: PropTypes.number.isRequired })).isRequired,
         isLoading: PropTypes.bool,
@@ -33,6 +38,10 @@ class MusicGroupConnected extends React.Component {
         Actions: PropTypes.func,
         Accessories: PropTypes.arrayOf(PropTypes.element),
         AllowSort: PropTypes.bool,
+        AlwaysSort: PropTypes.bool,
+        DisplayActionsOnSort: PropTypes.bool,
+        OnMusicElementClick: PropTypes.func,
+        HighlightedMusics: PropTypes.arrayOf(PropTypes.number),
     };
 
     static defaultProps = {
@@ -42,12 +51,16 @@ class MusicGroupConnected extends React.Component {
         Actions: DefaultActions,
         Accessories: [],
         AllowSort: false,
+        AlwaysSort: false,
+        DisplayActionsOnSort: false,
+        OnMusicElementClick: undefined,
+        HighlightedMusics: [],
     };
 
     constructor(props) {
         super(props);
         this.state = {
-            isInSorting: false,
+            isInSorting: props.AlwaysSort,
         };
     }
 
@@ -69,18 +82,51 @@ class MusicGroupConnected extends React.Component {
     };
 
     render() {
-        const { Musics, Actions, Accessories, AllowSort, ...props } = this.props;
+        const {
+            Musics,
+            Actions,
+            Accessories,
+            AllowSort,
+            DisplayActionsOnSort,
+            OnMusicElementClick,
+            ChangePlayingMusic,
+            HighlightedMusics,
+            ...props
+        } = this.props;
         const { isInSorting } = this.state;
 
         const MusicElementSortable = SortableElement(({ value }) => (
-            <MusicElement UseDragHandle ShowLikeButton={false} Music={value} />
+            <MusicElement
+                UseDragHandle
+                ShowLikeButton={DisplayActionsOnSort}
+                Music={value.Music}
+                onClick={() =>
+                    OnMusicElementClick
+                        ? OnMusicElementClick(value.Music, value.index)
+                        : ChangePlayingMusic(value.Music)
+                }
+                Actions={DisplayActionsOnSort ? Actions : undefined}
+                Highlight={HighlightedMusics.includes(value.index)}
+                {...props}
+            />
         ));
 
         const MusicItems = Musics.map((m, index) =>
             isInSorting ? (
-                <MusicElementSortable key={m._id} index={index} value={m} />
+                <MusicElementSortable key={m._id} index={index} value={{ Music: m, index }} />
             ) : (
-                <MusicElement key={m._id} Music={m} Actions={Actions} {...props} />
+                <MusicElement
+                    key={m._id}
+                    Music={m}
+                    Actions={Actions}
+                    onClick={() =>
+                        OnMusicElementClick
+                            ? OnMusicElementClick({ m, index })
+                            : ChangePlayingMusic(m)
+                    }
+                    Highlight={HighlightedMusics.includes(index)}
+                    {...props}
+                />
             )
         );
 
