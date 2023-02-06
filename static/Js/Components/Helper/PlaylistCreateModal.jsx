@@ -66,7 +66,7 @@ class PlaylistCreateModal extends React.Component {
                                 type="checkbox"
                                 label="Public"
                                 checked={IsPublic}
-                                onClick={this.handleIsPublicChange}
+                                onChange={this.handleIsPublicChange}
                             />
                         </Form.Group>
                     </Form>

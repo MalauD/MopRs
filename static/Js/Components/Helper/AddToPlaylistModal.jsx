@@ -14,8 +14,8 @@ class AddToPlaylistModalConnected extends React.Component {
         OnClose: PropTypes.func.isRequired,
         history: PropTypes.shape({ push: PropTypes.func }).isRequired,
         Music: PropTypes.shape({
-            _id: PropTypes.string.isRequired,
-            Title: PropTypes.string.isRequired,
+            _id: PropTypes.number.isRequired,
+            title: PropTypes.string.isRequired,
         }).isRequired,
         Account: PropTypes.shape().isRequired,
     };
