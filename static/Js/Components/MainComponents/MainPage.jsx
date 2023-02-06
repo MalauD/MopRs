@@ -26,10 +26,14 @@ class MainPageConnected extends React.Component {
     render() {
         const { Account } = this.props;
         const { liked_musics } = Account;
-        console.log(liked_musics);
         return (
             <>
-                <RelatedMusics Title="Suggestion" Limit={10} ExcludePassedIds={false} MusicIds={liked_musics} />
+                <RelatedMusics
+                    Title="Suggestion"
+                    Limit={10}
+                    ExcludePassedIds={false}
+                    MusicIds={liked_musics}
+                />
                 <Trending />
                 <Favorites Size={14} />
                 <History Size={14} />
