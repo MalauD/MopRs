@@ -4,6 +4,7 @@ use actix_identity::IdentityMiddleware;
 use actix_session::{config::PersistentSession, storage::RedisSessionStore, SessionMiddleware};
 use actix_web::{
     cookie::Key,
+    middleware,
     web::{self, Data},
     App, HttpRequest, HttpResponse, HttpServer, Result,
 };
@@ -98,6 +99,7 @@ async fn main() -> std::io::Result<()> {
 
     HttpServer::new(move || {
         App::new()
+            .wrap(middleware::Compress::default())
             .app_data(Data::new(config.clone()))
             .app_data(Data::new(addr.clone()))
             .wrap(IdentityMiddleware::default())
