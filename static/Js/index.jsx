@@ -3,6 +3,9 @@ import React, { Suspense } from 'react';
 import ReactDOM from 'react-dom';
 import { Provider } from 'react-redux';
 import { HashRouter, Route } from 'react-router-dom';
+
+import '../Style/Main.scss';
+
 import ScrollToTop from './Components/ScrollToTop';
 import ProtectedRoute from './ProtectedRoute';
 import store from './store';
