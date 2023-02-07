@@ -15,6 +15,7 @@ import Register from './Components/Authentification/Register';
 import Favorites from './Components/MainComponents/Favorites';
 import History from './Components/MainComponents/History';
 import SearchPage from './Components/Search/SearchPage';
+import Music from './Components/MainComponents/Music';
 import Album from './Components/MainComponents/Album';
 import Artist from './Components/MainComponents/Artist';
 import UserPlaylist from './Components/MainComponents/UserPlaylist';
@@ -49,6 +50,9 @@ function App() {
                     </Route>
                     <Route path="/Player">
                         <ProtectedRoute Component={PlayerFull} />
+                    </Route>
+                    <Route path="/Music/:id">
+                        <ProtectedRoute Component={Music} />
                     </Route>
                     <Route path="/Album/:id">
                         <ProtectedRoute Component={Album} />

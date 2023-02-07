@@ -21,6 +21,7 @@ pub fn config_music(cfg: &mut web::ServiceConfig) {
                 web::get().to(search_playlist),
             )
             .route("/Trending/Musics", web::get().to(trending_musics))
+            .route("/Music/id/{id}", web::get().to(get_music))
             .route("/Album/id/{id}", web::get().to(get_album))
             .route("/Artist/id/{id}", web::get().to(get_artist))
             .route("/Playlist/Create", web::post().to(create_playlist))
@@ -39,7 +40,7 @@ pub fn config_music(cfg: &mut web::ServiceConfig) {
                 "/Playlist/id/{id}/Remove",
                 web::delete().to(remove_music_playlist),
             )
-            .route("/cdn/{id}", web::get().to(get_music))
+            .route("/cdn/{id}", web::get().to(get_music_audio))
             .route("/Download/{id}.mp3", web::get().to(get_music_tagged))
             .route("/Like/Music/{id}", web::get().to(like_music))
             .route("/Related", web::post().to(get_related_musics)),

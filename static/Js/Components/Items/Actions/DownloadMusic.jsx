@@ -13,13 +13,12 @@ export default class DownloadMusic extends React.Component {
 
     onClick = () => {
         const { Music } = this.props;
-        Axios.get(`/Music/Download/${Music._id}.mp3`, { responseType: 'blob' })
-            .then((response) => {
-                fileDownload(response.data, `${Music._id}.mp3`);
-            });
+        Axios.get(`/Music/Download/${Music._id}.mp3`, { responseType: 'blob' }).then((response) => {
+            fileDownload(response.data, `${Music._id}.mp3`);
+        });
     };
 
     render() {
-        return <Dropdown.Item onClick={this.onClick}>Download Music</Dropdown.Item>;
+        return <Dropdown.Item onClick={this.onClick}>Download music</Dropdown.Item>;
     }
 }

@@ -8,6 +8,7 @@ import AddToPlaylistMusic from './AddToPlaylistMusic';
 import DeletePlaylist from './DeletePlaylistMusic';
 import AddPlaylistMusic from './AddPlaylistMusic';
 import DownloadMusic from './DownloadMusic';
+import GetLink from './GetLink';
 
 function DefaultActions(props) {
     return (
@@ -21,6 +22,7 @@ function DefaultActions(props) {
             <AddToPlaylistMusic {...props} />
             <Dropdown.Divider />
             <DownloadMusic {...props} />
+            <GetLink {...props} />
         </>
     );
 }
@@ -37,6 +39,7 @@ function OwnPlaylistActions(props) {
             <AddToPlaylistMusic {...props} />
             <Dropdown.Divider />
             <DownloadMusic {...props} />
+            <GetLink {...props} />
             <Dropdown.Divider />
             <DeletePlaylist {...props} />
         </>
@@ -57,6 +60,7 @@ function OwnPlaylistRelatedActions(props) {
             <AddToPlaylistMusic {...props} />
             <Dropdown.Divider />
             <DownloadMusic {...props} />
+            <GetLink {...props} />
             <Dropdown.Divider />
             <DeletePlaylist {...props} />
         </>
@@ -70,6 +74,7 @@ function CurrentPlaylistActions(props) {
             <AddToPlaylistMusic {...props} />
             <Dropdown.Divider />
             <DownloadMusic {...props} />
+            <GetLink {...props} />
         </>
     );
 }

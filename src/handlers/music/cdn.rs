@@ -12,7 +12,7 @@ use crate::{
     s3::get_s3,
 };
 
-pub async fn get_music(
+pub async fn get_music_audio(
     req: web::Path<DeezerId>,
     user: User,
     httpreq: HttpRequest,

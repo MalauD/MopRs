@@ -29,7 +29,7 @@ class PlayNextMusicAction extends React.Component {
     };
 
     render() {
-        return <Dropdown.Item onClick={this.onClick}>Play Next</Dropdown.Item>;
+        return <Dropdown.Item onClick={this.onClick}>Play next</Dropdown.Item>;
     }
 }
 
