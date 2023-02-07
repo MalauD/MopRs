@@ -35,11 +35,10 @@ pub async fn search_music(
 pub async fn search_album(
     req: web::Path<String>,
     pagination: web::Query<PaginationOptions>,
-    scraper: web::Data<Addr<ArtistScraperActor>>,
 ) -> MusicResponse {
     let db = get_mongo(None).await;
     let search = get_meilisearch(None).await;
-    let dz = get_dz_client(None).await.read().await;
+    let _dz = get_dz_client(None).await.read().await;
     /*
     if pagination.get_page() == 0 {}
         let res = dz.search_music(req.clone()).await?;
@@ -56,11 +55,10 @@ pub async fn search_album(
 pub async fn search_artist(
     req: web::Path<String>,
     pagination: web::Query<PaginationOptions>,
-    scraper: web::Data<Addr<ArtistScraperActor>>,
 ) -> MusicResponse {
     let db = get_mongo(None).await;
     let search = get_meilisearch(None).await;
-    let dz = get_dz_client(None).await.read().await;
+    let _dz = get_dz_client(None).await.read().await;
 
     /*
     if pagination.get_page() == 0 {

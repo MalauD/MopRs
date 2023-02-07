@@ -69,7 +69,6 @@ pub async fn get_music(
 pub async fn get_music_tagged(
     req: web::Path<DeezerId>,
     user: User,
-    httpreq: HttpRequest,
 ) -> actix_web::Result<HttpResponse> {
     let db = get_mongo(None).await;
     let bucket = get_s3(None).await.get_bucket();

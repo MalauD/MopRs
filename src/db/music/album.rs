@@ -1,13 +1,13 @@
 use mongodb::{
     bson::doc,
     error::Result,
-    options::{FindOptions, IndexOptions, InsertManyOptions},
+    options::{IndexOptions, InsertManyOptions},
     IndexModel,
 };
 use tokio_stream::StreamExt;
 
 use crate::{
-    db::{MongoClient, PaginationOptions},
+    db::MongoClient,
     models::{Album, DeezerId},
 };
 

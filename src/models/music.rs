@@ -3,7 +3,6 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use bson::oid::ObjectId;
 use bson::serde_helpers::serialize_object_id_as_hex_string;
 use chrono::{Duration, Utc};
-use id3::{Tag, TagLike};
 use mongodb::bson::DateTime;
 use serde::{Deserialize, Serialize};
 
@@ -35,12 +34,6 @@ pub struct Music {
     pub likes: i64,
     pub rank: i64,
     pub last_view: DateTime,
-}
-
-impl Music {
-    pub fn get_rank(&self) -> &i64 {
-        &self.rank
-    }
 }
 
 #[derive(Deserialize, Serialize, Clone)]

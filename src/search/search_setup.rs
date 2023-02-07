@@ -27,6 +27,7 @@ impl MeilisearchClient {
         Ok(())
     }
 
+    #[allow(dead_code)]
     pub async fn wait_for_tasks(&self, tasks: Vec<TaskInfo>) {
         let tasks: Vec<_> = tasks.into_iter().map(|t| self.wait_for_task(t)).collect();
         futures::future::join_all(tasks).await;

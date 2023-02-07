@@ -4,13 +4,13 @@ use futures::StreamExt;
 use mongodb::{
     bson::doc,
     error::Result,
-    options::{FindOptions, IndexOptions, InsertManyOptions},
+    options::{IndexOptions, InsertManyOptions},
     IndexModel,
 };
 
 use crate::{
-    db::{MongoClient, PaginationOptions},
-    models::{Music, DeezerId},
+    db::MongoClient,
+    models::{DeezerId, Music},
 };
 
 impl MongoClient {
