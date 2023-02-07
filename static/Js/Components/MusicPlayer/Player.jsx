@@ -103,10 +103,10 @@ class PlayerConnected extends React.Component {
             this.HandlePlay();
         });
         mediaSession.setActionHandler('seekbackward', (e) => {
-            this.player.currentTime -= e.seekOffset ?? 10;
+            this.player.currentTime -= e.seekOffset || 10;
         });
         mediaSession.setActionHandler('seekforward', (e) => {
-            this.player.currentTime += e.seekOffset ?? 10;
+            this.player.currentTime += e.seekOffset || 10;
         });
         mediaSession.setActionHandler('seekto', (e) => {
             this.player.currentTime = e.seekTime;
