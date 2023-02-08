@@ -74,7 +74,6 @@ export default function Searchbox() {
     };
 
     const onEnter = (query) => {
-        console.log(query);
         setlastSelectedId(lastSelectedId < 0 ? lastSelectedId - 1 : -1);
         if (query) {
             history.push(`/Search?q=${encodeURIComponent(query)}`);

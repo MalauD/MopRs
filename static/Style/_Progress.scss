@@ -24,8 +24,8 @@ $ProgressBallSize: 15px;
 }
 
 .Progress-drag {
-    margin-left: -($ProgressBallSize / 2);
-    top: -($ProgressBallSize / 2);
+    margin-left: - calc($ProgressBallSize / 2);
+    top: - calc($ProgressBallSize / 2);
     position: absolute;
 
     -webkit-transition: width 0.5s ease-in-out, height 0.5s ease-in-out, left 0.5s ease-in-out,
