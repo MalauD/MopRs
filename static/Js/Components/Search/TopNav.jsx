@@ -28,7 +28,7 @@ export default class TopNav extends React.Component {
                         }}
                     />
                 </Navbar.Toggle>
-                <Navbar.Collapse id="basic-navbar-nav" className="justify-content-end">
+                <Navbar.Collapse id="basic-navbar-nav">
                     <Searchbox />
                     <AccountTopNav />
                 </Navbar.Collapse>
