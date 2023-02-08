@@ -7,7 +7,7 @@ import Searchbox from './Searchbox';
 export default class TopNav extends React.Component {
     render() {
         return (
-            <Navbar variant="" bg="" expand="lg" className="justify-content-between">
+            <Navbar variant="" bg="" expand="lg">
                 <Navbar.Brand
                     style={{
                         fontFamily: 'Pacifico, cursive',
@@ -28,8 +28,11 @@ export default class TopNav extends React.Component {
                         }}
                     />
                 </Navbar.Toggle>
-                <Navbar.Collapse id="basic-navbar-nav">
+
+                <Navbar.Collapse className="justify-content-end">
                     <Searchbox />
+                </Navbar.Collapse>
+                <Navbar.Collapse className="justify-content-end">
                     <AccountTopNav />
                 </Navbar.Collapse>
             </Navbar>
