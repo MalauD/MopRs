@@ -9,7 +9,7 @@ use crate::{
 };
 
 #[derive(Serialize, Deserialize)]
-struct MusicMeilisearch {
+pub struct MusicMeilisearch {
     pub id: DeezerId,
     pub title: String,
     pub artist_name: String,
@@ -64,7 +64,7 @@ impl MeilisearchClient {
         &self,
         query: String,
         page: PaginationOptions,
-    ) -> Result<Vec<DeezerId>, Error> {
+    ) -> Result<Vec<MusicMeilisearch>, Error> {
         let index = self.client.index("musics");
         let response = index
             .search()
@@ -73,7 +73,6 @@ impl MeilisearchClient {
             .with_offset(page.get_page() * page.get_max_results())
             .execute::<MusicMeilisearch>()
             .await?;
-        let ids: Vec<DeezerId> = response.hits.into_iter().map(|m| m.result.id).collect();
-        Ok(ids)
+        Ok(response.hits.into_iter().map(|m| m.result).collect())
     }
 }

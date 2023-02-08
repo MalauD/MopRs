@@ -29,6 +29,18 @@ class Music extends React.Component {
         });
     }
 
+    componentDidUpdate(prevProps) {
+        // Check if music id changed in url
+        const { match } = this.props;
+        if (match.params.id !== prevProps.match.params.id) {
+            Axios.get(`/Music/Music/id/${match.params.id}`).then((res) => {
+                this.setState({
+                    MusicData: res.data,
+                });
+            });
+        }
+    }
+
     render() {
         const { MusicData } = this.state;
 

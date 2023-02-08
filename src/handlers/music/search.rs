@@ -1,24 +1,38 @@
-use actix::Addr;
-use actix_web::{web, HttpResponse};
-
 use crate::{
     actors::ArtistScraperActor,
     db::{get_mongo, PaginationOptions},
     deezer::get_dz_client,
     models::{PopulatedPlaylist, User},
-    search::get_meilisearch,
+    search::{self, get_meilisearch},
 };
+use actix::Addr;
+use actix_web::{web, HttpResponse};
+use serde::Deserialize;
 
 use super::{index_search_musics_result, IndexType, MusicResponse};
+
+#[derive(Deserialize)]
+pub struct SearchOption {
+    pub no_index: Option<bool>,
+}
 
 pub async fn search_music(
     req: web::Path<String>,
     pagination: web::Query<PaginationOptions>,
+    search_opt: web::Query<SearchOption>,
     scraper: web::Data<Addr<ArtistScraperActor>>,
 ) -> MusicResponse {
     let db = get_mongo(None).await;
     let search = get_meilisearch(None).await;
     let dz = get_dz_client(None).await.read().await;
+
+    if let Some(true) = search_opt.no_index {
+        return Ok(HttpResponse::Ok().json(
+            search
+                .search_musics(req.into_inner(), pagination.into_inner())
+                .await?,
+        ));
+    }
 
     if pagination.get_page() == 0 {
         let res = dz.search_music(req.clone()).await?;
@@ -28,7 +42,8 @@ pub async fn search_music(
     let search_res = search
         .search_musics(req.into_inner(), pagination.into_inner())
         .await?;
-    let searched_musics = db.get_musics(&search_res).await?;
+    let ids = search_res.iter().map(|m| m.id).collect();
+    let searched_musics = db.get_musics(&ids).await?;
     Ok(HttpResponse::Ok().json(searched_musics.unwrap_or_default()))
 }
 

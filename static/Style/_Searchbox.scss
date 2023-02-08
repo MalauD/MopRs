@@ -1,0 +1,44 @@
+$SearchboxRadius: 0.25rem;
+$SearchboxBackground: lighten($PrimaryColor1,5%);
+
+.SearchboxInput {
+    border: 0;
+    background-color: $SearchboxBackground;
+    color: #fff;
+    padding: 0 0.5rem;
+    border-radius: $SearchboxRadius;
+    height: 2rem;
+    appearance: none;
+    letter-spacing: normal;
+    width: 100%;
+}
+
+.SearchboxInputFocus {
+    border: 0;
+    background-color: $SearchboxBackground;
+    color: #fff;
+    padding: 0 0.5rem;
+    border-top-left-radius: $SearchboxRadius;
+    border-top-right-radius: $SearchboxRadius;
+    height: 2rem;
+    appearance: none;
+    letter-spacing: normal;
+    width: 100%;
+}
+
+.SearchboxInputFocus:focus {
+    outline: none;
+    box-shadow: none;
+}
+
+.SearchboxTypeahead {
+    color: darken($color: #fff, $amount: 50%);
+}
+
+.SearchboxItemList {
+    background-color: $SearchboxBackground;
+    border-bottom-left-radius: $SearchboxRadius;
+    border-bottom-right-radius: $SearchboxRadius;
+    width: 100%;
+}
+
