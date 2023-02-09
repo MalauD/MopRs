@@ -43,7 +43,6 @@ impl ArtistScraperActor {
             let tracks = index_artist_top_tracks(&top_tracks, &artist.id)
                 .await
                 .unwrap();
-            let _ = search.index_musics(tracks.clone()).await;
             let _ = db
                 .set_top_tracks(
                     &artist.id,
