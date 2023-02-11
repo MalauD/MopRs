@@ -1,6 +1,7 @@
 import {
     CHANGE_PLAYING_MUSIC,
     ADD_MUSIC,
+    REMOVE_MUSIC,
     CHANGE_PLAYING_ID,
     CLEAR_PLAYLIST,
     ADD_MULTIPLE_MUSICS,
@@ -14,6 +15,16 @@ const initialState = {
         Musics: [],
     },
 };
+
+function CalculateNewIdAfterRemove(oldId, Index) {
+    if (oldId === Index) {
+        return Index - 1;
+    }
+    if (oldId > Index) {
+        return oldId - 1;
+    }
+    return oldId;
+}
 
 /* eslint default-param-last: ["off"] */
 
@@ -35,6 +46,17 @@ export default function MusicPlayerReducer(state = initialState, action) {
                 Playlist: {
                     Musics: [...state.Playlist.Musics, action.AddedMusic],
                     PlayingId: state.Playlist.PlayingId,
+                },
+            };
+        case REMOVE_MUSIC:
+            return {
+                ...state,
+                Playlist: {
+                    Musics: [
+                        ...state.Playlist.Musics.slice(0, action.Index),
+                        ...state.Playlist.Musics.slice(action.Index + 1),
+                    ],
+                    PlayingId: CalculateNewIdAfterRemove(state.Playlist.PlayingId, action.Index),
                 },
             };
         case PLAY_NEXT:

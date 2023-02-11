@@ -57,13 +57,13 @@ class UserPlaylistConnected extends React.Component {
         });
     };
 
-    onDelete = (Music) => {
+    onDelete = ({ Index }) => {
         const { PlaylistId, Musics } = this.state;
         Axios.delete(`/Music/Playlist/id/${PlaylistId}/Remove`, {
-            data: { MusicsId: [Music._id] },
+            data: { AtIndex: Index },
         }).then(() => {
             this.setState({
-                Musics: Musics.filter((m) => m._id !== Music._id),
+                Musics: Musics.filter((m, i) => i !== Index),
             });
         });
     };

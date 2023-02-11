@@ -7,6 +7,7 @@ import {
     AddMusic as AddMusicRedux,
     ChangePlayingId as ChangePlayingIdRedux,
     UpdateCurrentPlaylist as UpdateCurrentPlaylistRedux,
+    RemoveMusic as RemoveMusicRedux,
 } from '../../Actions/Action';
 import PlaylistSaverButton from '../Helper/PlaylistSaverButton';
 import ButtonIcon from '../Helper/ButtonIcon';
@@ -29,6 +30,9 @@ const mapDispatchToProps = (dispatch) => ({
     AddMusic: (Music) => {
         dispatch(AddMusicRedux(Music));
     },
+    RemoveMusic: (Index) => {
+        dispatch(RemoveMusicRedux(Index));
+    },
 });
 
 function shuffle(a) {
@@ -44,6 +48,7 @@ class PlayerFull extends React.Component {
     static propTypes = {
         ChangePlayingId: PropTypes.func.isRequired,
         UpdateCurrentPlaylist: PropTypes.func.isRequired,
+        RemoveMusic: PropTypes.func.isRequired,
         Musics: PropTypes.arrayOf(PropTypes.shape({ _id: PropTypes.number })).isRequired,
         CurrentPlayingId: PropTypes.number,
     };
@@ -90,7 +95,7 @@ class PlayerFull extends React.Component {
     };
 
     render() {
-        const { Musics, CurrentPlayingId, ChangePlayingId } = this.props;
+        const { Musics, CurrentPlayingId, ChangePlayingId, RemoveMusic } = this.props;
 
         const accessories = [
             <ButtonIcon
@@ -117,6 +122,9 @@ class PlayerFull extends React.Component {
                     Actions={CurrentPlaylistActions}
                     OnMusicElementClick={(_, i) => ChangePlayingId(i)}
                     HighlightedMusics={[CurrentPlayingId]}
+                    OnMusicPlaylistDelete={({ Index }) => {
+                        RemoveMusic(Index);
+                    }}
                 />
                 <RelatedMusics
                     MusicIds={Musics.map((m) => m._id)}

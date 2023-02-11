@@ -1,6 +1,7 @@
 export const CHANGE_PLAYING_MUSIC = 'CHANGE_PLAYING_MUSIC';
 export const CHANGE_PLAYING_ID = 'CHANGE_PLAYING_ID';
 export const ADD_MUSIC = 'ADD_MUSIC';
+export const REMOVE_MUSIC = 'REMOVE_MUSIC';
 export const PLAY_NEXT = 'PLAY_NEXT';
 export const ADD_MULTIPLE_MUSICS = 'ADD_MULTIPLE_MUSICS';
 export const CLEAR_PLAYLIST = 'CLEAR_PLAYLIST';
@@ -19,6 +20,13 @@ export function AddMusic(Music) {
         type: ADD_MUSIC,
         AddedMusic: Music,
         AddedAt: Date.now(),
+    };
+}
+
+export function RemoveMusic(Index) {
+    return {
+        type: REMOVE_MUSIC,
+        Index,
     };
 }
 

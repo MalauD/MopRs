@@ -75,6 +75,8 @@ function CurrentPlaylistActions(props) {
             <Dropdown.Divider />
             <DownloadMusic {...props} />
             <GetLink {...props} />
+            <Dropdown.Divider />
+            <DeletePlaylist {...props} />
         </>
     );
 }

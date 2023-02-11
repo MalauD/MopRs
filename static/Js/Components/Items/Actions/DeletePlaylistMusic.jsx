@@ -6,11 +6,12 @@ export default class DeletePlaylistAction extends React.Component {
     static propTypes = {
         Music: PropTypes.shape({}).isRequired,
         OnMusicPlaylistDelete: PropTypes.func.isRequired,
+        Index: PropTypes.number.isRequired,
     };
 
     onClick = () => {
-        const { Music, OnMusicPlaylistDelete } = this.props;
-        OnMusicPlaylistDelete(Music);
+        const { Music, Index, OnMusicPlaylistDelete } = this.props;
+        OnMusicPlaylistDelete({ Music, Index });
     };
 
     render() {

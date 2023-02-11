@@ -107,6 +107,7 @@ class MusicGroupConnected extends React.Component {
                 }
                 Actions={DisplayActionsOnSort ? Actions : undefined}
                 Highlight={HighlightedMusics.includes(value.index)}
+                Index={value.index}
                 {...props}
             />
         ));
@@ -125,6 +126,7 @@ class MusicGroupConnected extends React.Component {
                             : ChangePlayingMusic(m)
                     }
                     Highlight={HighlightedMusics.includes(index)}
+                    Index={index}
                     {...props}
                 />
             )

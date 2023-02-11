@@ -8,7 +8,7 @@ use mongodb::{
 
 use crate::{
     db::{MongoClient, PaginationOptions},
-    models::{Playlist, User, DeezerId},
+    models::{DeezerId, Playlist, User},
 };
 
 impl MongoClient {
@@ -88,7 +88,11 @@ impl MongoClient {
         Ok(id)
     }
 
-    pub async fn add_musics_playlist(&self, playlist_id: ObjectId, music: &Vec<DeezerId>) -> Result<()> {
+    pub async fn add_musics_playlist(
+        &self,
+        playlist_id: ObjectId,
+        music: &Vec<DeezerId>,
+    ) -> Result<()> {
         let coll = self._database.collection::<Playlist>("Playlist");
         let _r = coll
             .update_one(
@@ -100,16 +104,19 @@ impl MongoClient {
         Ok(())
     }
 
-    pub async fn remove_musics_playlist(
-        &self,
-        playlist_id: ObjectId,
-        music: &Vec<DeezerId>,
-    ) -> Result<()> {
+    pub async fn remove_music_playlist(&self, playlist_id: ObjectId, index: usize) -> Result<()> {
         let coll = self._database.collection::<Playlist>("Playlist");
         let _r = coll
             .update_one(
                 doc! {"_id": playlist_id},
-                doc! {"$pull": {"musics": {"$in": music}}},
+                doc! {"$unset": {format!("musics.{}", index): 1}},
+                None,
+            )
+            .await?;
+        let _r = coll
+            .update_one(
+                doc! {"_id": playlist_id},
+                doc! {"$pull": {"musics": null}},
                 None,
             )
             .await?;

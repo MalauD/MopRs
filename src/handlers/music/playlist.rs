@@ -78,9 +78,15 @@ pub async fn edit_music_playlist(
     Ok(HttpResponse::Ok().finish())
 }
 
+#[derive(Deserialize)]
+pub struct RemovePlaylistBody {
+    #[serde(rename = "AtIndex")]
+    pub at_index: usize,
+}
+
 pub async fn remove_music_playlist(
     user: User,
-    pl: web::Json<AddRemoveMusicBody>,
+    pl: web::Json<RemovePlaylistBody>,
     req: web::Path<String>,
 ) -> MusicResponse {
     let db = get_mongo(None).await;
@@ -94,7 +100,7 @@ pub async fn remove_music_playlist(
     if !playlist.is_authorized_write(&user.id().unwrap()) {
         return Ok(HttpResponse::Unauthorized().finish());
     }
-    let _ = db.remove_musics_playlist(playlist.id, &pl.musics).await;
+    let _ = db.remove_music_playlist(playlist.id, pl.at_index).await;
     Ok(HttpResponse::Ok().finish())
 }
 
