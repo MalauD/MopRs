@@ -79,6 +79,40 @@ pub async fn edit_music_playlist(
 }
 
 #[derive(Deserialize)]
+pub struct EditPlaylistBody {
+    #[serde(rename = "Name")]
+    pub name: Option<String>,
+    #[serde(rename = "IsPublic")]
+    pub is_public: Option<bool>,
+}
+
+pub async fn edit_playlist(
+    user: User,
+    req: web::Path<String>,
+    pl: web::Json<EditPlaylistBody>,
+) -> MusicResponse {
+    let db = get_mongo(None).await;
+    let playlist = db
+        .get_playlist(&ObjectId::parse_str(&*req).unwrap())
+        .await?;
+    if playlist.is_none() {
+        return Ok(HttpResponse::NotFound().finish());
+    }
+    let playlist = playlist.unwrap();
+    if !playlist.is_authorized_write(&user.id().unwrap()) {
+        return Ok(HttpResponse::Unauthorized().finish());
+    }
+    let _ = db
+        .edit_playlist(
+            playlist.id,
+            pl.name.clone().unwrap_or(playlist.name().to_owned()),
+            pl.is_public.unwrap_or(playlist.public()),
+        )
+        .await;
+    Ok(HttpResponse::Ok().finish())
+}
+
+#[derive(Deserialize)]
 pub struct RemovePlaylistBody {
     #[serde(rename = "AtIndex")]
     pub at_index: usize,

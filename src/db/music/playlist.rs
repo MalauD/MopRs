@@ -138,4 +138,21 @@ impl MongoClient {
             .await?;
         Ok(())
     }
+
+    pub async fn edit_playlist(
+        &self,
+        playlist_id: ObjectId,
+        name: String,
+        is_public: bool,
+    ) -> Result<()> {
+        let coll = self._database.collection::<Playlist>("Playlist");
+        let _r = coll
+            .update_one(
+                doc! {"_id": playlist_id},
+                doc! {"$set": {"name": name, "public": is_public }},
+                None,
+            )
+            .await?;
+        Ok(())
+    }
 }

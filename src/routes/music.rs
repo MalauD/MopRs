@@ -25,7 +25,7 @@ pub fn config_music(cfg: &mut web::ServiceConfig) {
                 web::post().to(create_playlist_deezer),
             )
             .route("/playlist/{id}", web::get().to(get_playlist))
-            .route("/Playlist/{id}", web::delete().to(delete_playlist))
+            .route("/playlist/{id}", web::delete().to(delete_playlist))
             .route("/playlist/{id}/musics", web::post().to(add_music_playlist))
             .route(
                 "/playlist/{id}/musics",
@@ -35,6 +35,7 @@ pub fn config_music(cfg: &mut web::ServiceConfig) {
                 "/playlist/{id}/musics/edit",
                 web::post().to(edit_music_playlist),
             )
+            .route("/playlist/{id}/edit", web::post().to(edit_playlist))
             .route("/login", web::post().to(login))
             .route("/register", web::post().to(register))
             .route("/logout", web::post().to(logout))

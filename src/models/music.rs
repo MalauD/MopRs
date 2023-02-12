@@ -307,6 +307,14 @@ impl Playlist {
     pub fn creator(&self) -> ObjectId {
         self.creator
     }
+
+    pub fn name(&self) -> &str {
+        self.name.as_ref()
+    }
+
+    pub fn public(&self) -> bool {
+        self.public
+    }
 }
 
 #[derive(Deserialize, Serialize, Clone)]
@@ -315,6 +323,7 @@ pub struct PopulatedPlaylist {
     pub id: ObjectId,
     name: String,
     creator: User,
+    public: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub musics: Option<Vec<Music>>,
 }
@@ -325,6 +334,7 @@ impl PopulatedPlaylist {
             id: pl.id,
             name: pl.name,
             creator,
+            public: pl.public,
             musics: None,
         }
     }
