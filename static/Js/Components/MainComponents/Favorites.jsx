@@ -24,7 +24,7 @@ class Favorites extends React.Component {
     componentDidMount() {
         const { Size } = this.props;
 
-        Axios.get(`/User/LikedMusics?maxResults=${Size}&page=0`).then((res) => {
+        Axios.get(`/api/me/likes/musics?maxResults=${Size}&page=0`).then((res) => {
             this.setState({
                 Musics: res.data,
             });
@@ -35,7 +35,7 @@ class Favorites extends React.Component {
         const { Size } = this.props;
         const { CurrentPage } = this.state;
 
-        Axios.get(`/User/LikedMusics?maxResults=${Size}&page=${CurrentPage + 1}`).then((res) => {
+        Axios.get(`/api/me/likes/musics?maxResults=${Size}&page=${CurrentPage + 1}`).then((res) => {
             this.setState((prevState) => ({
                 Musics: [...prevState.Musics, ...res.data],
                 CurrentPage: prevState.CurrentPage + 1,

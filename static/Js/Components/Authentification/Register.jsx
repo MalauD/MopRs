@@ -21,10 +21,10 @@ function RegisterConnected({ history, dispatch }) {
     const values = QueryString.parse(location.search);
 
     const onSubmit = (data) => {
-        Axios.post('/User/Register', data)
+        Axios.post('/api/register', data)
             .then((res) => {
                 if (res.data.success) {
-                    Axios.get('/User/Me')
+                    Axios.get('/api/me')
                         .then((res2) => {
                             if (res2.data.Account) {
                                 dispatch(AddMyAccount(res2.data.Account));

@@ -21,7 +21,7 @@ const mapStateToProps = (state) => {
         CurrentMusicId: Playlist.PlayingId,
         PlaylistLength: Playlist.Musics.length,
         MusicFilePath: Playlist.Musics[Playlist.PlayingId]
-            ? `/Music/cdn/${Playlist.Musics[Playlist.PlayingId]._id}`
+            ? `/api/music/${Playlist.Musics[Playlist.PlayingId]._id}/audio`
             : undefined,
         MusicIds: Playlist.Musics.map((m) => m._id),
     };
@@ -92,7 +92,7 @@ class PlayerConnected extends React.Component {
                 this.player.pause();
             }
         }
-        Axios.get('/User/CurrentPlaylist').then(({ data }) => {
+        Axios.get('/api/me/currentplaylist').then(({ data }) => {
             UpdateCurrentPlaylist(data.CurrentPlaylist, data.CurrentPlaylistPlaying);
         });
         const { mediaSession } = navigator;
@@ -204,7 +204,7 @@ class PlayerConnected extends React.Component {
         const { NextMusic, ChangePlayingId, CurrentMusicId, AddMultipleMusics, MusicIds } =
             this.props;
         if (!NextMusic) {
-            Axios.post('/Music/Related', { MusicIds, Exclude: MusicIds }).then((res) => {
+            Axios.post('/related/musics', { MusicIds, Exclude: MusicIds }).then((res) => {
                 AddMultipleMusics(res.data.RelatedMusics);
                 if (res.data.length !== 0) {
                     ChangePlayingId(CurrentMusicId + 1);

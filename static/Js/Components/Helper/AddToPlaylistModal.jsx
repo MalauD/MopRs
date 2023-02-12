@@ -34,7 +34,7 @@ class AddToPlaylistModalConnected extends React.Component {
         this.setState({
             IsLoading: true,
         });
-        Axios.get(`/User/${Account._id}/Playlists?page=0&maxResults=100`).then((res) => {
+        Axios.get(`/api/user/${Account._id}/playlists?page=0&maxResults=100`).then((res) => {
             this.setState({
                 UserPlaylists: res.data.Playlists,
                 IsLoading: false,
@@ -51,7 +51,7 @@ class AddToPlaylistModalConnected extends React.Component {
     handleSubmit = () => {
         const { SelectedPlaylistId } = this.state;
         const { Music } = this.props;
-        Axios.post(`/Music/Playlist/id/${SelectedPlaylistId}/Add`, {
+        Axios.post(`/api/playlist/${SelectedPlaylistId}/musics`, {
             MusicsId: [Music._id],
         }).then(() => {
             this.closeModal();

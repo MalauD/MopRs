@@ -46,7 +46,7 @@ class Artist extends React.Component {
 
     fetchArtist = (artist_id) => {
         this.setState({ isFetching: true });
-        Axios.get(`/Music/Artist/id/${artist_id}`).then((res) => {
+        Axios.get(`/api/artist/${artist_id}`).then((res) => {
             this.setState({
                 ArtistId: artist_id,
                 ArtistName: res.data.name,

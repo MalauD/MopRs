@@ -26,7 +26,7 @@ class History extends React.Component {
     componentDidMount() {
         const { Size, RemoveDups } = this.props;
 
-        Axios.get(`/User/ViewedMusics?page=0&maxResults=${Size}`).then((res) => {
+        Axios.get(`/api/me/history/musics?page=0&maxResults=${Size}`).then((res) => {
             this.setState({
                 Musics: RemoveDups ? [...new Set(res.data)] : res.data,
             });
@@ -37,13 +37,18 @@ class History extends React.Component {
         const { Size, RemoveDups } = this.props;
         const { CurrentPage } = this.state;
 
-        Axios.get(`/User/ViewedMusics?maxResults=${Size}&page=${CurrentPage + 1}`).then((res) => {
-            this.setState((prevState) => ({
-                Musics: [...prevState.Musics, ...(RemoveDups ? [...new Set(res.data)] : res.data)],
-                CurrentPage: prevState.CurrentPage + 1,
-                PrevPageEmpty: res.data.length === 0,
-            }));
-        });
+        Axios.get(`/api/me/history/musics?maxResults=${Size}&page=${CurrentPage + 1}`).then(
+            (res) => {
+                this.setState((prevState) => ({
+                    Musics: [
+                        ...prevState.Musics,
+                        ...(RemoveDups ? [...new Set(res.data)] : res.data),
+                    ],
+                    CurrentPage: prevState.CurrentPage + 1,
+                    PrevPageEmpty: res.data.length === 0,
+                }));
+            }
+        );
     };
 
     render() {

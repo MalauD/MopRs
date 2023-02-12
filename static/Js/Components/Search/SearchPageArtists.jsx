@@ -31,7 +31,7 @@ class SearchPageArtists extends React.Component {
 
         if (values.q !== PrevSearch && !IsFetchingArtists) {
             this.setState({ IsFetchingArtists: true });
-            Axios.get(`/Music/Search/Artist/Name/${values.q}?maxResults=14&page=0`).then((res) => {
+            Axios.get(`/api/search/artist/${values.q}?maxResults=14&page=0`).then((res) => {
                 this.setState({
                     Artists: res.data,
                     IsFetchingArtists: false,
@@ -49,15 +49,15 @@ class SearchPageArtists extends React.Component {
 
         const values = QueryString.parse(location.search);
 
-        Axios.get(
-            `/Music/Search/Artist/Name/${values.q}?maxResults=14&page=${CurrentPage + 1}`
-        ).then((res) => {
-            this.setState((prevState) => ({
-                Artists: [...prevState.Artists, ...res.data],
-                CurrentPage: prevState.CurrentPage + 1,
-                PrevPageEmpty: res.data.length === 0,
-            }));
-        });
+        Axios.get(`/api/search/artist/${values.q}?maxResults=14&page=${CurrentPage + 1}`).then(
+            (res) => {
+                this.setState((prevState) => ({
+                    Artists: [...prevState.Artists, ...res.data],
+                    CurrentPage: prevState.CurrentPage + 1,
+                    PrevPageEmpty: res.data.length === 0,
+                }));
+            }
+        );
     };
 
     render() {

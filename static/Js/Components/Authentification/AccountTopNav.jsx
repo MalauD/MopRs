@@ -48,7 +48,7 @@ class AccountTopNavConnected extends React.Component {
     requestMyAccount = () => {
         const { AddMyAccount } = this.props;
 
-        Axios.get('/User/Me')
+        Axios.get('/api/me')
             .then((res) => {
                 if (res.data.Account) {
                     AddMyAccount(res.data.Account);
@@ -60,7 +60,7 @@ class AccountTopNavConnected extends React.Component {
     OnLogout = () => {
         const { AddMyAccount, history } = this.props;
 
-        Axios.post('/User/Logout').then(() => {
+        Axios.post('/api/logout').then(() => {
             AddMyAccount(undefined);
             history.push('/Login');
         });

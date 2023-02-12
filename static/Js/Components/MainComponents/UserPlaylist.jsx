@@ -35,7 +35,7 @@ class UserPlaylistConnected extends React.Component {
     componentDidMount() {
         const { match, Account } = this.props;
 
-        Axios.get(`/Music/Playlist/id/${match.params.id}`).then((res) => {
+        Axios.get(`/api/playlist/${match.params.id}`).then((res) => {
             this.setState({
                 Musics: res.data.musics,
                 PlaylistName: res.data.name,
@@ -48,7 +48,7 @@ class UserPlaylistConnected extends React.Component {
 
     onAdd = (Music) => {
         const { PlaylistId } = this.state;
-        Axios.post(`/Music/Playlist/id/${PlaylistId}/Add`, {
+        Axios.post(`/api/playlist/${PlaylistId}/musics`, {
             MusicsId: [Music._id],
         }).then(() => {
             this.setState((prevState) => ({
@@ -59,7 +59,7 @@ class UserPlaylistConnected extends React.Component {
 
     onDelete = ({ Index }) => {
         const { PlaylistId, Musics } = this.state;
-        Axios.delete(`/Music/Playlist/id/${PlaylistId}/Remove`, {
+        Axios.delete(`/api/playlist/${PlaylistId}/musics`, {
             data: { AtIndex: Index },
         }).then(() => {
             this.setState({
@@ -74,7 +74,7 @@ class UserPlaylistConnected extends React.Component {
         this.setState({
             Musics: newMusicsPlaylist,
         });
-        Axios.post(`/Music/Playlist/id/${PlaylistId}/Edit`, {
+        Axios.post(`/api/playlist/${PlaylistId}/musics/edit`, {
             MusicsId: newMusicsPlaylist.map((m) => m._id),
         })
             .then(() => {})

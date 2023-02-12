@@ -10,7 +10,7 @@ use actix_web::{
 };
 use dotenv::dotenv;
 use log::info;
-use routes::{config_music, config_user};
+use routes::config_music;
 
 use crate::{
     actors::ArtistScraperActor,
@@ -114,7 +114,6 @@ async fn main() -> std::io::Result<()> {
             )
             .route("/", web::get().to(index))
             .route("/health", web::get().to(health))
-            .configure(config_user)
             .configure(config_music)
             .service(Files::new("/", "./static"))
     })

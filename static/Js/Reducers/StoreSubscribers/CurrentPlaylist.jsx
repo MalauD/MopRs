@@ -7,7 +7,7 @@ const handleCurrentPlaylistMusicsChange = (state) => {
 
     if (previousMusics !== currentMusics) {
         if (currentMusics.length !== 0) {
-            Axios.post('/User/CurrentPlaylist/Musics', {
+            Axios.post('/api/me/currentplaylist/musics', {
                 CurrentPlaylist: currentMusics.map((m) => m._id),
             });
         }
@@ -21,7 +21,7 @@ const handleCurrentPlaylistPlayingMusicChange = (state) => {
 
     if (previousPlayingMusics !== currentPlayingMusics) {
         if (currentPlayingMusics !== -1)
-            Axios.post('/User/CurrentPlaylist/Playing', {
+            Axios.post('/api/me/currentplaylist/playing', {
                 CurrentPlaylistPlaying: currentPlayingMusics,
             });
     }

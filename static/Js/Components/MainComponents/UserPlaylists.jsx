@@ -26,14 +26,14 @@ class UserPlaylists extends React.Component {
         this.setState({
             IsFetching: true,
         });
-        Axios.get(`/User/${match.params.id}/Playlists?page=0&maxResults=100`).then((res) => {
+        Axios.get(`/api/user/${match.params.id}/playlists?page=0&maxResults=100`).then((res) => {
             this.setState({
                 Playlists: res.data.Playlists,
                 Creator: res.data.Creator,
                 IsFetching: false,
             });
         });
-    };
+    }
 
     handlePlaylistDelete = (Playlist) => {
         const { Playlists } = this.state;

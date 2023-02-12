@@ -23,7 +23,7 @@ class Album extends React.Component {
     componentDidMount() {
         const { match } = this.props;
 
-        Axios.get(`/Music/Album/id/${match.params.id}`).then((res) => {
+        Axios.get(`/api/album/${match.params.id}`).then((res) => {
             this.setState({
                 Musics: res.data.musics,
                 AlbumName: res.data.name,

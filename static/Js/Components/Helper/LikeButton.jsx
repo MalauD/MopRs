@@ -30,7 +30,7 @@ class LikeButtonConnected extends React.Component {
 
     onButtonClick = () => {
         const { LikeMusic, MusicId } = this.props;
-        axios.get(`/Music/Like/Music/${MusicId}`).then(() => {
+        axios.get(`/api/music/${MusicId}/like`).then(() => {
             this.setState(
                 (prevState) => ({
                     IsLiked: !prevState.IsLiked,

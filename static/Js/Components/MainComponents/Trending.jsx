@@ -26,7 +26,7 @@ class Trending extends React.Component {
     componentDidMount() {
         const { Size } = this.props;
 
-        Axios.get(`/Music/Trending/Musics?page=0&maxResults=${Size}`).then((res) => {
+        Axios.get(`/api/trending/musics?page=0&maxResults=${Size}`).then((res) => {
             this.setState({
                 Musics: res.data,
             });
@@ -37,18 +37,13 @@ class Trending extends React.Component {
         const { Size, RemoveDups } = this.props;
         const { CurrentPage } = this.state;
 
-        Axios.get(`/Music/Trending/Musics?maxResults=${Size}&page=${CurrentPage + 1}`).then(
-            (res) => {
-                this.setState((prevState) => ({
-                    Musics: [
-                        ...prevState.Musics,
-                        ...(RemoveDups ? [...new Set(res.data)] : res.data),
-                    ],
-                    CurrentPage: prevState.CurrentPage + 1,
-                    PrevPageEmpty: res.data.length === 0,
-                }));
-            }
-        );
+        Axios.get(`/api/trending/musics?maxResults=${Size}&page=${CurrentPage + 1}`).then((res) => {
+            this.setState((prevState) => ({
+                Musics: [...prevState.Musics, ...(RemoveDups ? [...new Set(res.data)] : res.data)],
+                CurrentPage: prevState.CurrentPage + 1,
+                PrevPageEmpty: res.data.length === 0,
+            }));
+        });
     };
 
     render() {
@@ -65,7 +60,7 @@ class Trending extends React.Component {
             );
         }
 
-        return (null);
+        return null;
     }
 }
 export default Trending;

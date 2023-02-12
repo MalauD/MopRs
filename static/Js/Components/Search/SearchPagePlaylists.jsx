@@ -39,7 +39,7 @@ class SearchPagePlaylists extends React.Component {
 
         if (values.q !== PrevSearch && !IsFetchingPlaylists) {
             this.setState({ IsFetchingPlaylists: true });
-            Axios.get(`/Music/Search/Playlist/Name/${values.q}?maxResults=8&page=0`).then((res) => {
+            Axios.get(`/api/search/playlist/${values.q}?maxResults=8&page=0`).then((res) => {
                 this.setState({
                     Playlists: res.data,
                     IsFetchingPlaylists: false,
@@ -57,15 +57,15 @@ class SearchPagePlaylists extends React.Component {
 
         const values = QueryString.parse(location.search);
 
-        Axios.get(
-            `/Music/Search/Playlist/Name/${values.q}?maxResults=8&page=${CurrentPage + 1}`
-        ).then((res) => {
-            this.setState((prevState) => ({
-                Playlists: [...prevState.Playlists, ...res.data],
-                CurrentPage: prevState.CurrentPage + 1,
-                PrevPageEmpty: res.data.length === 0,
-            }));
-        });
+        Axios.get(`/api/search/playlist/${values.q}?maxResults=8&page=${CurrentPage + 1}`).then(
+            (res) => {
+                this.setState((prevState) => ({
+                    Playlists: [...prevState.Playlists, ...res.data],
+                    CurrentPage: prevState.CurrentPage + 1,
+                    PrevPageEmpty: res.data.length === 0,
+                }));
+            }
+        );
     };
 
     render() {

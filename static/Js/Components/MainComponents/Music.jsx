@@ -22,7 +22,7 @@ class Music extends React.Component {
     componentDidMount() {
         const { match } = this.props;
 
-        Axios.get(`/Music/Music/id/${match.params.id}`).then((res) => {
+        Axios.get(`/api/music/${match.params.id}`).then((res) => {
             this.setState({
                 MusicData: res.data,
             });
@@ -33,7 +33,7 @@ class Music extends React.Component {
         // Check if music id changed in url
         const { match } = this.props;
         if (match.params.id !== prevProps.match.params.id) {
-            Axios.get(`/Music/Music/id/${match.params.id}`).then((res) => {
+            Axios.get(`/api/music/${match.params.id}`).then((res) => {
                 this.setState({
                     MusicData: res.data,
                 });

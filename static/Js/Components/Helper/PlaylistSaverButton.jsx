@@ -24,7 +24,7 @@ class PlaylistSaverButton extends React.Component {
         const { MusicsId, history } = this.props;
         const { Name, IsPublic } = this.state;
 
-        Axios.post('/Music/Playlist/Create', { Name, IsPublic, MusicsId }).then((res) => {
+        Axios.post('/api/playlist/create', { Name, IsPublic, MusicsId }).then((res) => {
             history.push(`/Playlist/${res.data.CreatedPlaylistId}`);
         });
     };

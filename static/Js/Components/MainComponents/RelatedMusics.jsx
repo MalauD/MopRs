@@ -20,7 +20,7 @@ export default class RelatedMusics extends React.Component {
         Actions: DefaultActions,
         Title: 'Related',
         Limit: 20,
-        ExcludePassedIds: true
+        ExcludePassedIds: true,
     };
 
     constructor(props) {
@@ -60,12 +60,18 @@ export default class RelatedMusics extends React.Component {
         this.setState({
             isLoading: true,
         });
-        axios.post('/Music/Related', { MusicIds, Exclude: ExcludePassedIds ? MusicIds : [], Limit }).then((res) => {
-            this.setState({
-                RelatedMusicsData: res.data.RelatedMusics,
-                isLoading: false,
+        axios
+            .post('/api/related/musics', {
+                MusicIds,
+                Exclude: ExcludePassedIds ? MusicIds : [],
+                Limit,
+            })
+            .then((res) => {
+                this.setState({
+                    RelatedMusicsData: res.data.RelatedMusics,
+                    isLoading: false,
+                });
             });
-        });
     };
 
     onReloadRelated = () => {

@@ -58,7 +58,7 @@ export default function Searchbox() {
             displayField: 'title',
             data: (query) =>
                 fetch(
-                    `/Music/Search/Music/Name/${encodeURIComponent(
+                    `/api/search/music/${encodeURIComponent(
                         query
                     )}?maxResults=14&page=0&no_index=true`
                 ).then((response) => response.json()),

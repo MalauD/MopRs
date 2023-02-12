@@ -25,7 +25,7 @@ class PlaylistCreateModal extends React.Component {
         const { history, MusicsId } = this.props;
         this.setState({ IsLoading: true });
 
-        Axios.post('/Music/Playlist/Create', { Name, IsPublic, MusicsId }).then((res) => {
+        Axios.post('/api/playlist/create', { Name, IsPublic, MusicsId }).then((res) => {
             history.push(`/Playlist/${res.data.CreatedPlaylistId}`);
         });
     };

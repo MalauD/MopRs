@@ -22,7 +22,7 @@ function ProtectedRouteConnected({ Component, IsConnected, AddMyAccount, ...prop
     const history = useHistory();
     useEffect(() => {
         if (!IsConnected) {
-            Axios.get('/User/Me')
+            Axios.get('/api/me')
                 .then((res) => {
                     if (res.data.Account) {
                         AddMyAccount(res.data.Account);

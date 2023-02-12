@@ -30,7 +30,7 @@ class SearchPageAlbums extends React.Component {
         const values = QueryString.parse(location.search);
 
         if (values.q !== PrevSearch && !IsFetchingAlbums) {
-            Axios.get(`/Music/Search/Album/Name/${values.q}?page=0&maxResults=14`).then((res) => {
+            Axios.get(`/api/search/album/${values.q}?page=0&maxResults=14`).then((res) => {
                 this.setState({
                     Albums: res.data,
                     IsFetchingAlbums: false,
@@ -48,15 +48,15 @@ class SearchPageAlbums extends React.Component {
 
         const values = QueryString.parse(location.search);
 
-        Axios.get(
-            `/Music/Search/Album/Name/${values.q}?maxResults=14&page=${CurrentPage + 1}`
-        ).then((res) => {
-            this.setState((prevState) => ({
-                Albums: [...prevState.Albums, ...res.data],
-                CurrentPage: prevState.CurrentPage + 1,
-                PrevPageEmpty: res.data.length === 0,
-            }));
-        });
+        Axios.get(`/api/search/album/${values.q}?maxResults=14&page=${CurrentPage + 1}`).then(
+            (res) => {
+                this.setState((prevState) => ({
+                    Albums: [...prevState.Albums, ...res.data],
+                    CurrentPage: prevState.CurrentPage + 1,
+                    PrevPageEmpty: res.data.length === 0,
+                }));
+            }
+        );
     };
 
     render() {

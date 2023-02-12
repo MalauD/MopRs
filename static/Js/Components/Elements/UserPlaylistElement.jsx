@@ -54,7 +54,7 @@ class UserPlaylistElementConnected extends React.Component {
 
     OnDelete = () => {
         const { Playlist, OnDelete } = this.props;
-        Axios.delete(`/Music/Playlist/id/${Playlist._id}`).then(() => {
+        Axios.delete(`/api/playlist/${Playlist._id}`).then(() => {
             // TODO it resets the player
             OnDelete(Playlist);
         });
