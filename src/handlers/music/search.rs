@@ -42,9 +42,7 @@ pub async fn search_music(
     let search_res = search
         .search_musics(req.into_inner(), pagination.into_inner())
         .await?;
-    let ids = search_res.iter().map(|m| m.id).collect();
-    let searched_musics = db.get_musics(&ids).await?;
-    Ok(HttpResponse::Ok().json(searched_musics.unwrap_or_default()))
+    Ok(HttpResponse::Ok().json(search_res))
 }
 
 pub async fn search_album(
