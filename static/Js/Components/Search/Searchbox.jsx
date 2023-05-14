@@ -60,7 +60,7 @@ export default function Searchbox() {
                 fetch(
                     `/api/search/music/${encodeURIComponent(
                         query
-                    )}?maxResults=14&page=0&no_index=true`
+                    )}?maxResults=14&page=0&noIndex=true`
                 ).then((response) => response.json()),
             searchType: 'contains',
         },

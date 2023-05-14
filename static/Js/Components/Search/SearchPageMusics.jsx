@@ -44,15 +44,35 @@ class SearchPageMusics extends React.Component {
 
         if (values.q !== PrevSearch && !IsFetchingMusics) {
             this.setState({ IsFetchingMusics: true });
+            Axios.get(`/api/search/music/${values.q}?maxResults=14&page=0&noIndex=true`).then(
+                (res) => {
+                    this.setState({
+                        Musics: res.data,
+                        IsFetchingMusics: false,
+                        PrevSearch: values.q,
+                        CurrentPage: 0,
+                        PrevPageEmpty: res.data.length === 0,
+                    });
+                }
+            );
             Axios.get(`/api/search/music/${values.q}?maxResults=14&page=0`).then((res) => {
                 onSearchEnd();
-                this.setState({
-                    Musics: res.data,
+                // Add to array without duplicates base on id
+                this.setState((prevState) => ({
+                    Musics: [
+                        ...prevState.Musics,
+                        ...res.data.filter((item) => {
+                            const found = prevState.Musics.find(
+                                (prevItem) => prevItem.id === item.id
+                            );
+                            return !found;
+                        }),
+                    ],
                     IsFetchingMusics: false,
                     PrevSearch: values.q,
                     CurrentPage: 0,
                     PrevPageEmpty: res.data.length === 0,
-                });
+                }));
             });
         }
     };

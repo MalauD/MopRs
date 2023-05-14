@@ -12,6 +12,7 @@ use serde::Deserialize;
 use super::{index_search_musics_result, IndexType, MusicResponse};
 
 #[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct SearchOption {
     pub no_index: Option<bool>,
 }
