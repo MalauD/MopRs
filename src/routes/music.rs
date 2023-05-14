@@ -51,6 +51,7 @@ pub fn config_music(cfg: &mut web::ServiceConfig) {
                 "/me/currentplaylist/playing",
                 web::post().to(set_current_playlist_playing),
             )
+            .route("/me/suggestions", web::get().to(get_suggestions))
             .route("/user/{id}/playlists", web::get().to(get_user_playlists)),
     );
 }

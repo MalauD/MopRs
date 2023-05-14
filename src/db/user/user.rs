@@ -1,8 +1,9 @@
 use crate::{
     db::MongoClient,
-    models::{User, UserReq, DeezerId},
+    models::{DeezerId, User, UserReq},
 };
-use bson::oid::ObjectId;
+use bson::{oid::ObjectId, Document};
+use futures::TryStreamExt;
 use mongodb::{bson::doc, error::Result};
 
 impl MongoClient {
@@ -90,5 +91,51 @@ impl MongoClient {
             )
             .await?;
         Ok(())
+    }
+
+    pub async fn get_history(&self, user: &User, size: i64) -> Result<Vec<DeezerId>> {
+        let coll = self._database.collection::<User>("User");
+        let mut doc = coll
+            .aggregate(
+                vec![
+                    doc! {"$match": {"_id": user.id().unwrap()}},
+                    doc! {"$addFields": {"last_viewed_musics": {"$lastN": {"n": size, "input": "$viewed_musics"}}}},
+                    doc! {"$project": {"last_viewed_musics": 1, "_id": 0}},
+                ],
+                None,
+            )
+            .await?;
+
+        let doc: Document = doc.try_next().await?.unwrap();
+        let hist = doc.get_array("last_viewed_musics").unwrap();
+        let hist = hist
+            .iter()
+            .map(|x| x.as_i64().unwrap() as DeezerId)
+            .collect::<Vec<DeezerId>>();
+
+        Ok(hist)
+    }
+
+    pub async fn get_liked_musics(&self, user: &User, size: i64) -> Result<Vec<DeezerId>> {
+        let coll = self._database.collection::<User>("User");
+        let mut doc = coll
+            .aggregate(
+                vec![
+                    doc! {"$match": {"_id": user.id().unwrap()}},
+                    doc! {"$addFields": {"last_liked_musics": {"$lastN": {"n": size, "input": "$liked_musics"}}}},
+                    doc! {"$project": {"last_liked_musics": 1, "_id": 0}},
+                ],
+                None,
+            )
+            .await?;
+
+        let doc: Document = doc.try_next().await?.unwrap();
+        let hist = doc.get_array("last_liked_musics").unwrap();
+        let hist = hist
+            .iter()
+            .map(|x| x.as_i64().unwrap() as DeezerId)
+            .collect::<Vec<DeezerId>>();
+
+        Ok(hist)
     }
 }

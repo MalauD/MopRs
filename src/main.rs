@@ -30,7 +30,7 @@ mod models;
 mod routes;
 mod s3;
 mod search;
-mod suggestion;
+mod suggestions;
 mod tools;
 
 async fn index(_req: HttpRequest) -> Result<NamedFile> {

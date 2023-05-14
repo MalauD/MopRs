@@ -1,39 +1,20 @@
 import React from 'react';
-import PropTypes from 'prop-types';
-import { connect } from 'react-redux';
 import { withRouter } from 'react-router-dom';
 import Favorites from './Favorites';
 import History from './History';
-import RelatedMusics from './RelatedMusics';
 import Trending from './Trending';
+import Suggestion from './Suggestion';
 
-const mapStateToProps = (state) => ({
-    Account: state.UserAccountReducer.Account,
-});
-
-class MainPageConnected extends React.Component {
-    static propTypes = {
-        Account: PropTypes.shape({
-            liked_musics: PropTypes.arrayOf(PropTypes.number),
-        }).isRequired,
-    };
-
+class MainPage extends React.Component {
     constructor(props) {
         super(props);
         this.state = {};
     }
 
     render() {
-        const { Account } = this.props;
-        const { liked_musics } = Account;
         return (
             <>
-                <RelatedMusics
-                    Title="Suggestion"
-                    Limit={10}
-                    ExcludePassedIds={false}
-                    MusicIds={liked_musics}
-                />
+                <Suggestion />
                 <Trending />
                 <Favorites Size={14} />
                 <History Size={14} />
@@ -41,7 +22,5 @@ class MainPageConnected extends React.Component {
         );
     }
 }
-
-const MainPage = connect(mapStateToProps)(MainPageConnected);
 
 export default withRouter(MainPage);

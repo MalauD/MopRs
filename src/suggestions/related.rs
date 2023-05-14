@@ -5,7 +5,7 @@ use rand::thread_rng;
 
 pub async fn get_related_to(
     base_music_ids: &Vec<DeezerId>,
-    exclude: &Vec<DeezerId>,
+    exclude: Option<&Vec<DeezerId>>,
     limit: i32,
 ) -> Vec<DeezerId> {
     let db = get_mongo(None).await;
@@ -41,7 +41,9 @@ pub async fn get_related_to(
 
     related_musics.extend(related_musics_ext);
     related_musics.sort();
-    remove_from_sorted_vec(&mut related_musics, &exclude);
+    if let Some(exclude) = exclude {
+        remove_from_sorted_vec(&mut related_musics, exclude);
+    }
     related_musics.dedup();
     related_musics.shuffle(&mut thread_rng());
     related_musics.truncate(limit as usize);
