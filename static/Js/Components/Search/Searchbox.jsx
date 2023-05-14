@@ -68,8 +68,8 @@ export default function Searchbox() {
 
     const onSelect = (item) => {
         if (item && item.id !== lastSelectedId) {
-            setlastSelectedId(item.id);
-            history.push(`/Music/${item.id}`);
+            setlastSelectedId(item._id);
+            history.push(`/Music/${item._id}`);
         }
     };
 

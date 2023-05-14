@@ -63,7 +63,7 @@ class SearchPageMusics extends React.Component {
                         ...prevState.Musics,
                         ...res.data.filter((item) => {
                             const found = prevState.Musics.find(
-                                (prevItem) => prevItem.id === item.id
+                                (prevItem) => prevItem._id === item._id
                             );
                             return !found;
                         }),

@@ -64,7 +64,7 @@ impl MeilisearchClient {
         &self,
         query: String,
         page: PaginationOptions,
-    ) -> Result<Vec<MusicMeilisearch>, Error> {
+    ) -> Result<Vec<DeezerId>, Error> {
         let index = self.client.index("musics");
         let response = index
             .search()
@@ -73,6 +73,6 @@ impl MeilisearchClient {
             .with_offset(page.get_page() * page.get_max_results())
             .execute::<MusicMeilisearch>()
             .await?;
-        Ok(response.hits.into_iter().map(|m| m.result).collect())
+        Ok(response.hits.into_iter().map(|m| m.result.id).collect())
     }
 }

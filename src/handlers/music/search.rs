@@ -28,11 +28,10 @@ pub async fn search_music(
     let dz = get_dz_client(None).await.read().await;
 
     if let Some(true) = search_opt.no_index {
-        return Ok(HttpResponse::Ok().json(
-            search
-                .search_musics(req.into_inner(), pagination.into_inner())
-                .await?,
-        ));
+        let ids = search
+            .search_musics(req.into_inner(), pagination.into_inner())
+            .await?;
+        return Ok(HttpResponse::Ok().json(db.get_musics(&ids).await?.unwrap_or_default()));
     }
 
     if pagination.get_page() == 0 {
@@ -43,7 +42,7 @@ pub async fn search_music(
     let search_res = search
         .search_musics(req.into_inner(), pagination.into_inner())
         .await?;
-    Ok(HttpResponse::Ok().json(search_res))
+    Ok(HttpResponse::Ok().json(db.get_musics(&search_res).await?.unwrap_or_default()))
 }
 
 pub async fn search_album(
