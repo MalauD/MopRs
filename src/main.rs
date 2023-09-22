@@ -93,6 +93,7 @@ async fn main() -> std::io::Result<()> {
     let _ = get_s3(Some(s3::S3Config {
         s3_url: config.s3_url.clone(),
         s3_region: config.s3_region.clone(),
+        s3_bucket: config.s3_bucket.clone(),
     }))
     .await;
 

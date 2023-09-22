@@ -38,6 +38,8 @@ pub struct AppSettings {
     pub s3_url: String,
     #[serde(default = "default_s3_region")]
     pub s3_region: String,
+    #[serde(default)]
+    pub s3_bucket: String,
     pub arl: String,
     pub mongo_url: String,
     pub meilisearch_host: String,

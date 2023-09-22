@@ -10,6 +10,7 @@ pub struct S3Client {
 pub struct S3Config {
     pub s3_url: String,
     pub s3_region: String,
+    pub s3_bucket: String,
 }
 
 impl S3Client {
@@ -35,7 +36,7 @@ pub async fn get_s3(s3_config: Option<S3Config>) -> &'static S3Client {
         let s3_region = s3_config.s3_region;
 
         let bucket = match Bucket::create_with_path_style(
-            "moprs",
+            &s3_config.s3_bucket,
             Region::Custom {
                 region: s3_region.clone(),
                 endpoint: s3_url.clone(),

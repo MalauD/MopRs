@@ -103,6 +103,7 @@ You can store your environment variables in the `.env` file. Here is a quick ove
 | ---------------------------------------- | ------------------------------------------------------------------------ | ----------------------- |
 | `S3_URL`                                 | Url used to connect to s3                                                |                         |
 | `S3_REGION`                              | Region of s3 bucket                                                      | ``                      |
+| `S3_BUCKET`                              | Bucket name                                                              |                         |
 | `ARL`                                    | Arl token used to download music from deezer                             |                         |
 | `MONGO_URL`                              | Url used to connect to mongo database                                    |                         |
 | `REDIS_SERVICE_HOST`                     | Address used to connect to redis                                         |                         |
