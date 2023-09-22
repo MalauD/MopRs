@@ -7,6 +7,11 @@ pub struct S3Client {
     bucket: Bucket,
 }
 
+pub struct S3Config {
+    pub s3_url: String,
+    pub s3_region: String,
+}
+
 impl S3Client {
     pub fn get_bucket(&self) -> &Bucket {
         &self.bucket
@@ -16,21 +21,23 @@ impl S3Client {
 static S3: OnceCell<S3Client> = OnceCell::new();
 static S3_INITIALIZED: OnceCell<Mutex<bool>> = OnceCell::new();
 
-pub async fn get_s3(s3_url: Option<String>) -> &'static S3Client {
+pub async fn get_s3(s3_config: Option<S3Config>) -> &'static S3Client {
     if let Some(c) = S3.get() {
         return c;
     }
-    info!(target: "mop-rs::s3", "Connecting to s3");
     let initializing_mutex = S3_INITIALIZED.get_or_init(|| tokio::sync::Mutex::new(false));
 
     let mut initialized = initializing_mutex.lock().await;
 
     if !*initialized {
-        let s3_url = s3_url.unwrap();
+        let s3_config = s3_config.unwrap();
+        let s3_url = s3_config.s3_url;
+        let s3_region = s3_config.s3_region;
+
         let bucket = match Bucket::create_with_path_style(
             "moprs",
             Region::Custom {
-                region: "".into(),
+                region: s3_region.clone(),
                 endpoint: s3_url.clone(),
             },
             Credentials::from_env_specific(None, None, None, None).unwrap(),
@@ -42,7 +49,7 @@ pub async fn get_s3(s3_url: Option<String>) -> &'static S3Client {
             Err(S3Error::Http(409, _)) => Bucket::new(
                 "moprs",
                 Region::Custom {
-                    region: "".into(),
+                    region: s3_region.clone(),
                     endpoint: s3_url.clone(),
                 },
                 Credentials::from_env_specific(None, None, None, None).unwrap(),

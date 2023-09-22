@@ -90,7 +90,11 @@ async fn main() -> std::io::Result<()> {
 
     let db = get_mongo(Some(config.mongo_url.clone())).await;
 
-    let _ = get_s3(Some(config.s3_url.clone())).await;
+    let _ = get_s3(Some(s3::S3Config {
+        s3_url: config.s3_url.clone(),
+        s3_region: config.s3_region.clone(),
+    }))
+    .await;
 
     let c = db.get_musics_count().await.unwrap();
     info!(target:"mop-rs::mongo","{} musics in database", c);

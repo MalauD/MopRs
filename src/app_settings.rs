@@ -28,10 +28,16 @@ fn default_artist_scrape_cooldown() -> Duration {
     Duration::from_millis(100)
 }
 
+fn default_s3_region() -> String {
+    "".to_string()
+}
+
 #[serde_as]
 #[derive(Deserialize, Debug, Clone)]
 pub struct AppSettings {
     pub s3_url: String,
+    #[serde(default = "default_s3_region")]
+    pub s3_region: String,
     pub arl: String,
     pub mongo_url: String,
     pub meilisearch_host: String,

@@ -102,6 +102,7 @@ You can store your environment variables in the `.env` file. Here is a quick ove
 | Variable                                 | Description                                                              | Default                 |
 | ---------------------------------------- | ------------------------------------------------------------------------ | ----------------------- |
 | `S3_URL`                                 | Url used to connect to s3                                                |                         |
+| `S3_REGION`                              | Region of s3 bucket                                                      | ``                      |
 | `ARL`                                    | Arl token used to download music from deezer                             |                         |
 | `MONGO_URL`                              | Url used to connect to mongo database                                    |                         |
 | `REDIS_SERVICE_HOST`                     | Address used to connect to redis                                         |                         |
@@ -173,6 +174,7 @@ helm upgrade redis ot-helm/redis --install --namespace default  -f .kube/redis_v
 ```
 
 And finally install meilisearch
+
 ```bash
 helm upgrade -i mop-meilisearch meilisearch/meilisearch -f .kube/meilisearch_values.yaml
 ```
