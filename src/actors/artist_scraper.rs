@@ -28,7 +28,7 @@ impl ArtistScraperActor {
                 .data
                 .clone()
                 .into_iter()
-                .map(|x| Artist::from(x))
+                .map(Artist::from)
                 .unique_by(|x| x.id)
                 .collect_vec();
             let _ = db.bulk_insert_artists(&rel_artists).await;
@@ -43,7 +43,7 @@ impl ArtistScraperActor {
             let tracks = index_artist_top_tracks(&top_tracks, &artist.id)
                 .await
                 .unwrap();
-            let _ = db
+            db
                 .set_top_tracks(
                     &artist.id,
                     &tracks.clone().into_iter().map(|x| x.id).collect_vec(),
@@ -114,6 +114,7 @@ impl Handler<ArtistScraperMessage> for ArtistScraperActor {
         });
 
         let actor_fut = fut.into_actor(self);
-        Ok(ctx.wait(actor_fut))
+        ctx.wait(actor_fut);
+        Ok(())
     }
 }

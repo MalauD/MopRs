@@ -32,7 +32,7 @@ pub async fn trending_musics(
             )
             .await;
             let ch = Chart::from(chart);
-            let _ = db.insert_chart(&ch).await?;
+            db.insert_chart(&ch).await?;
             ch
         }
     };

@@ -14,7 +14,7 @@ pub async fn get_album(req: web::Path<DeezerId>) -> MusicResponse {
     let dz = get_dz_client(None).await.read().await;
     let search = get_meilisearch(None).await;
 
-    let res = dz.get_album_musics(req.clone()).await?;
+    let res = dz.get_album_musics(*req).await?;
     let album = db.get_album(&req).await?.unwrap();
     let musics: Vec<Music> = res
         .data
@@ -33,7 +33,7 @@ pub async fn get_album(req: web::Path<DeezerId>) -> MusicResponse {
     //musics.group_by()
     let compl_album = db.get_album(&req).await?.unwrap();
     let musics_of_album = db
-        .get_musics(&compl_album.musics.as_ref().unwrap())
+        .get_musics(compl_album.musics.as_ref().unwrap())
         .await?
         .unwrap();
     let mut pop_album = PopulatedAlbum::from(compl_album);

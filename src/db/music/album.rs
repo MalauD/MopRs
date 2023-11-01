@@ -72,7 +72,7 @@ impl MongoClient {
 
     pub async fn get_album(&self, album_id: &DeezerId) -> Result<Option<Album>> {
         let coll = self._database.collection::<Album>("Album");
-        Ok(coll.find_one(doc! {"_id": album_id}, None).await?)
+        coll.find_one(doc! {"_id": album_id}, None).await
     }
 
     pub async fn get_albums(&self, album_ids: &Vec<DeezerId>) -> Result<Option<Vec<Album>>> {
@@ -84,11 +84,11 @@ impl MongoClient {
                 result.push(res);
             }
         }
-        return Ok(Some(result));
+        Ok(Some(result))
     }
 
     pub async fn get_album_of_music(&self, music_id: &DeezerId) -> Result<Option<Album>> {
         let coll = self._database.collection::<Album>("Album");
-        Ok(coll.find_one(doc! {"musics": music_id}, None).await?)
+        coll.find_one(doc! {"musics": music_id}, None).await
     }
 }

@@ -99,10 +99,8 @@ pub async fn get_settings(base_settings: Option<AppSettings>) -> &'static AppSet
 
     let mut initialized = initializing_mutex.lock().await;
 
-    if !*initialized {
-        if APP_SETTINGS.set(base_settings.unwrap()).is_ok() {
-            *initialized = true;
-        }
+    if !*initialized && APP_SETTINGS.set(base_settings.unwrap()).is_ok() {
+        *initialized = true;
     }
     drop(initialized);
     APP_SETTINGS.get().unwrap()

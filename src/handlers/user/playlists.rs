@@ -25,7 +25,7 @@ pub async fn get_user_playlists(
         if playlist.is_authorized_read(&user.id().unwrap()) {
             //Something else might be faster
             let musics = db
-                .get_musics(&playlist.musics.as_ref().unwrap())
+                .get_musics(playlist.musics.as_ref().unwrap())
                 .await
                 .unwrap();
             let mut playlist_pop = PopulatedPlaylist::from_playlist(playlist, creator.clone());

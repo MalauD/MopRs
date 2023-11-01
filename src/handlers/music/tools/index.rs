@@ -28,7 +28,7 @@ pub async fn index_search_musics_result(
         .data
         .clone()
         .into_iter()
-        .map(|x| Artist::from(x))
+        .map(Artist::from)
         .unique_by(|x| x.id)
         .collect_vec();
 

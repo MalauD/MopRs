@@ -26,7 +26,7 @@ pub async fn get_playlist(req: web::Path<String>, user: User) -> MusicResponse {
         return Ok(HttpResponse::Unauthorized().finish());
     }
 
-    let musics = db.get_musics(&playlist.musics.as_ref().unwrap()).await?;
+    let musics = db.get_musics(playlist.musics.as_ref().unwrap()).await?;
     let user = db.get_user(&playlist.creator()).await.unwrap();
     let mut playlist_pop = PopulatedPlaylist::from_playlist(playlist, user.unwrap());
     playlist_pop.musics = musics;
@@ -202,6 +202,6 @@ pub async fn delete_playlist(req: web::Path<String>, user: User) -> MusicRespons
     if !playlist.is_authorized_write(&user.id().unwrap()) {
         return Ok(HttpResponse::Unauthorized().finish());
     }
-    let _ = db.remove_playlist(&playlist.id).await?;
+    db.remove_playlist(&playlist.id).await?;
     Ok(HttpResponse::Ok().finish())
 }

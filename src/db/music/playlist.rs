@@ -34,7 +34,7 @@ impl MongoClient {
 
     pub async fn get_playlist(&self, playlist_id: &ObjectId) -> Result<Option<Playlist>> {
         let coll = self._database.collection::<Playlist>("Playlist");
-        Ok(coll.find_one(doc! {"_id": playlist_id}, None).await?)
+        coll.find_one(doc! {"_id": playlist_id}, None).await
     }
 
     pub async fn get_user_playlists(
@@ -71,7 +71,7 @@ impl MongoClient {
     pub async fn create_playlist(
         &self,
         name: String,
-        musics: &Vec<DeezerId>,
+        musics: &[DeezerId],
         public: bool,
         creator: &User,
     ) -> Result<ObjectId> {

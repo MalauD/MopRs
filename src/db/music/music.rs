@@ -61,7 +61,7 @@ impl MongoClient {
         for e in music_ids {
             final_arranged.push(result_hash[e].clone());
         }
-        return Ok(Some(final_arranged));
+        Ok(Some(final_arranged))
     }
 
     pub async fn modify_like_count(&self, music_id: &DeezerId, inc: DeezerId) -> Result<()> {
@@ -73,6 +73,6 @@ impl MongoClient {
 
     pub async fn get_musics_count(&self) -> Result<u64> {
         let coll = self._database.collection::<Music>("Music");
-        Ok(coll.estimated_document_count(None).await?)
+        coll.estimated_document_count(None).await
     }
 }

@@ -30,7 +30,7 @@ pub async fn get_artist(
             .data
             .clone()
             .into_iter()
-            .map(|x| Album::from(x))
+            .map(Album::from)
             .unique_by(|x| x.id)
             .collect_vec();
         let albums_id = albums.clone().into_iter().map(|x| x.id).collect_vec();
@@ -46,7 +46,7 @@ pub async fn get_artist(
             .data
             .clone()
             .into_iter()
-            .map(|x| Artist::from(x))
+            .map(Artist::from)
             .unique_by(|x| x.id)
             .collect_vec();
 
@@ -61,7 +61,7 @@ pub async fn get_artist(
             .await;
 
         let tracks = index_artist_top_tracks(&top_tracks, &req).await.unwrap();
-        let _ = db
+        db
             .set_top_tracks(
                 &req,
                 &tracks.clone().into_iter().map(|x| x.id).collect_vec(),
@@ -72,7 +72,7 @@ pub async fn get_artist(
     };
 
     let albums_of_artist = db
-        .get_albums(&compl_artist.albums.as_ref().unwrap())
+        .get_albums(compl_artist.albums.as_ref().unwrap())
         .await?
         .unwrap();
 

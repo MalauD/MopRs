@@ -3,7 +3,7 @@ use crate::{
     db::{get_mongo, PaginationOptions},
     deezer::get_dz_client,
     models::{PopulatedPlaylist, User},
-    search::{self, get_meilisearch},
+    search::{get_meilisearch},
 };
 use actix::Addr;
 use actix_web::{web, HttpResponse};
@@ -102,7 +102,7 @@ pub async fn search_playlist(
     for playlist in playlists.iter().cloned() {
         if playlist.is_authorized_read(&user.clone().id().unwrap()) {
             //Something else might be faster
-            let musics = db.get_musics(&playlist.musics.as_ref().unwrap()).await?;
+            let musics = db.get_musics(playlist.musics.as_ref().unwrap()).await?;
             //TODO add correct user..
             let mut playlist_pop = PopulatedPlaylist::from_playlist(playlist, user.clone());
             playlist_pop.musics = musics;

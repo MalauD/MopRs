@@ -18,11 +18,11 @@ impl StreamingCredentials {
         }
     }
 
-    pub fn set_sid(&mut self, sid: String) -> () {
+    pub fn set_sid(&mut self, sid: String) {
         self.sid = sid;
     }
 
-    pub fn set_token(&mut self, token: String) -> () {
+    pub fn set_token(&mut self, token: String) {
         self.token = token;
     }
 }
@@ -75,23 +75,21 @@ impl StreamMusic {
 
     pub fn get_bf_key(&self) -> String {
         let secret = "g4el58wc0zvf9na1";
-        let md5_music_id = hex::encode(&md5::compute(self.id.to_string().as_bytes()).0);
+        let md5_music_id = hex::encode(md5::compute(self.id.to_string().as_bytes()).0);
         let mut blowfish_key = String::new();
         for i in 0..16 {
             blowfish_key.push_str(
-                &String::from_utf16(&vec![
-                    md5_music_id.chars().nth(i).unwrap() as u16
-                        ^ md5_music_id.chars().nth(i + 16).unwrap() as u16
-                        ^ secret.chars().nth(i).unwrap() as u16,
-                ])
+                &String::from_utf16(&[md5_music_id.chars().nth(i).unwrap() as u16
+                    ^ md5_music_id.chars().nth(i + 16).unwrap() as u16
+                    ^ secret.chars().nth(i).unwrap() as u16])
                 .unwrap(),
             );
         }
-        return blowfish_key;
+        blowfish_key
     }
 }
 
-fn to_vec_u8_ascii(data: &String) -> Vec<u8> {
+fn to_vec_u8_ascii(data: &str) -> Vec<u8> {
     let mut data_ascii: Vec<u8> = vec![];
     for c in data.chars() {
         if c == '¤' {

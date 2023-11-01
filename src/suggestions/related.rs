@@ -20,8 +20,7 @@ pub async fn get_related_to(
         .get_artists(
             &base_musics_artists
                 .iter()
-                .map(|a| a.related_artists.clone().unwrap_or_default())
-                .flatten()
+                .flat_map(|a| a.related_artists.clone().unwrap_or_default())
                 .collect(),
         )
         .await

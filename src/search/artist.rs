@@ -36,7 +36,7 @@ impl MeilisearchClient {
         let index = self.client.index("artists");
         let artists: Vec<ArtistMeilisearch> = artists
             .into_iter()
-            .map(|m| ArtistMeilisearch::from(m))
+            .map(ArtistMeilisearch::from)
             .collect();
         let t = index.add_documents(&artists, Some("id")).await?;
         Ok(t)

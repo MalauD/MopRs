@@ -41,7 +41,7 @@ impl MongoClient {
                     None,
                 )
                 .await?;
-            return Ok(false);
+            Ok(false)
         } else {
             let _ = coll
                 .update_one(
@@ -50,7 +50,7 @@ impl MongoClient {
                     None,
                 )
                 .await?;
-            return Ok(true);
+            Ok(true)
         }
     }
 

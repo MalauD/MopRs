@@ -84,7 +84,7 @@ impl MongoClient {
 
     pub async fn get_artist(&self, artist_id: &DeezerId) -> Result<Option<Artist>> {
         let coll = self._database.collection::<Artist>("Artist");
-        Ok(coll.find_one(doc! {"_id": artist_id}, None).await?)
+        coll.find_one(doc! {"_id": artist_id}, None).await
     }
 
     pub async fn get_artists(&self, artist_ids: &Vec<DeezerId>) -> Result<Option<Vec<Artist>>> {
@@ -100,7 +100,7 @@ impl MongoClient {
         for e in artist_ids {
             final_arranged.push(result_hash[e].clone());
         }
-        return Ok(Some(final_arranged));
+        Ok(Some(final_arranged))
     }
 
     pub async fn get_artists_by_name(
@@ -123,7 +123,7 @@ impl MongoClient {
                 final_arranged.push(result_hash[e].clone());
             }
         }
-        return Ok(Some(final_arranged));
+        Ok(Some(final_arranged))
     }
 
     pub async fn append_multiple_to_an_artist(

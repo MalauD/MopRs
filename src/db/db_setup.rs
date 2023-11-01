@@ -21,9 +21,7 @@ pub async fn get_mongo(mongo_url: Option<String>) -> &'static MongoClient {
     let mut initialized = initializing_mutex.lock().await;
 
     if !*initialized {
-        if let Ok(client_options) =
-            ClientOptions::parse(mongo_url.unwrap()).await
-        {
+        if let Ok(client_options) = ClientOptions::parse(mongo_url.unwrap()).await {
             if let Ok(client) = Client::with_options(client_options) {
                 if MONGO
                     .set(MongoClient {
@@ -66,7 +64,7 @@ impl PaginationOptions {
         self.max_results as usize
     }
 
-    pub fn trim_vec<T: Copy>(&self, input: &Vec<T>) -> Vec<T> {
+    pub fn trim_vec<T: Copy>(&self, input: &[T]) -> Vec<T> {
         let rng = self.get_max_results() * self.get_page()
             ..self.get_max_results() * (self.get_page() + 1);
         let mut vec: Vec<T> = Vec::with_capacity(rng.len());
@@ -75,6 +73,6 @@ impl PaginationOptions {
                 vec.push(*e);
             }
         }
-        return vec;
+        vec
     }
 }

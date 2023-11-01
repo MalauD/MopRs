@@ -134,23 +134,12 @@ impl DeezerClient {
 
         let cipher = BfCBC::new_from_slices(bf_key.as_bytes(), &[0, 1, 2, 3, 4, 5, 6, 7]).unwrap();
 
-        let mut iter = 0;
-
-        for ch in chunks {
+        for (iter, ch) in chunks.enumerate() {
             if iter % 3 > 0 || ch.len() != 2048 {
                 decrypted_file.extend_from_slice(ch);
             } else {
                 decrypted_file.append(&mut cipher.clone().decrypt_vec(ch).unwrap());
             }
-            // let mut decrypted_buf = decrypt(
-            //     cipher,
-            //     bf_key.as_bytes(),
-            //     Some(&[0, 1, 2, 3, 4, 5, 6, 7]),
-            //     ch,
-            // )
-            // .unwrap();
-
-            iter = iter + 1;
         }
         let s3 = get_s3(None).await;
         let _ = s3
