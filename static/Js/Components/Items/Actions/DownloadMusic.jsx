@@ -8,6 +8,8 @@ export default class DownloadMusic extends React.Component {
     static propTypes = {
         Music: PropTypes.shape({
             _id: PropTypes.number.isRequired,
+            title: PropTypes.string.isRequired,
+            artist_name: PropTypes.string.isRequired,
         }).isRequired,
     };
 
@@ -15,7 +17,7 @@ export default class DownloadMusic extends React.Component {
         const { Music } = this.props;
         Axios.get(`/api/music/${Music._id}/audio_tagged`, { responseType: 'blob' }).then(
             (response) => {
-                fileDownload(response.data, `${Music._id}.mp3`);
+                fileDownload(response.data, `${Music.artist_name} - ${Music.title}.mp3`);
             }
         );
     };
