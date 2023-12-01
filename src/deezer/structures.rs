@@ -2,7 +2,7 @@ use serde::{Deserialize, Deserializer, Serialize};
 
 use crate::models::DeezerId;
 
-use super::StreamMusic;
+use super::UnofficialDeezerMusic;
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct SearchMusicsResult {
@@ -92,7 +92,7 @@ pub struct Session {
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct UnofficialMusicResult {
-    pub results: StreamMusic,
+    pub results: UnofficialDeezerMusic,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]

@@ -1,6 +1,10 @@
+use std::pin::Pin;
+use std::task::Poll;
+use std::{convert::TryInto, io};
+
 use aes::Aes128;
-use block_modes::block_padding::Pkcs7;
-use block_modes::{BlockMode, Ecb};
+use block_modes::{block_padding::NoPadding, block_padding::Pkcs7, BlockMode, Cbc, Ecb};
+use blowfish::Blowfish;
 use serde::{Deserialize, Serialize};
 
 pub struct StreamingCredentials {
@@ -28,7 +32,7 @@ impl StreamingCredentials {
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
-pub struct StreamMusic {
+pub struct UnofficialDeezerMusic {
     #[serde(rename = "SNG_ID")]
     id: String,
     #[serde(rename = "MD5_ORIGIN")]
@@ -39,7 +43,7 @@ pub struct StreamMusic {
     size: String,
 }
 
-impl StreamMusic {
+impl UnofficialDeezerMusic {
     fn get_track_name(&self) -> String {
         let data = vec![
             self.md5.clone(),
@@ -99,4 +103,128 @@ fn to_vec_u8_ascii(data: &str) -> Vec<u8> {
         }
     }
     data_ascii
+}
+
+pub struct ChunkedStream<T>
+where
+    T: futures::Stream<Item = reqwest::Result<bytes::Bytes>>,
+{
+    stream: T,
+    buffer: Vec<u8>,
+    idx: u32,
+}
+
+impl<T> ChunkedStream<T>
+where
+    T: futures::Stream<Item = reqwest::Result<bytes::Bytes>>,
+{
+    pub fn new(stream: T) -> Self {
+        Self {
+            stream,
+            buffer: Vec::with_capacity(2048),
+            idx: 0,
+        }
+    }
+}
+
+impl<T> futures::Stream for ChunkedStream<T>
+where
+    T: futures::Stream<Item = reqwest::Result<bytes::Bytes>> + Unpin,
+{
+    type Item = Result<[u8; 2048], actix_web::Error>;
+
+    fn poll_next(
+        self: std::pin::Pin<&mut Self>,
+        cx: &mut std::task::Context<'_>,
+    ) -> std::task::Poll<Option<Self::Item>> {
+        if self.idx > 2048 {
+            // Drain the buffer and return the first 2048 bytes
+            self.idx = self.idx - 2048;
+            let next: [u8; 2048] = self.buffer[..2048].try_into().unwrap();
+            // Remove the first 2048 bytes
+            self.buffer.drain(..2048);
+
+            return Poll::Ready(Some(Ok(next)));
+        }
+        match Pin::new(&mut self.stream).poll_next(cx) {
+            Poll::Pending => Poll::Pending,
+            Poll::Ready(Some(Ok(res))) => {
+                self.buffer.extend_from_slice(&res);
+                self.idx += res.len() as u32;
+                self.poll_next(cx)
+            }
+            Poll::Ready(Some(Err(e))) => Poll::Ready(Some(Err(io::Error::new(
+                io::ErrorKind::Other,
+                format!("{:?}", e),
+            )
+            .into()))),
+            Poll::Ready(None) => {
+                if self.buffer.len() > 0 {
+                    let next: [u8; 2048] = self.buffer[..2048].try_into().unwrap();
+                    Poll::Ready(Some(Ok(next)))
+                } else {
+                    Poll::Ready(None)
+                }
+            }
+        }
+    }
+}
+
+pub struct DeezerMusicStream<T>
+where
+    T: futures::Stream<Item = reqwest::Result<bytes::Bytes>>,
+{
+    cipher: Cbc<Blowfish, NoPadding>,
+    stream: ChunkedStream<T>,
+    chunk_count: u32,
+}
+
+impl<T> DeezerMusicStream<T>
+where
+    T: futures::Stream<Item = reqwest::Result<bytes::Bytes>>,
+{
+    pub fn new(
+        music: &UnofficialDeezerMusic,
+        credentials: &StreamingCredentials,
+        stream: ChunkedStream<T>,
+    ) -> Self {
+        let bf_key = music.get_bf_key();
+        let cipher = Cbc::new_from_slices(bf_key.as_bytes(), &[0, 1, 2, 3, 4, 5, 6, 7]).unwrap();
+        Self {
+            cipher,
+            stream,
+            chunk_count: 0,
+        }
+    }
+}
+
+impl<T> futures::Stream for DeezerMusicStream<T>
+where
+    T: futures::Stream<Item = reqwest::Result<bytes::Bytes>> + Unpin,
+{
+    type Item = Result<bytes::Bytes, actix_web::Error>;
+
+    fn poll_next(
+        self: std::pin::Pin<&mut Self>,
+        cx: &mut std::task::Context<'_>,
+    ) -> std::task::Poll<Option<Self::Item>> {
+        match Pin::new(&mut self.stream).poll_next(cx) {
+            Poll::Pending => Poll::Pending,
+            Poll::Ready(Some(Ok(res))) => {
+                if self.chunk_count % 3 > 0 {
+                    self.chunk_count += 1;
+                    Poll::Ready(Some(Ok(bytes::Bytes::copy_from_slice(&res))))
+                } else {
+                    self.chunk_count += 1;
+                    Poll::Ready(Some(Ok(self.cipher.decrypt_vec(&res).unwrap().into())))
+                }
+            }
+            Poll::Ready(Some(Err(e))) => Poll::Ready(Some(Err(io::Error::new(
+                io::ErrorKind::Other,
+                format!("{:?}", e),
+            )
+            .into()))),
+            Poll::Ready(None) => Poll::Ready(None),
+        }
+    }
 }

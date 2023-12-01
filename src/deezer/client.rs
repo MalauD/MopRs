@@ -1,5 +1,6 @@
 use block_modes::{block_padding::NoPadding, BlockMode, Cbc};
 use blowfish::Blowfish;
+use bytes::Bytes;
 use log::info;
 use once_cell::sync::OnceCell;
 use reqwest::{Client, Result};
@@ -9,8 +10,9 @@ use tokio::sync::{Mutex, RwLock};
 use crate::{deezer::SearchMusicsResult, models::DeezerId, s3::get_s3};
 
 use super::{
-    AlbumTracksResult, ArtistAlbumsResult, ArtistTopTracksResult, ChartResult, InitSessionResult,
-    RelatedArtists, StreamMusic, StreamingCredentials, UnofficialMusicResult,
+    AlbumTracksResult, ArtistAlbumsResult, ArtistTopTracksResult, ChartResult, ChunkedStream,
+    DeezerMusicStream, InitSessionResult, RelatedArtists, StreamingCredentials,
+    UnofficialDeezerMusic, UnofficialMusicResult,
 };
 
 pub struct DeezerClient {
@@ -99,7 +101,7 @@ impl DeezerClient {
         Ok(())
     }
 
-    pub async fn get_music_by_id_unofficial(&self, id: DeezerId) -> Result<StreamMusic> {
+    pub async fn get_music_by_id_unofficial(&self, id: DeezerId) -> Result<UnofficialDeezerMusic> {
         let url = format!(
             "http://www.deezer.com/ajax/gw-light.php?api_token={}&api_version=1.0&input=3&method=song.getData",
             self.cred.token
@@ -116,7 +118,10 @@ impl DeezerClient {
             .results)
     }
 
-    pub async fn download_music(&self, id: DeezerId) -> Result<Vec<u8>> {
+    pub async fn download_music(
+        &self,
+        id: DeezerId,
+    ) -> futures::Stream<Item = actix_web::Result<bytes::Bytes, actix_web::Error>> {
         let m = self.get_music_by_id_unofficial(id).await?;
         let response = self
             .http_client
@@ -124,31 +129,12 @@ impl DeezerClient {
             .header("cookie", self.get_cookie())
             .send()
             .await?
-            .bytes()
-            .await?;
+            .bytes_stream();
 
-        let chunks = response.chunks(2048);
-        let mut decrypted_file: Vec<u8> = Vec::with_capacity(chunks.len());
-        let bf_key = m.get_bf_key();
-        type BfCBC = Cbc<Blowfish, NoPadding>;
+        let chunked_stream = ChunkedStream::new(response);
+        let dz_stream = DeezerMusicStream::new(&m, &self.cred, chunked_stream);
 
-        let cipher = BfCBC::new_from_slices(bf_key.as_bytes(), &[0, 1, 2, 3, 4, 5, 6, 7]).unwrap();
-
-        for (iter, ch) in chunks.enumerate() {
-            if iter % 3 > 0 || ch.len() != 2048 {
-                decrypted_file.extend_from_slice(ch);
-            } else {
-                decrypted_file.append(&mut cipher.clone().decrypt_vec(ch).unwrap());
-            }
-        }
-        let s3 = get_s3(None).await;
-        let _ = s3
-            .get_bucket()
-            .put_object(format!("/{}", id), &decrypted_file)
-            .await
-            .unwrap();
-        info!(target: "mop-rs::deezer","Downloaded music");
-        Ok(decrypted_file)
+        dz_stream)
     }
 
     pub async fn search_music(&self, search: String) -> Result<SearchMusicsResult> {
