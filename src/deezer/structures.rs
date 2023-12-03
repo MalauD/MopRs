@@ -2,8 +2,6 @@ use serde::{Deserialize, Deserializer, Serialize};
 
 use crate::models::DeezerId;
 
-use super::StreamMusic;
-
 #[derive(Debug, Deserialize, Serialize)]
 pub struct SearchMusicsResult {
     pub data: Vec<SearchMusicsResultItem>,
@@ -77,22 +75,6 @@ pub struct ArtistAlbumsResultItem {
     pub title: String,
     #[serde(deserialize_with = "parse_cover")]
     pub cover_big: String,
-}
-
-#[derive(Debug, Deserialize, Serialize, Clone)]
-pub struct InitSessionResult {
-    pub results: Session,
-}
-
-#[derive(Debug, Deserialize, Serialize, Clone)]
-pub struct Session {
-    #[serde(rename = "SESSION")]
-    pub session: String,
-}
-
-#[derive(Debug, Deserialize, Serialize, Clone)]
-pub struct UnofficialMusicResult {
-    pub results: StreamMusic,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]

@@ -1,42 +1,60 @@
+use crate::{
+    db::get_mongo,
+    deezer::{get_dz_client, get_dz_downloader, DeezerMusicFormats},
+    models::{DeezerId, User},
+    s3::get_s3,
+};
 use actix_web::{http::header::Range, web, HttpRequest, HttpResponse};
 use id3::{
     frame::{Picture, PictureType},
     Tag, TagLike,
 };
+use log::debug;
+use serde::Deserialize;
 use std::{convert::TryInto, str::FromStr};
 
-use crate::{
-    db::get_mongo,
-    deezer::{get_dz_client, refresh_dz_client},
-    models::{DeezerId, User},
-    s3::get_s3,
-};
+#[derive(Debug, Deserialize)]
+pub struct MusicFormat {
+    #[serde(default)]
+    pub format: DeezerMusicFormats,
+}
 
 pub async fn get_music_audio(
     req: web::Path<DeezerId>,
     user: User,
     httpreq: HttpRequest,
+    query: web::Query<MusicFormat>,
 ) -> actix_web::Result<HttpResponse> {
     let db = get_mongo(None).await;
-    let bucket = get_s3(None).await.get_bucket();
-    let dz = get_dz_client(None).await.read().await;
+    let s3 = get_s3(None).await;
+    let downloader = get_dz_downloader(None).read().unwrap();
     let id = req.into_inner();
 
-    let res = bucket.get_object(format!("/{}", id)).await;
-    let t = if res.is_err() {
-        if let Ok(track) = dz.download_music(id).await {
-            track
+    let formats = query.format.get_formats_below();
+
+    let res = s3.get_music(id, &vec![query.format]).await;
+    let (t, format) = if res.is_err() {
+        let (track, format) = if let Ok(d) = downloader.download_music(id, &formats).await {
+            d
         } else {
-            drop(dz);
-            refresh_dz_client().await;
-            let dz = get_dz_client(None).await.read().await;
-            dz.download_music(id).await.unwrap()
-        }
+            drop(downloader);
+            let mut downloader = get_dz_downloader(None).write().unwrap();
+            downloader.authenticate().await.unwrap();
+            downloader.download_music(id, &formats).await.unwrap()
+        };
+        let track_c = track.clone();
+        actix_rt::spawn(async move {
+            let _ = s3.upload_music(id, format, &track).await;
+            debug!(target : "mop-rs::cdn", "Uploaded music {} to S3", id)
+        });
+        (track_c, format)
     } else {
         let res = res.unwrap();
         db.add_to_history(&user, &id).await.unwrap();
-        res.bytes().to_vec()
+        res
     };
+
+    let mime_type = format.get_mime_type();
 
     if let Some(r) = httpreq.headers().get("range") {
         let range = Range::from_str(r.to_str().unwrap()).unwrap();
@@ -52,16 +70,16 @@ pub async fn get_music_audio(
                     format!("bytes {}-{}/{}", range.0, range.1, t.len()),
                 ))
                 .append_header(("Accept-Ranges", "bytes"))
-                .append_header(("Content-Type", "audio/mpeg"))
+                .append_header(("Content-Type", mime_type))
                 .body(t[range.0 as usize..=range.1 as usize].to_vec()))
         } else {
             Ok(HttpResponse::Ok()
-                .append_header(("Content-Type", "audio/mpeg"))
+                .append_header(("Content-Type", mime_type))
                 .body(t))
         }
     } else {
         Ok(HttpResponse::Ok()
-            .append_header(("Content-Type", "audio/mpeg"))
+            .append_header(("Content-Type", mime_type))
             .body(t))
     }
 }
@@ -69,27 +87,42 @@ pub async fn get_music_audio(
 pub async fn get_music_tagged(
     req: web::Path<DeezerId>,
     user: User,
+    query: web::Query<MusicFormat>,
 ) -> actix_web::Result<HttpResponse> {
     let db = get_mongo(None).await;
-    let bucket = get_s3(None).await.get_bucket();
-    let dz = get_dz_client(None).await.read().await;
+    let s3 = get_s3(None).await;
+    let downloader = get_dz_downloader(None).read().unwrap();
     let id = req.into_inner();
 
-    let res = bucket.get_object(format!("/{}", id)).await;
-    let mut t = if res.is_err() {
-        if let Ok(track) = dz.download_music(id).await {
-            track
+    let formats = query.format.get_formats_below();
+
+    let res = s3.get_music(id, &vec![query.format]).await;
+    let (mut t, format) = if res.is_err() {
+        let (track, format) = if let Ok(d) = downloader.download_music(id, &formats).await {
+            d
         } else {
-            drop(dz);
-            refresh_dz_client().await;
-            let dz = get_dz_client(None).await.read().await;
-            dz.download_music(id).await.unwrap()
-        }
+            drop(downloader);
+            let mut downloader = get_dz_downloader(None).write().unwrap();
+            downloader.authenticate().await.unwrap();
+            downloader.download_music(id, &formats).await.unwrap()
+        };
+        let track_c = track.clone();
+        actix_rt::spawn(async move {
+            let _ = s3.upload_music(id, format, &track).await;
+            debug!(target : "mop-rs::cdn", "Uploaded music {} to S3", id)
+        });
+        (track_c, format)
     } else {
         let res = res.unwrap();
         db.add_to_history(&user, &id).await.unwrap();
-        res.bytes().to_vec()
+        res
     };
+
+    if format == DeezerMusicFormats::FLAC {
+        return Ok(HttpResponse::Ok()
+            .append_header(("Content-Type", "audio/flac"))
+            .body(t));
+    }
 
     let db_music = db.get_musics(&vec![id]).await.unwrap().unwrap();
     let db_music = db_music.first().unwrap();
@@ -107,7 +140,7 @@ pub async fn get_music_tagged(
         tags.set_disc(disc.try_into().unwrap());
     }
     if let Some(cover_url) = db_music.image_url.clone() {
-        let dz = get_dz_client(None).await.read().await;
+        let dz = get_dz_client();
         let data = dz.get_cover(&cover_url).await.unwrap();
         tags.add_frame(Picture {
             mime_type: "image/jpeg".to_string(),

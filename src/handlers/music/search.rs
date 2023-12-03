@@ -3,7 +3,7 @@ use crate::{
     db::{get_mongo, PaginationOptions},
     deezer::get_dz_client,
     models::{PopulatedPlaylist, User},
-    search::{get_meilisearch},
+    search::get_meilisearch,
 };
 use actix::Addr;
 use actix_web::{web, HttpResponse};
@@ -25,7 +25,7 @@ pub async fn search_music(
 ) -> MusicResponse {
     let db = get_mongo(None).await;
     let search = get_meilisearch(None).await;
-    let dz = get_dz_client(None).await.read().await;
+    let dz = get_dz_client();
 
     if let Some(true) = search_opt.no_index {
         let ids = search
@@ -51,7 +51,7 @@ pub async fn search_album(
 ) -> MusicResponse {
     let db = get_mongo(None).await;
     let search = get_meilisearch(None).await;
-    let _dz = get_dz_client(None).await.read().await;
+    let _dz = get_dz_client();
     /*
     if pagination.get_page() == 0 {}
         let res = dz.search_music(req.clone()).await?;
@@ -71,7 +71,7 @@ pub async fn search_artist(
 ) -> MusicResponse {
     let db = get_mongo(None).await;
     let search = get_meilisearch(None).await;
-    let _dz = get_dz_client(None).await.read().await;
+    let _dz = get_dz_client();
 
     /*
     if pagination.get_page() == 0 {

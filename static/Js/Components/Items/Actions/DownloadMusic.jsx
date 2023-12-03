@@ -17,7 +17,11 @@ export default class DownloadMusic extends React.Component {
         const { Music } = this.props;
         Axios.get(`/api/music/${Music._id}/audio_tagged`, { responseType: 'blob' }).then(
             (response) => {
-                fileDownload(response.data, `${Music.artist_name} - ${Music.title}.mp3`);
+                let ext = 'mp3';
+                if (response.data.type === 'audio/flac') {
+                    ext = 'flac';
+                }
+                fileDownload(response.data, `${Music.artist_name} - ${Music.title}.${ext}`);
             }
         );
     };

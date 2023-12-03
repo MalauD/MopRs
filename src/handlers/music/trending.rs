@@ -15,7 +15,7 @@ pub async fn trending_musics(
     scraper: web::Data<Addr<ArtistScraperActor>>,
 ) -> MusicResponse {
     let db = get_mongo(None).await;
-    let dz = get_dz_client(None).await.read().await;
+    let dz = get_dz_client();
 
     let charts = db.get_chart_today().await?;
     let charts = match charts {

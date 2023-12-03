@@ -172,7 +172,7 @@ pub async fn create_playlist_deezer(
     scraper: web::Data<Addr<ArtistScraperActor>>,
 ) -> MusicResponse {
     let db = get_mongo(None).await;
-    let dz = get_dz_client(None).await.read().await;
+    let dz = get_dz_client();
 
     let music_dz_ids = dz.get_playlist_musics(&pl.deezer_id).await?;
 

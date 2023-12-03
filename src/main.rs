@@ -16,7 +16,7 @@ use crate::{
     actors::ArtistScraperActor,
     app_settings::{get_settings, AppSettings},
     db::get_mongo,
-    deezer::get_dz_client,
+    deezer::get_dz_downloader,
     s3::get_s3,
     search::{get_meilisearch, MeilisearchConfig},
 };
@@ -58,6 +58,11 @@ async fn main() -> std::io::Result<()> {
         Key::generate()
     };
 
+    let mut d = get_dz_downloader(Some(config.arl.clone())).write().unwrap();
+    d.authenticate().await.unwrap();
+    drop(d);
+    info!(target:"mop-rs::deezer_downloader","Deezer downloader initialized");
+
     let redis_config = config.clone();
     let redis_connection_string = if let Some(redis_pasword) = redis_config.redis_password {
         format!(
@@ -79,8 +84,6 @@ async fn main() -> std::io::Result<()> {
         .unwrap();
 
     info!(target:"mop-rs::redis","Connected to redis");
-
-    let _ = get_dz_client(Some(config.arl.clone())).await;
 
     let _ = get_meilisearch(Some(MeilisearchConfig::new(
         config.meilisearch_host.clone(),

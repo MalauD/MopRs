@@ -11,7 +11,7 @@ use super::MusicResponse;
 
 pub async fn get_album(req: web::Path<DeezerId>) -> MusicResponse {
     let db = get_mongo(None).await;
-    let dz = get_dz_client(None).await.read().await;
+    let dz = get_dz_client();
     let search = get_meilisearch(None).await;
 
     let res = dz.get_album_musics(*req).await?;

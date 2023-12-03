@@ -1,45 +1,34 @@
-use block_modes::{block_padding::NoPadding, BlockMode, Cbc};
-use blowfish::Blowfish;
-use log::info;
 use once_cell::sync::OnceCell;
 use reqwest::{Client, Result};
-use serde_json::json;
-use tokio::sync::{Mutex, RwLock};
+use std::sync::Mutex;
 
-use crate::{deezer::SearchMusicsResult, models::DeezerId, s3::get_s3};
+use crate::{deezer::SearchMusicsResult, models::DeezerId};
 
 use super::{
-    AlbumTracksResult, ArtistAlbumsResult, ArtistTopTracksResult, ChartResult, InitSessionResult,
-    RelatedArtists, StreamMusic, StreamingCredentials, UnofficialMusicResult,
+    AlbumTracksResult, ArtistAlbumsResult, ArtistTopTracksResult, ChartResult, RelatedArtists,
 };
 
 pub struct DeezerClient {
     http_client: Client,
     base_url: String,
-    pub cred: StreamingCredentials,
 }
 
-static DEEZER: OnceCell<RwLock<DeezerClient>> = OnceCell::new();
+static DEEZER: OnceCell<DeezerClient> = OnceCell::new();
 static DEEZER_INITIALIZED: OnceCell<Mutex<bool>> = OnceCell::new();
 
-pub async fn get_dz_client(arl: Option<String>) -> &'static RwLock<DeezerClient> {
+pub fn get_dz_client() -> &'static DeezerClient {
     if let Some(c) = DEEZER.get() {
         return c;
     }
 
-    let initializing_mutex = DEEZER_INITIALIZED.get_or_init(|| tokio::sync::Mutex::new(false));
+    let initializing_mutex = DEEZER_INITIALIZED.get_or_init(|| Mutex::new(false));
 
-    let mut initialized = initializing_mutex.lock().await;
+    let mut initialized = initializing_mutex.lock().unwrap();
 
     if !*initialized {
-        if let Some(arl_value) = arl {
-            let mut client = DeezerClient::new("https://api.deezer.com/".to_string(), arl_value);
-            info!(target:"mop-rs::deezer","Initializing deezer client");
-            let _ = client.init_session().await;
-            let _ = client.init_user().await;
-            if DEEZER.set(RwLock::new(client)).is_ok() {
-                *initialized = true;
-            }
+        let client = DeezerClient::new("https://api.deezer.com/".to_string());
+        if DEEZER.set(client).is_ok() {
+            *initialized = true;
         }
     }
 
@@ -47,108 +36,12 @@ pub async fn get_dz_client(arl: Option<String>) -> &'static RwLock<DeezerClient>
     DEEZER.get().unwrap()
 }
 
-pub async fn refresh_dz_client() {
-    let mut dz = get_dz_client(None).await.write().await;
-    info!(target:"mop-rs::deezer","Initializing deezer client");
-    let _ = dz.init_session().await;
-    let _ = dz.init_user().await;
-}
-
 impl DeezerClient {
-    pub fn new(base_url: String, arl: String) -> Self {
+    pub fn new(base_url: String) -> Self {
         Self {
             http_client: Client::new(),
             base_url,
-            cred: StreamingCredentials::new(arl),
         }
-    }
-
-    fn get_cookie(&self) -> String {
-        if self.cred.sid.is_empty() {
-            return format!("arl={}", self.cred.arl);
-        }
-        format!("arl={};sid={}", self.cred.arl, self.cred.sid)
-    }
-
-    pub async fn init_session(&mut self) -> Result<()> {
-        let response: InitSessionResult = self
-            .http_client
-            .get("http://www.deezer.com/ajax/gw-light.php?method=deezer.ping&api_version=1.0&api_token")
-            .header("cookie", self.get_cookie())
-            .send()
-            .await?
-            .json()
-            .await?;
-
-        self.cred.set_sid(response.results.session);
-        Ok(())
-    }
-
-    pub async fn init_user(&mut self) -> Result<()> {
-        let response : serde_json::Value = self
-            .http_client
-            .get("http://www.deezer.com/ajax/gw-light.php?api_token=null&method=deezer.getUserData&api_version=1.0&input=3") 
-            .header("cookie", self.get_cookie())
-            .send()
-            .await?
-            .json()
-            .await?;
-        let res = response.get("results").unwrap();
-        self.cred
-            .set_token(res.get("checkForm").unwrap().as_str().unwrap().to_string());
-        Ok(())
-    }
-
-    pub async fn get_music_by_id_unofficial(&self, id: DeezerId) -> Result<StreamMusic> {
-        let url = format!(
-            "http://www.deezer.com/ajax/gw-light.php?api_token={}&api_version=1.0&input=3&method=song.getData",
-            self.cred.token
-        );
-        Ok(self
-            .http_client
-            .post(url)
-            .json(&json!({ "sng_id": id }))
-            .header("cookie", self.get_cookie())
-            .send()
-            .await?
-            .json::<UnofficialMusicResult>()
-            .await?
-            .results)
-    }
-
-    pub async fn download_music(&self, id: DeezerId) -> Result<Vec<u8>> {
-        let m = self.get_music_by_id_unofficial(id).await?;
-        let response = self
-            .http_client
-            .get(m.get_url())
-            .header("cookie", self.get_cookie())
-            .send()
-            .await?
-            .bytes()
-            .await?;
-
-        let chunks = response.chunks(2048);
-        let mut decrypted_file: Vec<u8> = Vec::with_capacity(chunks.len());
-        let bf_key = m.get_bf_key();
-        type BfCBC = Cbc<Blowfish, NoPadding>;
-
-        let cipher = BfCBC::new_from_slices(bf_key.as_bytes(), &[0, 1, 2, 3, 4, 5, 6, 7]).unwrap();
-
-        for (iter, ch) in chunks.enumerate() {
-            if iter % 3 > 0 || ch.len() != 2048 {
-                decrypted_file.extend_from_slice(ch);
-            } else {
-                decrypted_file.append(&mut cipher.clone().decrypt_vec(ch).unwrap());
-            }
-        }
-        let s3 = get_s3(None).await;
-        let _ = s3
-            .get_bucket()
-            .put_object(format!("/{}", id), &decrypted_file)
-            .await
-            .unwrap();
-        info!(target: "mop-rs::deezer","Downloaded music");
-        Ok(decrypted_file)
     }
 
     pub async fn search_music(&self, search: String) -> Result<SearchMusicsResult> {

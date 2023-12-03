@@ -17,7 +17,7 @@ pub async fn get_artist(
     scraper: web::Data<Addr<ArtistScraperActor>>,
 ) -> MusicResponse {
     let db = get_mongo(None).await;
-    let dz = get_dz_client(None).await.read().await;
+    let dz = get_dz_client();
     let search = get_meilisearch(None).await;
     let config = get_settings_sync();
 
@@ -61,12 +61,11 @@ pub async fn get_artist(
             .await;
 
         let tracks = index_artist_top_tracks(&top_tracks, &req).await.unwrap();
-        db
-            .set_top_tracks(
-                &req,
-                &tracks.clone().into_iter().map(|x| x.id).collect_vec(),
-            )
-            .await?;
+        db.set_top_tracks(
+            &req,
+            &tracks.clone().into_iter().map(|x| x.id).collect_vec(),
+        )
+        .await?;
         compl_artist.top_tracks = Some(tracks.into_iter().map(|x| x.id).collect_vec());
         compl_artist.related_artists = Some(rel_artists.into_iter().map(|x| x.id).collect_vec());
     };

@@ -1,5 +1,5 @@
 mod client;
-mod streaming;
+mod downloader;
 mod structures;
 
-pub use {client::*, streaming::*, structures::*};
+pub use {client::*, downloader::*, structures::*};

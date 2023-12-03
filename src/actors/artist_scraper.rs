@@ -19,7 +19,7 @@ impl ArtistScraperActor {
             let mut compl_artist = artist.clone();
             let db = get_mongo(None).await;
             let search = get_meilisearch(None).await;
-            let dz = get_dz_client(None).await.read().await;
+            let dz = get_dz_client();
 
             let related = dz.get_related_artists(&artist.id).await.unwrap();
             let top_tracks = dz.get_artist_top_tracks(&artist.id).await.unwrap();
@@ -43,13 +43,12 @@ impl ArtistScraperActor {
             let tracks = index_artist_top_tracks(&top_tracks, &artist.id)
                 .await
                 .unwrap();
-            db
-                .set_top_tracks(
-                    &artist.id,
-                    &tracks.clone().into_iter().map(|x| x.id).collect_vec(),
-                )
-                .await
-                .unwrap();
+            db.set_top_tracks(
+                &artist.id,
+                &tracks.clone().into_iter().map(|x| x.id).collect_vec(),
+            )
+            .await
+            .unwrap();
             compl_artist.top_tracks = Some(tracks.into_iter().map(|x| x.id).collect_vec());
             compl_artist.related_artists =
                 Some(rel_artists.into_iter().map(|x| x.id).collect_vec());

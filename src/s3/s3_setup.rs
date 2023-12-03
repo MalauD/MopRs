@@ -1,7 +1,11 @@
+use std::str::FromStr;
+
 use log::info;
 use once_cell::sync::OnceCell;
 use s3::{creds::Credentials, error::S3Error, Bucket, BucketConfiguration, Region};
 use tokio::sync::Mutex;
+
+use crate::{deezer::DeezerMusicFormats, models::DeezerId};
 
 pub struct S3Client {
     bucket: Bucket,
@@ -16,6 +20,54 @@ pub struct S3Config {
 impl S3Client {
     pub fn get_bucket(&self) -> &Bucket {
         &self.bucket
+    }
+
+    pub async fn get_music(
+        &self,
+        id: DeezerId,
+        allowed_formats: &Vec<DeezerMusicFormats>,
+    ) -> Result<(Vec<u8>, DeezerMusicFormats), S3Error> {
+        let bucket = self.get_bucket();
+        let (res, _) = bucket
+            .list_page(format!("/{}", id), None, None, None, None)
+            .await
+            .unwrap();
+        let mut best_allowed_format = Option::None;
+        let mut best_allowed_format_obj_key = String::new();
+        for r in res.contents {
+            let format = if !r.key.contains(".") {
+                DeezerMusicFormats::MP3_128
+            } else {
+                let format = r.key.split(".").last().unwrap();
+                DeezerMusicFormats::from_str(&format).unwrap()
+            };
+            if !allowed_formats.contains(&format) {
+                continue;
+            }
+            if best_allowed_format.is_none() || best_allowed_format.unwrap() < format {
+                best_allowed_format = Some(format);
+                best_allowed_format_obj_key = r.key;
+            }
+        }
+
+        if best_allowed_format.is_none() {
+            return Err(S3Error::HttpFail);
+        }
+
+        let res = bucket.get_object(best_allowed_format_obj_key).await?;
+        Ok((res.bytes().to_vec(), best_allowed_format.unwrap()))
+    }
+
+    pub async fn upload_music(
+        &self,
+        id: DeezerId,
+        format: DeezerMusicFormats,
+        data: &Vec<u8>,
+    ) -> Result<(), S3Error> {
+        let bucket = self.get_bucket();
+        let obj_key = format!("/{}.{}", id, format.to_string());
+        bucket.put_object(obj_key, data).await?;
+        Ok(())
     }
 }
 
