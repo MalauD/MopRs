@@ -2045,6 +2045,7 @@ dependencies = [
  "mongodb",
  "now",
  "once_cell",
+ "pin-project 1.0.12",
  "rand",
  "reqwest",
  "ring",
@@ -2055,6 +2056,7 @@ dependencies = [
  "serde_json",
  "serde_with 2.0.1",
  "static_init",
+ "stream-flatten-iters",
  "thiserror",
  "tokio",
  "tokio-stream",
@@ -2305,11 +2307,31 @@ dependencies = [
 
 [[package]]
 name = "pin-project"
+version = "0.4.30"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3ef0f924a5ee7ea9cbcea77529dba45f8a9ba9f622419fe3386ca581a3ae9d5a"
+dependencies = [
+ "pin-project-internal 0.4.30",
+]
+
+[[package]]
+name = "pin-project"
 version = "1.0.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ad29a609b6bcd67fee905812e544992d216af9d755757c05ed2d0e15a74c6ecc"
 dependencies = [
- "pin-project-internal",
+ "pin-project-internal 1.0.12",
+]
+
+[[package]]
+name = "pin-project-internal"
+version = "0.4.30"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "851c8d0ce9bebe43790dedfc86614c23494ac9f423dd618d3a61fc693eafe61e"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
 ]
 
 [[package]]
@@ -3044,6 +3066,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "stream-flatten-iters"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2b10cec45f0cea2f2a8a05c44ea3f400994b29baf8e1690cdd722e25bacd3128"
+dependencies = [
+ "futures-core",
+ "pin-project 0.4.30",
+ "pin-utils",
+]
+
+[[package]]
 name = "stringprep"
 version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3313,7 +3346,7 @@ version = "0.2.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "97d095ae15e245a057c8e8451bab9b3ee1e1f68e9ba2b4fbc18d0ac5237835f2"
 dependencies = [
- "pin-project",
+ "pin-project 1.0.12",
  "tracing",
 ]
 

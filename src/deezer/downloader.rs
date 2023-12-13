@@ -1,15 +1,20 @@
 use block_modes::{block_padding::NoPadding, BlockMode, Cbc};
 use blowfish::Blowfish;
+use futures::TryStreamExt;
 use itertools::Itertools;
 use log::debug;
 use once_cell::sync::OnceCell;
+use pin_project::pin_project;
 use reqwest::Client;
 use serde::{ser::SerializeMap, Deserialize, Serialize};
 use serde_json::json;
 use std::sync::{Mutex, RwLock};
 use thiserror::Error;
 
-use crate::models::DeezerId;
+use crate::{
+    models::{DeezerId, Music},
+    tools::MusicError,
+};
 
 #[derive(Error, Debug)]
 pub enum DeezerDownloaderError {
@@ -302,6 +307,24 @@ impl DeezerDownloader {
         Ok(decrypted_file)
     }
 
+    async fn stream_media(
+        &self,
+        music: &DeezerUnofficialMusic,
+        media: &DeezerUnofficialMedia,
+    ) -> DeezerStreamDecrypt<impl futures::stream::Stream<Item = reqwest::Result<bytes::Bytes>>>
+    {
+        let response = self
+            .http_client
+            .get(media.sources[0].url.clone())
+            .header("cookie", self.get_cookie(true))
+            .send()
+            .await
+            .unwrap()
+            .bytes_stream();
+
+        DeezerStreamDecrypt::new(music.get_bf_key(), response)
+    }
+
     pub async fn download_music(
         &self,
         id: DeezerId,
@@ -315,5 +338,58 @@ impl DeezerDownloader {
         let file = self.download_media(&music, &media).await?;
 
         Ok((file, media.format))
+    }
+}
+
+#[pin_project]
+pub struct DeezerStreamDecrypt<Inner: futures::stream::Stream<Item = reqwest::Result<bytes::Bytes>>>
+{
+    bf_cipher: Cbc<Blowfish, NoPadding>,
+    #[pin]
+    input: futures::stream::TryChunks<stream_flatten_iters::TryFlattenIters<Inner>>,
+    iter: usize,
+}
+
+impl<Inner: futures::stream::Stream<Item = reqwest::Result<bytes::Bytes>>>
+    DeezerStreamDecrypt<Inner>
+{
+    pub fn new(bf_key: String, input: Inner) -> Self {
+        let bf_cipher = Cbc::new_from_slices(bf_key.as_bytes(), &[0, 1, 2, 3, 4, 5, 6, 7]).unwrap();
+        Self {
+            bf_cipher,
+            input: stream_flatten_iters::TryStreamExt::try_flatten_iters(input).try_chunks(2048),
+            iter: 0,
+        }
+    }
+}
+
+impl<Inner: futures::stream::Stream<Item = reqwest::Result<bytes::Bytes>>> futures::Stream
+    for DeezerStreamDecrypt<Inner>
+{
+    type Item = core::result::Result<bytes::Bytes, MusicError>;
+
+    fn poll_next(
+        mut self: std::pin::Pin<&mut Self>,
+        cx: &mut std::task::Context,
+    ) -> std::task::Poll<Option<Self::Item>> {
+        let mut this = self.as_mut().project();
+        match this.input.as_mut().poll_next(cx) {
+            std::task::Poll::Ready(Some(Ok(chunk))) => {
+                if *this.iter % 3 > 0 || chunk.len() != 2048 {
+                    *this.iter += 1;
+                    std::task::Poll::Ready(Some(Ok(bytes::Bytes::copy_from_slice(&chunk))))
+                } else {
+                    *this.iter += 1;
+                    let cipher = this.bf_cipher.clone();
+                    let decrypted = cipher.decrypt_vec(&chunk).unwrap();
+                    std::task::Poll::Ready(Some(Ok(bytes::Bytes::copy_from_slice(&decrypted))))
+                }
+            }
+            std::task::Poll::Ready(Some(Err(e))) => {
+                std::task::Poll::Ready(Some(Err(MusicError::from(e.1))))
+            }
+            std::task::Poll::Ready(None) => std::task::Poll::Ready(None),
+            std::task::Poll::Pending => std::task::Poll::Pending,
+        }
     }
 }
