@@ -24,6 +24,7 @@ import Artist from './Components/MainComponents/Artist';
 import UserPlaylist from './Components/MainComponents/UserPlaylist';
 import UserPlaylists from './Components/MainComponents/UserPlaylists';
 import PlayerFull from './Components/MainComponents/PlayerFull';
+import UserSettings from './Components/MainComponents/UserSettings';
 
 Axios.defaults.withCredentials = true;
 
@@ -68,6 +69,9 @@ function App() {
                     </Route>
                     <Route path="/User/:id/Playlists">
                         <ProtectedRoute Component={UserPlaylists} />
+                    </Route>
+                    <Route path="/Settings">
+                        <ProtectedRoute Component={UserSettings} />
                     </Route>
                 </HashRouter>
             </Suspense>

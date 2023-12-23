@@ -3,6 +3,7 @@ use serde_json::json;
 
 use crate::{
     db::{get_mongo, PaginationOptions},
+    deezer::DeezerMusicFormats,
     models::{PublicUser, User},
     suggestions::get_suggestions_for,
 };
@@ -56,4 +57,24 @@ pub async fn get_suggestions(user: User, settings: web::Query<SuggestionSettings
     let res = db.get_musics(&sugg).await.unwrap();
 
     Ok(HttpResponse::Ok().json(res))
+}
+
+#[derive(serde::Deserialize)]
+pub struct PreferedFormat {
+    pub format: DeezerMusicFormats,
+}
+
+pub async fn set_prefered_format(
+    user: User,
+    format: web::Json<PreferedFormat>,
+) -> actix_web::Result<HttpResponse> {
+    let db = get_mongo(None).await;
+    db.set_prefered_format(&user, &format.format).await.unwrap();
+    Ok(HttpResponse::Ok().finish())
+}
+
+pub async fn get_prefered_format(user: User) -> actix_web::Result<HttpResponse> {
+    let db = get_mongo(None).await;
+    let user = db.get_user(&user.id().unwrap()).await.unwrap().unwrap();
+    Ok(HttpResponse::Ok().json(user.prefered_format().to_string()))
 }

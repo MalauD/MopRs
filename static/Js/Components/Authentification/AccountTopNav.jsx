@@ -92,6 +92,12 @@ class AccountTopNavConnected extends React.Component {
         this.setState({ ShowPlaylistImporterModal: false });
     };
 
+    OnSettings = () => {
+        const { history } = this.props;
+
+        history.push('/Settings');
+    };
+
     render() {
         const { Account } = this.props;
         const { ShowPlaylistImporterModal } = this.state;
@@ -112,6 +118,7 @@ class AccountTopNavConnected extends React.Component {
                             Import Playlist
                         </NavDropdown.Item>
                         <NavDropdown.Divider />
+                        <NavDropdown.Item onClick={this.OnSettings}>Settings</NavDropdown.Item>
                         <NavDropdown.Item onClick={this.OnLogout}>Logout</NavDropdown.Item>
                     </NavDropdown>
                 </>

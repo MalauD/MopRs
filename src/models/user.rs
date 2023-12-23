@@ -1,4 +1,4 @@
-use crate::{db::get_mongo, tools::UserError, models::DeezerId};
+use crate::{db::get_mongo, deezer::DeezerMusicFormats, models::DeezerId, tools::UserError};
 use actix_identity::Identity;
 use actix_web::{dev::Payload, error::ErrorUnauthorized, Error, FromRequest, HttpRequest};
 use futures::Future;
@@ -41,6 +41,8 @@ pub struct User {
     current_playlist: Vec<DeezerId>,
     current_playing: DeezerId,
     viewed_musics: Vec<DeezerId>,
+    #[serde(default)]
+    prefered_format: DeezerMusicFormats,
 }
 
 fn serialize_option_oid_hex<S>(x: &Option<ObjectId>, s: S) -> Result<S::Ok, S::Error>
@@ -89,6 +91,7 @@ impl User {
             current_playing: 0,
             current_playlist: Vec::new(),
             viewed_musics: Vec::new(),
+            prefered_format: DeezerMusicFormats::default(),
         }
     }
 
@@ -119,6 +122,11 @@ impl User {
     /// Get a reference to the user's viewed musics.
     pub fn viewed_musics(&self) -> &[DeezerId] {
         self.viewed_musics.as_ref()
+    }
+
+    /// Get a reference to the user's prefered format.
+    pub fn prefered_format(&self) -> DeezerMusicFormats {
+        self.prefered_format
     }
 }
 

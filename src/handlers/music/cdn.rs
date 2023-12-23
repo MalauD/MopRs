@@ -6,6 +6,7 @@ use crate::{
     tools::MusicError,
 };
 use actix_web::{http::header::Range, web, HttpRequest, HttpResponse};
+use bson::de;
 use futures::{StreamExt, TryStreamExt};
 use futures_core::Stream;
 use id3::{
@@ -18,8 +19,7 @@ use std::{convert::TryInto, iter::FromIterator, str::FromStr};
 
 #[derive(Debug, Deserialize)]
 pub struct MusicFormat {
-    #[serde(default)]
-    pub format: DeezerMusicFormats,
+    pub format: Option<DeezerMusicFormats>,
 }
 
 pub async fn get_music_audio(
@@ -33,14 +33,17 @@ pub async fn get_music_audio(
     let downloader = get_dz_downloader(None).read().unwrap();
     let id = req.into_inner();
 
-    let formats = query.format.get_formats_below();
+    let formats = query
+        .format
+        .unwrap_or(user.prefered_format())
+        .get_formats_below();
 
     db.add_to_history(&user, &id).await.unwrap();
     let range = httpreq
         .headers()
         .get("range")
         .map(|v| Range::from_str(v.to_str().unwrap()).unwrap());
-    let res = s3.get_music(id, &vec![query.format]).await;
+    let res = s3.get_music(id, &formats).await;
     if res.is_err() {
         let (stream, format) = if let Ok(d) = downloader.stream_music(id, &formats).await {
             d
@@ -51,7 +54,7 @@ pub async fn get_music_audio(
             downloader.stream_music(id, &formats).await.unwrap()
         };
         let stream_size = stream.get_stream_size();
-
+        debug!(target : "mop-rs::cdn", "Streaming music {} from Deezer (format {:?})", id, format);
         stream_seek(range, stream_size, format.get_mime_type(), stream)
     } else {
         let (res, format) = res.unwrap();
@@ -107,9 +110,12 @@ pub async fn get_music_tagged(
     let downloader = get_dz_downloader(None).read().unwrap();
     let id = req.into_inner();
 
-    let formats = query.format.get_formats_below();
+    let formats = query
+        .format
+        .unwrap_or(user.prefered_format())
+        .get_formats_below();
 
-    let res = s3.get_music(id, &vec![query.format]).await;
+    let res = s3.get_music(id, &formats).await;
     let (mut t, format) = if res.is_err() {
         let (track, format) = if let Ok(d) = downloader.download_music(id, &formats).await {
             d

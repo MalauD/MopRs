@@ -1,5 +1,6 @@
 use crate::{
     db::MongoClient,
+    deezer::DeezerMusicFormats,
     models::{DeezerId, User, UserReq},
 };
 use bson::{oid::ObjectId, Document};
@@ -137,5 +138,20 @@ impl MongoClient {
             .collect::<Vec<DeezerId>>();
 
         Ok(hist)
+    }
+
+    pub async fn set_prefered_format(
+        &self,
+        user: &User,
+        format: &DeezerMusicFormats,
+    ) -> Result<()> {
+        let coll = self._database.collection::<User>("User");
+        coll.update_one(
+            doc! {"_id": user.id().unwrap()},
+            doc! {"$set": {"prefered_format": format.to_string()}},
+            None,
+        )
+        .await?;
+        Ok(())
     }
 }
