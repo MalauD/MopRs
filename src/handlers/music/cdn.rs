@@ -1,17 +1,20 @@
 use crate::{
     db::get_mongo,
-    deezer::{get_dz_client, get_dz_downloader, DeezerMusicFormats},
+    deezer::{get_dz_client, get_dz_downloader, DeezerMusicFormats, DeezerStreamDecrypt},
     models::{DeezerId, User},
     s3::get_s3,
+    tools::MusicError,
 };
 use actix_web::{http::header::Range, web, HttpRequest, HttpResponse};
+use futures::{StreamExt, TryStreamExt};
+use futures_core::Stream;
 use id3::{
     frame::{Picture, PictureType},
     Tag, TagLike,
 };
 use log::debug;
 use serde::Deserialize;
-use std::{convert::TryInto, str::FromStr};
+use std::{convert::TryInto, iter::FromIterator, str::FromStr};
 
 #[derive(Debug, Deserialize)]
 pub struct MusicFormat {
@@ -32,55 +35,65 @@ pub async fn get_music_audio(
 
     let formats = query.format.get_formats_below();
 
+    db.add_to_history(&user, &id).await.unwrap();
+    let range = httpreq
+        .headers()
+        .get("range")
+        .map(|v| Range::from_str(v.to_str().unwrap()).unwrap());
     let res = s3.get_music(id, &vec![query.format]).await;
-    let (t, format) = if res.is_err() {
-        let (track, format) = if let Ok(d) = downloader.download_music(id, &formats).await {
+    if res.is_err() {
+        let (stream, format) = if let Ok(d) = downloader.stream_music(id, &formats).await {
             d
         } else {
             drop(downloader);
             let mut downloader = get_dz_downloader(None).write().unwrap();
             downloader.authenticate().await.unwrap();
-            downloader.download_music(id, &formats).await.unwrap()
+            downloader.stream_music(id, &formats).await.unwrap()
         };
-        let track_c = track.clone();
-        actix_rt::spawn(async move {
-            let _ = s3.upload_music(id, format, &track).await;
-            debug!(target : "mop-rs::cdn", "Uploaded music {} to S3", id)
-        });
-        (track_c, format)
+        let stream_size = stream.get_stream_size();
+
+        stream_seek(range, stream_size, format.get_mime_type(), stream)
     } else {
-        let res = res.unwrap();
-        db.add_to_history(&user, &id).await.unwrap();
-        res
-    };
+        let (res, format) = res.unwrap();
+        let stream_size = res.len();
+        let stream = futures::stream::once(async move { Ok(bytes::Bytes::from_iter(res)) });
+        stream_seek(range, stream_size, format.get_mime_type(), stream)
+    }
+}
 
-    let mime_type = format.get_mime_type();
-
-    if let Some(r) = httpreq.headers().get("range") {
-        let range = Range::from_str(r.to_str().unwrap()).unwrap();
+fn stream_seek<T>(
+    range: Option<Range>,
+    stream_size: usize,
+    mime_type: String,
+    stream: T,
+) -> Result<HttpResponse, actix_web::Error>
+where
+    T: futures::Stream<Item = Result<bytes::Bytes, MusicError>> + 'static,
+{
+    if let Some(range) = range {
         if let Range::Bytes(ranges) = range {
             let range = ranges
                 .first()
                 .unwrap()
-                .to_satisfiable_range(t.len() as u64)
+                .to_satisfiable_range(stream_size as u64)
                 .unwrap();
             Ok(HttpResponse::PartialContent()
                 .append_header((
                     "Content-Range",
-                    format!("bytes {}-{}/{}", range.0, range.1, t.len()),
+                    format!("bytes {}-{}/{}", range.0, range.1, stream_size),
                 ))
                 .append_header(("Accept-Ranges", "bytes"))
                 .append_header(("Content-Type", mime_type))
-                .body(t[range.0 as usize..=range.1 as usize].to_vec()))
+                .streaming(stream.skip(range.0 as usize)))
         } else {
             Ok(HttpResponse::Ok()
                 .append_header(("Content-Type", mime_type))
-                .body(t))
+                .streaming(stream))
         }
     } else {
         Ok(HttpResponse::Ok()
             .append_header(("Content-Type", mime_type))
-            .body(t))
+            .streaming(stream))
     }
 }
 

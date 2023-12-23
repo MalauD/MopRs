@@ -8,6 +8,7 @@ use pin_project::pin_project;
 use reqwest::Client;
 use serde::{ser::SerializeMap, Deserialize, Serialize};
 use serde_json::json;
+use serde_with::{serde_as, DisplayFromStr};
 use std::sync::{Mutex, RwLock};
 use thiserror::Error;
 
@@ -24,16 +25,32 @@ pub enum DeezerDownloaderError {
     InvalidArlToken,
 }
 
+#[serde_as]
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct DeezerUnofficialMusic {
     #[serde(rename = "SNG_ID")]
     id: String,
-    #[serde(rename = "MD5_ORIGIN")]
-    md5: String,
     #[serde(rename = "TRACK_TOKEN")]
     token: String,
-    #[serde(rename = "MEDIA_VERSION")]
-    media_version: String,
+    #[serde_as(as = "DisplayFromStr")]
+    #[serde(rename = "FILESIZE_MP3_128")]
+    size_mp3_128: u64,
+    #[serde_as(as = "DisplayFromStr")]
+    #[serde(rename = "FILESIZE_MP3_320")]
+    size_mp3_320: u64,
+    #[serde_as(as = "DisplayFromStr")]
+    #[serde(rename = "FILESIZE_FLAC")]
+    size_flac: u64,
+}
+
+impl DeezerUnofficialMusic {
+    pub fn get_size(&self, format: &DeezerMusicFormats) -> u64 {
+        match format {
+            DeezerMusicFormats::MP3_128 => self.size_mp3_128,
+            DeezerMusicFormats::MP3_320 => self.size_mp3_320,
+            DeezerMusicFormats::FLAC => self.size_flac,
+        }
+    }
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -173,7 +190,11 @@ impl DeezerDownloader {
     pub fn new(arl: String) -> Self {
         Self {
             arl,
-            http_client: Client::new(),
+            http_client: Client::builder()
+                .cookie_store(true)
+                .gzip(true)
+                .build()
+                .unwrap(),
             token: String::new(),
             license_token: String::new(),
             sid: String::new(),
@@ -221,12 +242,12 @@ impl DeezerDownloader {
 
     async fn get_music_by_id(&self, id: DeezerId) -> Result<DeezerUnofficialMusic> {
         let url = format!(
-            "http://www.deezer.com/ajax/gw-light.php?api_token={}&api_version=1.0&input=3&method=song.getData",
+            "http://www.deezer.com/ajax/gw-light.php?api_token={}&api_version=1.0&input=3&method=song.getListData",
             self.token
         );
 
         let body = json!({
-            "sng_id": id,
+            "sng_ids": vec![id.to_string()],
         });
 
         let res = self
@@ -234,12 +255,22 @@ impl DeezerDownloader {
             .post(url)
             .json(&body)
             .header("cookie", self.get_cookie(true))
+            .header(reqwest::header::ACCEPT, "application/json")
+            .header(reqwest::header::CONNECTION, "keep-alive")
             .send()
             .await?
             .json::<serde_json::Value>()
             .await?;
 
-        Ok(serde_json::from_value(res["results"].clone()).unwrap())
+        Ok(serde_json::from_value(
+            res["results"]["data"]
+                .as_array()
+                .unwrap()
+                .first()
+                .unwrap()
+                .clone(),
+        )
+        .unwrap())
     }
 
     async fn get_music_download_url(
@@ -322,7 +353,11 @@ impl DeezerDownloader {
             .unwrap()
             .bytes_stream();
 
-        DeezerStreamDecrypt::new(music.get_bf_key(), response)
+        DeezerStreamDecrypt::new(
+            music.get_bf_key(),
+            response,
+            music.get_size(&media.format) as usize,
+        )
     }
 
     pub async fn download_music(
@@ -334,10 +369,25 @@ impl DeezerDownloader {
         let media = self
             .get_music_download_url(&music, &allowed_formats)
             .await?;
-        debug!(target: "mop-rs::deezer_downloader", "Downloading music: {:?} -  {:?}", music.id, media.format);
         let file = self.download_media(&music, &media).await?;
 
         Ok((file, media.format))
+    }
+
+    pub async fn stream_music(
+        &self,
+        id: DeezerId,
+        allowed_formats: &Vec<DeezerMusicFormats>,
+    ) -> Result<(
+        DeezerStreamDecrypt<impl futures::stream::Stream<Item = reqwest::Result<bytes::Bytes>>>,
+        DeezerMusicFormats,
+    )> {
+        let music = self.get_music_by_id(id).await?;
+        let media = self
+            .get_music_download_url(&music, &allowed_formats)
+            .await?;
+        let stream = self.stream_media(&music, &media).await;
+        Ok((stream, media.format))
     }
 }
 
@@ -348,18 +398,24 @@ pub struct DeezerStreamDecrypt<Inner: futures::stream::Stream<Item = reqwest::Re
     #[pin]
     input: futures::stream::TryChunks<stream_flatten_iters::TryFlattenIters<Inner>>,
     iter: usize,
+    stream_size: usize,
 }
 
 impl<Inner: futures::stream::Stream<Item = reqwest::Result<bytes::Bytes>>>
     DeezerStreamDecrypt<Inner>
 {
-    pub fn new(bf_key: String, input: Inner) -> Self {
+    pub fn new(bf_key: String, input: Inner, stream_size: usize) -> Self {
         let bf_cipher = Cbc::new_from_slices(bf_key.as_bytes(), &[0, 1, 2, 3, 4, 5, 6, 7]).unwrap();
         Self {
             bf_cipher,
             input: stream_flatten_iters::TryStreamExt::try_flatten_iters(input).try_chunks(2048),
             iter: 0,
+            stream_size,
         }
+    }
+
+    pub fn get_stream_size(&self) -> usize {
+        self.stream_size
     }
 }
 

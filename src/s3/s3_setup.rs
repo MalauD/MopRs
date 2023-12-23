@@ -1,5 +1,6 @@
-use std::str::FromStr;
+use std::{pin::Pin, str::FromStr};
 
+use futures_core::Stream;
 use log::info;
 use once_cell::sync::OnceCell;
 use s3::{creds::Credentials, error::S3Error, Bucket, BucketConfiguration, Region};
@@ -56,6 +57,45 @@ impl S3Client {
 
         let res = bucket.get_object(best_allowed_format_obj_key).await?;
         Ok((res.bytes().to_vec(), best_allowed_format.unwrap()))
+    }
+
+    pub async fn get_music_stream(
+        &self,
+        id: DeezerId,
+        allowed_formats: &Vec<DeezerMusicFormats>,
+    ) -> Result<(s3::request::ResponseDataStream, DeezerMusicFormats), S3Error> {
+        let (res, _) = self
+            .bucket
+            .list_page(format!("/{}", id), None, None, None, None)
+            .await
+            .unwrap();
+        let mut best_allowed_format = Option::None;
+        let mut best_allowed_format_obj_key = String::new();
+        for r in res.contents {
+            let format = if !r.key.contains(".") {
+                DeezerMusicFormats::MP3_128
+            } else {
+                let format = r.key.split(".").last().unwrap();
+                DeezerMusicFormats::from_str(&format).unwrap()
+            };
+            if !allowed_formats.contains(&format) {
+                continue;
+            }
+            if best_allowed_format.is_none() || best_allowed_format.unwrap() < format {
+                best_allowed_format = Some(format);
+                best_allowed_format_obj_key = r.key;
+            }
+        }
+
+        if best_allowed_format.is_none() {
+            return Err(S3Error::HttpFail);
+        }
+
+        let res = self
+            .bucket
+            .get_object_stream(best_allowed_format_obj_key)
+            .await?;
+        Ok((res, best_allowed_format.unwrap()))
     }
 
     pub async fn upload_music(
