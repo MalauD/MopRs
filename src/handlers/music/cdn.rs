@@ -41,13 +41,15 @@ pub async fn get_music_audio(
         .unwrap_or(user.prefered_format())
         .get_formats_below();
 
-    db.add_to_history(&user, &id).await.unwrap();
     let range = httpreq
         .headers()
         .get("range")
         .map(|v| Range::from_str(v.to_str().unwrap()).unwrap());
 
     let start_at = get_range_start(range.unwrap_or(Range::Bytes(vec![])));
+    if start_at.unwrap_or(0) == 0 {
+        db.add_to_history(&user, &id).await.unwrap();
+    }
 
     let res = s3.get_music(id, &formats, start_at).await;
     if res.is_err() {
