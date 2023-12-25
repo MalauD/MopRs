@@ -1,14 +1,12 @@
 use crate::{
     db::get_mongo,
-    deezer::{get_dz_client, get_dz_downloader, DeezerMusicFormats, DeezerStreamDecrypt},
+    deezer::{get_dz_client, get_dz_downloader, DeezerMusicFormats},
     models::{DeezerId, User},
     s3::get_s3,
     tools::MusicError,
 };
 use actix_web::{http::header::Range, web, HttpRequest, HttpResponse};
-use bson::de;
-use futures::{StreamExt, TryStreamExt};
-use futures_core::Stream;
+use futures::StreamExt;
 use id3::{
     frame::{Picture, PictureType},
     Tag, TagLike,

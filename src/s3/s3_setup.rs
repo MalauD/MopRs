@@ -1,9 +1,7 @@
-use std::{pin::Pin, str::FromStr};
-
-use futures_core::Stream;
 use log::info;
 use once_cell::sync::OnceCell;
 use s3::{creds::Credentials, error::S3Error, Bucket, BucketConfiguration, Region};
+use std::str::FromStr;
 use tokio::sync::Mutex;
 
 use crate::{deezer::DeezerMusicFormats, models::DeezerId};

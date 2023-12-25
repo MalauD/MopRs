@@ -2,7 +2,6 @@ use block_modes::{block_padding::NoPadding, BlockMode, Cbc};
 use blowfish::Blowfish;
 use futures::TryStreamExt;
 use itertools::Itertools;
-use log::debug;
 use once_cell::sync::OnceCell;
 use pin_project::pin_project;
 use reqwest::Client;
@@ -12,10 +11,7 @@ use serde_with::{serde_as, DisplayFromStr};
 use std::sync::{Mutex, RwLock};
 use thiserror::Error;
 
-use crate::{
-    models::{DeezerId, Music},
-    tools::MusicError,
-};
+use crate::{models::DeezerId, tools::MusicError};
 
 #[derive(Error, Debug)]
 pub enum DeezerDownloaderError {
