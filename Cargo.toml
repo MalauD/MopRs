@@ -7,6 +7,9 @@ edition = "2018"
 inherits = "release"
 debug = true
 
+[package.metadata.cargo-machete]
+ignored = ["rust-s3","serde_bytes"]
+
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
@@ -14,9 +17,7 @@ actix = "0.13.0"
 actix-web = "4.0.1"
 actix-session = { version = "0.7.1", features = ["redis-rs-session"] }
 actix-identity = "0.5.2"
-actix-service = "2.0.2"
 actix-files = "0.6.0"
-actix-multipart = "0.4.0"
 actix-rt = "2.7.0"
 mongodb = "2.1.0"
 bson = { version = "2.1.0", features = ["chrono-0_4"] }
@@ -27,20 +28,13 @@ tokio-stream = "0.1.6"
 serde = "1.0.125"
 serde_with="2.0.1"
 serde_json = "1.0"
+serde_bytes="0.11.5"
 reqwest = {version="0.11.2", features = ["json", "stream", "multipart", "cookies", "gzip"]}
 bytes = "1.0.1"
-futures-core = "0.3.13"
-async-trait = "0.1.48"
 thiserror = "1.0.24"
-static_init = "1.0.0"
-mime = "0.3.16"
-sanitize-filename = "0.3.0"
-anyhow = "1.0.40"
 ring = "0.16.20"
-serde_bytes="0.11.5"
 itertools = "0.10.1"
 config = "0.11"
-aes = "0.7.5"
 hex = "0.4.3"
 blowfish = "0.8.0"
 block-modes = "0.8.1"
@@ -49,7 +43,6 @@ log = "0.4"
 env_logger = "0.9.0"
 chrono = "0.4.19"
 now = "0.1.2"
-cached = "0.26.2"
 envy = "0.4"
 dotenv = "0.15.0"
 rust-s3 = "0.33.0"
