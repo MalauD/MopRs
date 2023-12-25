@@ -5,6 +5,7 @@ use serde_json::json;
 use crate::{
     db::get_mongo,
     models::{User, UserReq},
+    tools::UserError,
 };
 
 use super::UserResponse;
@@ -13,7 +14,9 @@ pub async fn login(request: HttpRequest, user: web::Json<UserReq>) -> UserRespon
     let db = get_mongo(None).await;
     if let Some(user_mod) = db.get_user_req(&user).await? {
         user_mod.login(&user)?;
-        let _ = Identity::login(&request.extensions(), user_mod.id().unwrap().to_string());
+        Identity::login(&request.extensions(), user_mod.id().unwrap().to_string())
+            .map_err(|_| UserError::AuthenticationError)?;
+
         Ok(HttpResponse::Ok().json(json!({"success": true})))
     } else {
         Ok(HttpResponse::Forbidden().finish())
@@ -28,7 +31,8 @@ pub async fn register(request: HttpRequest, user: web::Json<UserReq>) -> UserRes
         return Ok(HttpResponse::Ok().json(json!({"success": false})));
     }
     let uid = db.save_user(user_mod).await?;
-    let _ = Identity::login(&request.extensions(), uid.to_string());
+    Identity::login(&request.extensions(), uid.to_string())
+        .map_err(|_| UserError::AuthenticationError)?;
     Ok(HttpResponse::Ok().json(json!({"success": true})))
 }
 

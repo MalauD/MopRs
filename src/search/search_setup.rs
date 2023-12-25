@@ -11,11 +11,11 @@ pub struct MeilisearchClient {
 
 pub struct MeilisearchConfig {
     pub host: String,
-    pub api_key: String,
+    pub api_key: Option<String>,
 }
 
 impl MeilisearchConfig {
-    pub fn new(host: String, api_key: String) -> Self {
+    pub fn new(host: String, api_key: Option<String>) -> Self {
         Self { host, api_key }
     }
 }

@@ -29,6 +29,8 @@ impl ResponseError for MusicError {
 pub enum UserError {
     #[error("MismatchingCredential: cannot login")]
     MismatchingCredential,
+    #[error("AuthenticationError: something went wrong with the authentication")]
+    AuthenticationError,
     #[error("DatabaseError: something went wrong with mongodb")]
     DatabaseError(#[from] mongodb::error::Error),
 }
@@ -37,6 +39,7 @@ impl ResponseError for UserError {
     fn status_code(&self) -> StatusCode {
         match *self {
             Self::MismatchingCredential => StatusCode::UNAUTHORIZED,
+            Self::AuthenticationError => StatusCode::INTERNAL_SERVER_ERROR,
             Self::DatabaseError(_) => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
