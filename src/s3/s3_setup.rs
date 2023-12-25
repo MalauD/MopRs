@@ -25,13 +25,15 @@ impl S3Client {
         &self,
         id: DeezerId,
         allowed_formats: &Vec<DeezerMusicFormats>,
-    ) -> Result<(Vec<u8>, DeezerMusicFormats), S3Error> {
+        start: Option<u64>,
+    ) -> Result<(Vec<u8>, DeezerMusicFormats, u64), S3Error> {
         let bucket = self.get_bucket();
         let (res, _) = bucket
             .list_page(format!("/{}", id), None, None, None, None)
             .await
             .unwrap();
         let mut best_allowed_format = Option::None;
+        let mut best_allowed_format_obj_size = 0;
         let mut best_allowed_format_obj_key = String::new();
         for r in res.contents {
             let format = if !r.key.contains(".") {
@@ -46,6 +48,7 @@ impl S3Client {
             if best_allowed_format.is_none() || best_allowed_format.unwrap() < format {
                 best_allowed_format = Some(format);
                 best_allowed_format_obj_key = r.key;
+                best_allowed_format_obj_size = r.size;
             }
         }
 
@@ -53,8 +56,15 @@ impl S3Client {
             return Err(S3Error::HttpFail);
         }
 
-        let res = bucket.get_object(best_allowed_format_obj_key).await?;
-        Ok((res.bytes().to_vec(), best_allowed_format.unwrap()))
+        let res = bucket
+            .get_object_range(best_allowed_format_obj_key, start.unwrap_or(0), None)
+            .await?;
+
+        Ok((
+            res.bytes().to_vec(),
+            best_allowed_format.unwrap(),
+            best_allowed_format_obj_size,
+        ))
     }
 
     pub async fn get_music_stream(

@@ -5,8 +5,13 @@ use crate::{
     s3::get_s3,
     tools::MusicError,
 };
-use actix_web::{http::header::Range, web, HttpRequest, HttpResponse};
+use actix::Actor;
+use actix_web::{
+    http::header::{ByteRangeSpec, Range},
+    web, HttpRequest, HttpResponse,
+};
 use futures::StreamExt;
+
 use id3::{
     frame::{Picture, PictureType},
     Tag, TagLike,
@@ -41,61 +46,78 @@ pub async fn get_music_audio(
         .headers()
         .get("range")
         .map(|v| Range::from_str(v.to_str().unwrap()).unwrap());
-    let res = s3.get_music(id, &formats).await;
+
+    let start_at = get_range_start(range.unwrap_or(Range::Bytes(vec![])));
+
+    let res = s3.get_music(id, &formats, start_at).await;
     if res.is_err() {
-        let (stream, format) = if let Ok(d) = downloader.stream_music(id, &formats).await {
-            d
-        } else {
-            drop(downloader);
-            let mut downloader = get_dz_downloader(None).write().unwrap();
-            downloader.authenticate().await.unwrap();
-            downloader.stream_music(id, &formats).await.unwrap()
-        };
+        let (stream, format, song_length) =
+            if let Ok(d) = downloader.stream_music(id, &formats, start_at).await {
+                d
+            } else {
+                drop(downloader);
+                let mut downloader = get_dz_downloader(None).write().unwrap();
+                downloader.authenticate().await.unwrap();
+                downloader
+                    .stream_music(id, &formats, start_at)
+                    .await
+                    .unwrap()
+            };
         let stream_size = stream.get_stream_size();
         debug!(target : "mop-rs::cdn", "Streaming music {} from Deezer (format {:?})", id, format);
-        stream_seek(range, stream_size, format.get_mime_type(), stream)
+        stream_seek(
+            start_at.unwrap_or(0),
+            stream_size as u64,
+            song_length,
+            format.get_mime_type(),
+            stream,
+        )
     } else {
-        let (res, format) = res.unwrap();
-        let stream_size = res.len();
+        let (res, format, song_size) = res.unwrap();
+        let start_at = start_at.unwrap_or(0);
+        let stream_size = res.len() as u64;
         let stream = futures::stream::once(async move { Ok(bytes::Bytes::from_iter(res)) });
-        stream_seek(range, stream_size, format.get_mime_type(), stream)
+        stream_seek(
+            start_at,
+            stream_size,
+            song_size,
+            format.get_mime_type(),
+            stream,
+        )
     }
 }
 
+fn get_range_start(range: Range) -> Option<u64> {
+    if let Range::Bytes(ranges) = range {
+        if let Some(a) = ranges.first() {
+            return match a {
+                ByteRangeSpec::From(start) => Some(*start),
+                ByteRangeSpec::Last(_) => None,
+                ByteRangeSpec::FromTo(start, _) => Some(*start),
+            };
+        }
+    }
+    return None;
+}
+
 fn stream_seek<T>(
-    range: Option<Range>,
-    stream_size: usize,
+    start: u64,
+    stream_size: u64,
+    song_size: u64,
     mime_type: String,
     stream: T,
 ) -> Result<HttpResponse, actix_web::Error>
 where
     T: futures::Stream<Item = Result<bytes::Bytes, MusicError>> + 'static,
 {
-    if let Some(range) = range {
-        if let Range::Bytes(ranges) = range {
-            let range = ranges
-                .first()
-                .unwrap()
-                .to_satisfiable_range(stream_size as u64)
-                .unwrap();
-            Ok(HttpResponse::PartialContent()
-                .append_header((
-                    "Content-Range",
-                    format!("bytes {}-{}/{}", range.0, range.1, stream_size),
-                ))
-                .append_header(("Accept-Ranges", "bytes"))
-                .append_header(("Content-Type", mime_type))
-                .streaming(stream.skip(range.0 as usize)))
-        } else {
-            Ok(HttpResponse::Ok()
-                .append_header(("Content-Type", mime_type))
-                .streaming(stream))
-        }
-    } else {
-        Ok(HttpResponse::Ok()
-            .append_header(("Content-Type", mime_type))
-            .streaming(stream))
-    }
+    return Ok(HttpResponse::PartialContent()
+        .append_header((
+            "Content-Range",
+            format!("bytes {}-{}/{}", start, start + stream_size - 1, song_size),
+        ))
+        .append_header(("Accept-Ranges", "bytes"))
+        .append_header(("Content-Type", mime_type))
+        .streaming(stream));
 }
 
 pub async fn get_music_tagged(
@@ -113,7 +135,7 @@ pub async fn get_music_tagged(
         .unwrap_or(user.prefered_format())
         .get_formats_below();
 
-    let res = s3.get_music(id, &formats).await;
+    let res = s3.get_music(id, &formats, None).await;
     let (mut t, format) = if res.is_err() {
         let (track, format) = if let Ok(d) = downloader.download_music(id, &formats).await {
             d
@@ -132,7 +154,7 @@ pub async fn get_music_tagged(
     } else {
         let res = res.unwrap();
         db.add_to_history(&user, &id).await.unwrap();
-        res
+        (res.0, res.1)
     };
 
     if format == DeezerMusicFormats::FLAC {
