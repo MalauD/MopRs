@@ -1,6 +1,7 @@
+use actix_web::http::header::{ByteRangeSpec, Range};
 use block_modes::{block_padding::NoPadding, BlockMode, Cbc};
 use blowfish::Blowfish;
-use futures::TryStreamExt;
+use futures::{StreamExt, TryStreamExt};
 use itertools::Itertools;
 use once_cell::sync::OnceCell;
 use pin_project::pin_project;
@@ -8,10 +9,16 @@ use reqwest::Client;
 use serde::{ser::SerializeMap, Deserialize, Serialize};
 use serde_json::json;
 use serde_with::{serde_as, DisplayFromStr};
-use std::sync::{Mutex, RwLock};
+use std::{
+    str::FromStr,
+    sync::{Mutex, RwLock},
+};
 use thiserror::Error;
 
-use crate::{models::DeezerId, tools::MusicError};
+use crate::{
+    models::{DeezerId, Music},
+    tools::MusicError,
+};
 
 #[derive(Error, Debug)]
 pub enum DeezerDownloaderError {
@@ -339,20 +346,27 @@ impl DeezerDownloader {
         music: &DeezerUnofficialMusic,
         media: &DeezerUnofficialMedia,
         start: usize,
-    ) -> DeezerStreamDecrypt<impl futures::stream::Stream<Item = reqwest::Result<bytes::Bytes>>>
-    {
+    ) -> (
+        impl futures::stream::Stream<Item = core::result::Result<bytes::Bytes, MusicError>>,
+        ByteRangeSpec,
+    ) {
+        let dl_start = start / (3 * 2048);
+        let dl_start = dl_start * (3 * 2048);
         let response = self
             .http_client
             .get(media.sources[0].url.clone())
             .header("cookie", self.get_cookie(true))
-            .header("range", format!("bytes={}-", start))
+            .header("range", format!("bytes={}-", dl_start))
             .send()
             .await
             .unwrap();
         let size = response.content_length().unwrap() as usize;
         let response = response.bytes_stream();
 
-        DeezerStreamDecrypt::new(music.get_bf_key(), response, size, start)
+        (
+            DeezerStreamDecrypt::new(music.get_bf_key(), response),
+            ByteRangeSpec::FromTo(dl_start as u64, (dl_start + size - 1) as u64),
+        )
     }
 
     pub async fn download_music(
@@ -375,18 +389,24 @@ impl DeezerDownloader {
         allowed_formats: &Vec<DeezerMusicFormats>,
         start: Option<u64>,
     ) -> Result<(
-        DeezerStreamDecrypt<impl futures::stream::Stream<Item = reqwest::Result<bytes::Bytes>>>,
+        impl futures::stream::Stream<Item = core::result::Result<bytes::Bytes, MusicError>>,
         DeezerMusicFormats,
         u64,
+        ByteRangeSpec,
     )> {
         let music = self.get_music_by_id(id).await?;
         let media = self
             .get_music_download_url(&music, &allowed_formats)
             .await?;
-        let stream = self
+        let (stream, stream_range) = self
             .stream_media(&music, &media, start.unwrap_or(0) as usize)
             .await;
-        Ok((stream, media.format, music.get_size(&media.format)))
+        Ok((
+            stream,
+            media.format,
+            music.get_size(&media.format),
+            stream_range,
+        ))
     }
 }
 
@@ -397,24 +417,18 @@ pub struct DeezerStreamDecrypt<Inner: futures::stream::Stream<Item = reqwest::Re
     #[pin]
     input: futures::stream::TryChunks<stream_flatten_iters::TryFlattenIters<Inner>>,
     iter: usize,
-    stream_size: usize,
 }
 
 impl<Inner: futures::stream::Stream<Item = reqwest::Result<bytes::Bytes>>>
     DeezerStreamDecrypt<Inner>
 {
-    pub fn new(bf_key: String, input: Inner, stream_size: usize, start: usize) -> Self {
+    pub fn new(bf_key: String, input: Inner) -> Self {
         let bf_cipher = Cbc::new_from_slices(bf_key.as_bytes(), &[0, 1, 2, 3, 4, 5, 6, 7]).unwrap();
         Self {
             bf_cipher,
             input: stream_flatten_iters::TryStreamExt::try_flatten_iters(input).try_chunks(2048),
-            iter: start / 2048,
-            stream_size,
+            iter: 0,
         }
-    }
-
-    pub fn get_stream_size(&self) -> usize {
-        self.stream_size
     }
 }
 

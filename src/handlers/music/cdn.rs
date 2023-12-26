@@ -54,7 +54,7 @@ pub async fn get_music_audio(
 
     let res = s3.get_music(id, &formats, start_at).await;
     if res.is_err() {
-        let (stream, format, song_length) =
+        let (stream, format, song_length, range) =
             if let Ok(d) = downloader.stream_music(id, &formats, start_at).await {
                 d
             } else {
@@ -66,7 +66,6 @@ pub async fn get_music_audio(
                     .await
                     .unwrap()
             };
-        let stream_size = stream.get_stream_size();
         debug!(target : "mop-rs::cdn", "Streaming music {} from Deezer (format {:?})", id, format);
 
         if start_at.unwrap_or(0) == 0 {
@@ -75,10 +74,10 @@ pub async fn get_music_audio(
                 .await
                 .unwrap();
         }
-
+        let range = range.to_satisfiable_range(song_length).unwrap();
         stream_seek(
-            start_at.unwrap_or(0),
-            stream_size as u64,
+            range.0,
+            range.1,
             song_length,
             format.get_mime_type(),
             stream,
@@ -90,7 +89,7 @@ pub async fn get_music_audio(
         let stream = futures::stream::once(async move { Ok(bytes::Bytes::from_iter(res)) });
         stream_seek(
             start_at,
-            stream_size,
+            start_at + stream_size - 1,
             song_size,
             format.get_mime_type(),
             stream,
@@ -112,8 +111,8 @@ fn get_range_start(range: Range) -> Option<u64> {
 }
 
 fn stream_seek<T>(
-    start: u64,
-    stream_size: u64,
+    from: u64,
+    to: u64,
     song_size: u64,
     mime_type: String,
     stream: T,
@@ -121,11 +120,10 @@ fn stream_seek<T>(
 where
     T: futures::Stream<Item = Result<bytes::Bytes, MusicError>> + 'static,
 {
+    let range = format!("bytes {}-{}/{}", from, to, song_size);
+    debug!(target : "mop-rs::cdn", "Streaming music with range {}", range);
     return Ok(HttpResponse::PartialContent()
-        .append_header((
-            "Content-Range",
-            format!("bytes {}-{}/{}", start, start + stream_size - 1, song_size),
-        ))
+        .append_header(("Content-Range", range))
         .append_header(("Accept-Ranges", "bytes"))
         .append_header(("Content-Type", mime_type))
         .streaming(stream));
