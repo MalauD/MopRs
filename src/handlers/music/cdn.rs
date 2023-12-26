@@ -18,7 +18,7 @@ use id3::{
 };
 use log::debug;
 use serde::Deserialize;
-use std::{convert::TryInto, iter::FromIterator, os::unix::thread, str::FromStr, time::Duration};
+use std::{convert::TryInto, iter::FromIterator, str::FromStr};
 
 #[derive(Debug, Deserialize)]
 pub struct MusicFormat {

@@ -4,8 +4,7 @@ use crate::models::DeezerId;
 use crate::s3::get_s3;
 use crate::tools::MusicError;
 use actix::{Actor, AsyncContext, Context, Handler, Message, WrapFuture};
-use bson::de;
-use log::{debug, error, info};
+use log::{debug, info};
 use std::time::Duration;
 
 pub struct DownloaderActor;
@@ -26,7 +25,7 @@ impl DownloaderActor {
                 .unwrap();
             debug!(target : "mop-rs::DownloaderActor", "Downloaded music {} from Deezer (format {:?})", id, format);
             let s3 = get_s3(None).await;
-            s3.upload_music(id, format, &song).await;
+            s3.upload_music(id, format, &song).await.unwrap();
             info!(target : "mop-rs::DownloaderActor", "Uploaded music {} to S3 (format {:?})", id, format);
         });
     }
@@ -35,7 +34,7 @@ impl DownloaderActor {
 impl Actor for DownloaderActor {
     type Context = Context<Self>;
 
-    fn started(&mut self, ctx: &mut Self::Context) {
+    fn started(&mut self, _ctx: &mut Self::Context) {
         info!(target : "mop-rs::DownloaderActor","Started Downloader actor");
     }
 }
