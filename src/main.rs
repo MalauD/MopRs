@@ -13,7 +13,7 @@ use log::info;
 use routes::config_music;
 
 use crate::{
-    actors::ArtistScraperActor,
+    actors::{ArtistScraperActor, DownloaderActor},
     app_settings::{get_settings, AppSettings},
     db::get_mongo,
     deezer::get_dz_downloader,
@@ -104,12 +104,14 @@ async fn main() -> std::io::Result<()> {
     info!(target:"mop-rs::mongo","{} musics in database", c);
 
     let addr = ArtistScraperActor {}.start();
+    let downlaoder_addr = DownloaderActor {}.start();
 
     HttpServer::new(move || {
         App::new()
             .wrap(middleware::Compress::default())
             .app_data(Data::new(config.clone()))
             .app_data(Data::new(addr.clone()))
+            .app_data(Data::new(downlaoder_addr.clone()))
             .wrap(IdentityMiddleware::default())
             .wrap(
                 SessionMiddleware::builder(redis_store.clone(), secret_key.clone())

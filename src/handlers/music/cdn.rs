@@ -1,16 +1,16 @@
 use crate::{
+    actors::{DownloadSongMessage, DownloaderActor},
     db::get_mongo,
     deezer::{get_dz_client, get_dz_downloader, DeezerMusicFormats},
     models::{DeezerId, User},
     s3::get_s3,
     tools::MusicError,
 };
-use actix::Actor;
+use actix::Addr;
 use actix_web::{
     http::header::{ByteRangeSpec, Range},
     web, HttpRequest, HttpResponse,
 };
-use futures::StreamExt;
 
 use id3::{
     frame::{Picture, PictureType},
@@ -18,7 +18,7 @@ use id3::{
 };
 use log::debug;
 use serde::Deserialize;
-use std::{convert::TryInto, iter::FromIterator, str::FromStr};
+use std::{convert::TryInto, iter::FromIterator, os::unix::thread, str::FromStr, time::Duration};
 
 #[derive(Debug, Deserialize)]
 pub struct MusicFormat {
@@ -30,6 +30,7 @@ pub async fn get_music_audio(
     user: User,
     httpreq: HttpRequest,
     query: web::Query<MusicFormat>,
+    downloader_actor: web::Data<Addr<DownloaderActor>>,
 ) -> actix_web::Result<HttpResponse> {
     let db = get_mongo(None).await;
     let s3 = get_s3(None).await;
@@ -67,6 +68,14 @@ pub async fn get_music_audio(
             };
         let stream_size = stream.get_stream_size();
         debug!(target : "mop-rs::cdn", "Streaming music {} from Deezer (format {:?})", id, format);
+
+        if start_at.unwrap_or(0) == 0 {
+            let _ = downloader_actor
+                .send(DownloadSongMessage::new(id, formats))
+                .await
+                .unwrap();
+        }
+
         stream_seek(
             start_at.unwrap_or(0),
             stream_size as u64,

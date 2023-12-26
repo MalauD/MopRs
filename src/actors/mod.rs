@@ -1,3 +1,4 @@
 mod artist_scraper;
+mod downloader;
 
-pub use artist_scraper::*;
+pub use self::{artist_scraper::*, downloader::*};

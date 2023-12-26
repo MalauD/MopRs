@@ -28,6 +28,10 @@ fn default_artist_scrape_cooldown() -> Duration {
     Duration::from_millis(100)
 }
 
+fn default_predownload_wait_time() -> Duration {
+    Duration::from_millis(2000)
+}
+
 fn default_s3_region() -> String {
     "".to_string()
 }
@@ -67,6 +71,9 @@ pub struct AppSettings {
     #[serde(default = "default_artist_scrape_cooldown")]
     #[serde_as(as = "DurationMilliSeconds<u64>")]
     pub artist_scrape_cooldown: Duration,
+    #[serde(default = "default_predownload_wait_time")]
+    #[serde_as(as = "DurationMilliSeconds<u64>")]
+    pub predownload_wait_time: Duration,
 }
 
 impl AppSettings {
@@ -84,6 +91,14 @@ impl AppSettings {
 
     pub fn get_artist_periodic_scrape_update_interval(&self) -> chrono::Duration {
         chrono::Duration::from_std(self.artist_periodic_scrape_update_interval).unwrap()
+    }
+
+    pub fn get_artist_periodic_scrape_check_interval(&self) -> chrono::Duration {
+        chrono::Duration::from_std(self.artist_periodic_scrape_check_interval).unwrap()
+    }
+
+    pub fn get_artist_scrape_cooldown(&self) -> chrono::Duration {
+        chrono::Duration::from_std(self.artist_scrape_cooldown).unwrap()
     }
 }
 

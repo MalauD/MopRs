@@ -1,5 +1,8 @@
 use actix_web::{http::StatusCode, HttpResponse, HttpResponseBuilder, ResponseError};
+use s3::error::S3Error;
 use thiserror::Error;
+
+use crate::deezer::DeezerDownloaderError;
 
 #[derive(Error, Debug)]
 pub enum MusicError {
@@ -9,6 +12,10 @@ pub enum MusicError {
     ApiBackendError(#[from] reqwest::Error),
     #[error("Something went wrong with the meilisearch request")]
     SearchBackendError(#[from] meilisearch_sdk::errors::Error),
+    #[error("Something went wrong with the downloader")]
+    DownloaderError(#[from] DeezerDownloaderError),
+    #[error("Something went wrong with the s3 client")]
+    S3Error(#[from] S3Error),
 }
 
 impl ResponseError for MusicError {
@@ -17,6 +24,8 @@ impl ResponseError for MusicError {
             MusicError::DatabaseError(_) => StatusCode::INTERNAL_SERVER_ERROR,
             MusicError::ApiBackendError(_) => StatusCode::INTERNAL_SERVER_ERROR,
             MusicError::SearchBackendError(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            MusicError::DownloaderError(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            MusicError::S3Error(_) => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
 
