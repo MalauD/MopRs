@@ -26,6 +26,8 @@ pub enum DeezerDownloaderError {
     ApiBackendError(#[from] reqwest::Error),
     #[error("Invalid arl token")]
     InvalidArlToken,
+    #[error("Session expired")]
+    SessionExpired,
 }
 
 #[serde_as]
@@ -222,22 +224,26 @@ impl DeezerDownloader {
             .json::<serde_json::Value>()
             .await?;
 
-        if response["results"]["USER"]["USER_ID"].as_i64().unwrap() == 0 {
+        if response["results"]["USER"]["USER_ID"]
+            .as_i64()
+            .ok_or(DeezerDownloaderError::InvalidArlToken)?
+            == 0
+        {
             return Err(DeezerDownloaderError::InvalidArlToken);
         }
 
         self.token = response["results"]["checkForm"]
             .as_str()
-            .unwrap()
+            .ok_or(DeezerDownloaderError::InvalidArlToken)?
             .to_string();
         self.license_token = response["results"]["USER"]["OPTIONS"]["license_token"]
             .as_str()
-            .unwrap()
+            .ok_or(DeezerDownloaderError::InvalidArlToken)?
             .to_string();
 
         self.sid = response["results"]["SESSION_ID"]
             .as_str()
-            .unwrap()
+            .ok_or(DeezerDownloaderError::InvalidArlToken)?
             .to_string();
 
         Ok(())
@@ -265,12 +271,13 @@ impl DeezerDownloader {
             .json::<serde_json::Value>()
             .await?;
 
+        // if the value is null, it means the session expired
         Ok(serde_json::from_value(
             res["results"]["data"]
                 .as_array()
-                .unwrap()
+                .ok_or(DeezerDownloaderError::SessionExpired)?
                 .first()
-                .unwrap()
+                .ok_or(DeezerDownloaderError::SessionExpired)?
                 .clone(),
         )
         .unwrap())
