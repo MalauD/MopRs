@@ -48,9 +48,6 @@ pub async fn get_music_audio(
         .map(|v| Range::from_str(v.to_str().unwrap()).unwrap());
 
     let start_at = get_range_start(range.unwrap_or(Range::Bytes(vec![])));
-    if start_at.unwrap_or(0) == 0 {
-        db.add_to_history(&user, &id).await.unwrap();
-    }
 
     let res = s3.get_music(id, &formats, start_at).await;
     if res.is_err() {
@@ -73,7 +70,10 @@ pub async fn get_music_audio(
                 .send(DownloadSongMessage::new(id, formats))
                 .await
                 .unwrap();
+
+            db.add_to_history(&user, &id).await.unwrap();
         }
+
         let range = range.to_satisfiable_range(song_length).unwrap();
         stream_seek(
             range.0,
@@ -87,6 +87,9 @@ pub async fn get_music_audio(
         let start_at = start_at.unwrap_or(0);
         let stream_size = res.len() as u64;
         let stream = futures::stream::once(async move { Ok(bytes::Bytes::from_iter(res)) });
+        if start_at == 0 {
+            db.add_to_history(&user, &id).await.unwrap();
+        }
         stream_seek(
             start_at,
             start_at + stream_size - 1,
