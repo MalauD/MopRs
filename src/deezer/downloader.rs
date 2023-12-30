@@ -1,24 +1,19 @@
-use actix_web::http::header::{ByteRangeSpec, Range};
+use actix_web::http::header::ByteRangeSpec;
 use block_modes::{block_padding::NoPadding, BlockMode, Cbc};
 use blowfish::Blowfish;
-use futures::{StreamExt, TryStreamExt};
+use futures::TryStreamExt;
 use itertools::Itertools;
+use log::debug;
 use once_cell::sync::OnceCell;
 use pin_project::pin_project;
-use reqwest::Client;
+use reqwest::{cookie::Jar, Client, Url};
 use serde::{ser::SerializeMap, Deserialize, Serialize};
 use serde_json::json;
 use serde_with::{serde_as, DisplayFromStr};
-use std::{
-    str::FromStr,
-    sync::{Mutex, RwLock},
-};
+use std::sync::{Arc, Mutex, RwLock};
 use thiserror::Error;
 
-use crate::{
-    models::{DeezerId, Music},
-    tools::MusicError,
-};
+use crate::{models::DeezerId, tools::MusicError};
 
 #[derive(Error, Debug)]
 pub enum DeezerDownloaderError {
@@ -72,8 +67,6 @@ pub struct DeezerUnofficialMediaSource {
 type Result<T> = std::result::Result<T, DeezerDownloaderError>;
 
 pub struct DeezerDownloader {
-    arl: String,
-    sid: String,
     token: String,
     license_token: String,
     http_client: Client,
@@ -193,24 +186,20 @@ pub fn get_dz_downloader(arl: Option<String>) -> &'static RwLock<DeezerDownloade
 
 impl DeezerDownloader {
     pub fn new(arl: String) -> Self {
+        let cookie_jar = Arc::new(Jar::default());
+        cookie_jar.add_cookie_str(
+            &format!("arl={}; Domain=www.deezer.com; Path=/", arl),
+            &Url::parse("http://www.deezer.com").unwrap(),
+        );
+
         Self {
-            arl,
             http_client: Client::builder()
-                .cookie_store(true)
+                .cookie_provider(cookie_jar)
                 .gzip(true)
                 .build()
                 .unwrap(),
             token: String::new(),
             license_token: String::new(),
-            sid: String::new(),
-        }
-    }
-
-    fn get_cookie(&self, include_sid: bool) -> String {
-        if include_sid {
-            format!("arl={}; sid={}", self.arl, self.sid)
-        } else {
-            format!("arl={}", self.arl)
         }
     }
 
@@ -218,7 +207,6 @@ impl DeezerDownloader {
         let response = self
             .http_client
             .get("http://www.deezer.com/ajax/gw-light.php?api_token=null&method=deezer.getUserData&api_version=1.0&input=3")
-            .header("cookie", self.get_cookie(false))
             .send()
             .await?
             .json::<serde_json::Value>()
@@ -241,11 +229,6 @@ impl DeezerDownloader {
             .ok_or(DeezerDownloaderError::InvalidArlToken)?
             .to_string();
 
-        self.sid = response["results"]["SESSION_ID"]
-            .as_str()
-            .ok_or(DeezerDownloaderError::InvalidArlToken)?
-            .to_string();
-
         Ok(())
     }
 
@@ -263,7 +246,6 @@ impl DeezerDownloader {
             .http_client
             .post(url)
             .json(&body)
-            .header("cookie", self.get_cookie(true))
             .header(reqwest::header::ACCEPT, "application/json")
             .header(reqwest::header::CONNECTION, "keep-alive")
             .send()
@@ -271,6 +253,20 @@ impl DeezerDownloader {
             .json::<serde_json::Value>()
             .await?;
 
+        let sng = res["results"]["data"]
+            .as_array()
+            .ok_or(DeezerDownloaderError::SessionExpired)?
+            .first()
+            .ok_or(DeezerDownloaderError::SessionExpired)?;
+        // Check if there is a FALLBACK entry
+        if sng["FALLBACK"] != serde_json::Value::Null {
+            if let Ok(fallback) =
+                serde_json::from_value::<DeezerUnofficialMusic>(sng["FALLBACK"].clone())
+            {
+                debug!(target: "mop-rs::deezer_downloader", "Fallback entry ({}) found for {}", fallback.id, id);
+                return Ok(fallback);
+            }
+        }
         // if the value is null, it means the session expired
         Ok(serde_json::from_value(
             res["results"]["data"]
@@ -306,7 +302,6 @@ impl DeezerDownloader {
             .http_client
             .post(url)
             .json(&body)
-            .header("cookie", self.get_cookie(true))
             .send()
             .await?
             .json::<serde_json::Value>()
@@ -324,7 +319,6 @@ impl DeezerDownloader {
         let response = self
             .http_client
             .get(media.sources[0].url.clone())
-            .header("cookie", self.get_cookie(true))
             .send()
             .await?
             .bytes()
@@ -362,7 +356,6 @@ impl DeezerDownloader {
         let response = self
             .http_client
             .get(media.sources[0].url.clone())
-            .header("cookie", self.get_cookie(true))
             .header("range", format!("bytes={}-", dl_start))
             .send()
             .await

@@ -56,6 +56,7 @@ pub async fn get_music_audio(
                 d
             } else {
                 drop(downloader);
+                debug!(target : "mop-rs::cdn", "Reauthenticating Deezer downloader");
                 let mut downloader = get_dz_downloader(None).write().unwrap();
                 downloader.authenticate().await.unwrap();
                 downloader
