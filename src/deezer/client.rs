@@ -39,7 +39,7 @@ pub fn get_dz_client() -> &'static DeezerClient {
 impl DeezerClient {
     pub fn new(base_url: String) -> Self {
         Self {
-            http_client: Client::new(),
+            http_client: Client::builder().gzip(true).build().unwrap(),
             base_url,
         }
     }
