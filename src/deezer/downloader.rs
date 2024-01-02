@@ -7,7 +7,7 @@ use log::debug;
 use once_cell::sync::OnceCell;
 use pin_project::pin_project;
 use reqwest::{cookie::Jar, Client, Url};
-use serde::{ser::SerializeMap, Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 use serde_json::json;
 use serde_with::{serde_as, DisplayFromStr};
 use std::sync::{Arc, Mutex, RwLock};
