@@ -60,6 +60,18 @@ pub struct DeezerUnofficialMedia {
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct DeezerMusicFormatCiper {
+    cipher: String,
+    format: DeezerMusicFormats,
+}
+
+impl DeezerMusicFormatCiper {
+    pub fn new(cipher: String, format: DeezerMusicFormats) -> Self {
+        Self { cipher, format }
+    }
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct DeezerUnofficialMediaSource {
     url: String,
 }
@@ -72,7 +84,7 @@ pub struct DeezerDownloader {
     http_client: Client,
 }
 
-#[derive(Debug, Deserialize, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Deserialize, Serialize, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum DeezerMusicFormats {
     MP3_128,
     MP3_320,
@@ -146,18 +158,6 @@ impl DeezerUnofficialMusic {
             );
         }
         blowfish_key
-    }
-}
-
-impl Serialize for DeezerMusicFormats {
-    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
-    where
-        S: serde::ser::Serializer,
-    {
-        let mut map = serializer.serialize_map(Some(2))?;
-        map.serialize_entry("cipher", "BF_CBC_STRIPE")?;
-        map.serialize_entry("format", &self.to_string())?;
-        map.end()
     }
 }
 
@@ -287,11 +287,17 @@ impl DeezerDownloader {
         let url = "https://media.deezer.com/v1/get_url";
         let format_sorted: Vec<&DeezerMusicFormats> =
             allowed_formats.iter().sorted_by(|a, b| b.cmp(a)).collect();
+
+        let format = format_sorted
+            .iter()
+            .map(|x| DeezerMusicFormatCiper::new("BF_CBC_STRIPE".to_string(), **x))
+            .collect::<Vec<DeezerMusicFormatCiper>>();
+
         let body = json!({
             "media" : vec![
                 json!({
                     "type": "FULL",
-                    "formats": format_sorted,
+                    "formats": format,
                 })
             ],
             "track_tokens": vec![music.token.clone()],
