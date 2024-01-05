@@ -59,7 +59,7 @@ impl MongoClient {
         }
         let mut final_arranged: Vec<Music> = Vec::with_capacity(music_ids.len());
         for e in music_ids {
-            final_arranged.push(result_hash[e].clone());
+            result_hash.get(e).map(|x| final_arranged.push(x.clone()));
         }
         Ok(Some(final_arranged))
     }
