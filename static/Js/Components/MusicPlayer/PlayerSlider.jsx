@@ -18,7 +18,10 @@ function PlayerSlider({ Time, EndTime, OnSliderChange }) {
         >
             <div
                 className={`Progress-bar ${IsDragging ? 'noTransition' : ''}`}
-                style={{ width: `${(Time * width) / EndTime}px`, height: '2px' }}
+                style={{
+                    width: `${EndTime === 0 ? 0 : (Time * width) / EndTime}px`,
+                    height: '2px',
+                }}
             />
 
             <Draggable
