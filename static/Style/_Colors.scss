@@ -1,5 +1,6 @@
 $AccentColor: rgb(14, 118, 253);
-$PrimaryColor1:rgb(26, 27, 34);
-$PrimaryColor2:rgb(18, 19, 26);
-$PrimaryColor3: rgba(26, 27, 34);
-$PrimaryColor4: #141833;
+$BaseColor: #03040C;
+$PrimaryColor1: $BaseColor;
+$PrimaryColor2: lighten($BaseColor,0);
+$PrimaryColor3: lighten($BaseColor,1);
+$PrimaryColor4: lighten($BaseColor,2);
