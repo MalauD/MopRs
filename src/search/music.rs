@@ -34,7 +34,7 @@ impl MeilisearchClient {
     pub async fn init_musics_index(&self) -> Result<(), Error> {
         let index = self.client.index("musics");
         let _ = index
-            .set_searchable_attributes(&["title", "artist_name", "rank"])
+            .set_searchable_attributes(&["title", "artist_name"])
             .await?;
         let _ = index
             .set_ranking_rules(&[
@@ -52,10 +52,8 @@ impl MeilisearchClient {
 
     pub async fn index_musics(&self, musics: Vec<Music>) -> Result<TaskInfo, Error> {
         let index = self.client.index("musics");
-        let musics: Vec<MusicMeilisearch> = musics
-            .into_iter()
-            .map(MusicMeilisearch::from)
-            .collect();
+        let musics: Vec<MusicMeilisearch> =
+            musics.into_iter().map(MusicMeilisearch::from).collect();
         let t = index.add_documents(&musics, Some("id")).await?;
         Ok(t)
     }
