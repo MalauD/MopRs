@@ -49,11 +49,10 @@ pub async fn get_related_to(
     related_musics
 }
 
-//O(nlog(n)) n: size of vec
 fn remove_from_sorted_vec(sorted_vec: &mut Vec<DeezerId>, vec: &Vec<DeezerId>) {
     for i in vec {
         if let Ok(index) = sorted_vec.binary_search(i) {
-            sorted_vec.swap_remove(index);
+            sorted_vec.remove(index);
         }
     }
 }
