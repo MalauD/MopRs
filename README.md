@@ -79,6 +79,7 @@ This is deezer client providing multiple features like having multiple users, mu
 -   Creating playlists
 -   Suggestion to complete playlists
 -   Trending musics
+-   Mobile app: [MopMobile](https://github.com/MalauD/MopMobile)
 
 <!-- Getting Started -->
 
