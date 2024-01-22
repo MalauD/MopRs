@@ -29,7 +29,7 @@ impl S3Client {
     ) -> Result<(Vec<u8>, DeezerMusicFormats, u64), S3Error> {
         let bucket = self.get_bucket();
         let (res, _) = bucket
-            .list_page(format!("/{}", id), None, None, None, None)
+            .list_page(id.to_string(), None, None, None, None)
             .await
             .unwrap();
         let mut best_allowed_format = Option::None;
