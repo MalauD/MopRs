@@ -15,7 +15,7 @@ export default class TopNav extends React.Component {
                         marginLeft: '0.4em',
                         textShadow: '#cc506c 3px 3px 0px',
                     }}
-                    href="#"
+                    href="/"
                 >
                     MOP
                 </Navbar.Brand>

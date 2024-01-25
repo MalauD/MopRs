@@ -2,7 +2,7 @@ import Axios from 'axios';
 import React, { Suspense } from 'react';
 import ReactDOM from 'react-dom';
 import { Provider } from 'react-redux';
-import { HashRouter, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Route } from 'react-router-dom';
 
 import '../Style/Main.scss';
 
@@ -32,7 +32,7 @@ function App() {
     return (
         <Provider store={store}>
             <Suspense fallback={<div>Loading...</div>}>
-                <HashRouter>
+                <Router>
                     <ScrollToTop />
                     <Route path="/">
                         <ProtectedRoute Component={TopNav} />
@@ -73,7 +73,7 @@ function App() {
                     <Route path="/Settings">
                         <ProtectedRoute Component={UserSettings} />
                     </Route>
-                </HashRouter>
+                </Router>
             </Suspense>
         </Provider>
     );

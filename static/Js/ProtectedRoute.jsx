@@ -29,11 +29,13 @@ function ProtectedRouteConnected({ Component, IsConnected, AddMyAccount, ...prop
                     }
                 })
                 .catch(() => {
-                    if (
-                        !isInAuthentification(history.location) &&
-                        history.location.pathname !== '/'
-                    )
-                        history.push(`/Login?follow=${history.location.pathname}`);
+                    if (!isInAuthentification(history.location)) {
+                        if (history.location.pathname === '/') {
+                            history.push('/Login');
+                        } else {
+                            history.push(`/Login?follow=${history.location.pathname}`);
+                        }
+                    }
                 });
         }
     }, []);
