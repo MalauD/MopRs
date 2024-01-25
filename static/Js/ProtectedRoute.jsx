@@ -29,7 +29,10 @@ function ProtectedRouteConnected({ Component, IsConnected, AddMyAccount, ...prop
                     }
                 })
                 .catch(() => {
-                    if (!isInAuthentification(history.location))
+                    if (
+                        !isInAuthentification(history.location) &&
+                        history.location.pathname !== '/'
+                    )
                         history.push(`/Login?follow=${history.location.pathname}`);
                 });
         }
