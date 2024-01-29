@@ -3,8 +3,7 @@ use crate::{
     deezer::DeezerMusicFormats,
     models::{DeezerId, User, UserReq},
 };
-use bson::{oid::ObjectId, Document};
-use futures::TryStreamExt;
+use bson::oid::ObjectId;
 use mongodb::{bson::doc, error::Result};
 
 impl MongoClient {
@@ -96,48 +95,30 @@ impl MongoClient {
 
     pub async fn get_history(&self, user: &User, size: i64) -> Result<Vec<DeezerId>> {
         let coll = self._database.collection::<User>("User");
-        let mut doc = coll
-            .aggregate(
-                vec![
-                    doc! {"$match": {"_id": user.id().unwrap()}},
-                    doc! {"$addFields": {"last_viewed_musics": {"$lastN": {"n": size, "input": "$viewed_musics"}}}},
-                    doc! {"$project": {"last_viewed_musics": 1, "_id": 0}},
-                ],
-                None,
-            )
-            .await?;
-
-        let doc: Document = doc.try_next().await?.unwrap();
-        let hist = doc.get_array("last_viewed_musics").unwrap();
-        let hist = hist
-            .iter()
-            .map(|x| x.as_i64().unwrap() as DeezerId)
-            .collect::<Vec<DeezerId>>();
-
-        Ok(hist)
+        let opt = {
+            let mut opt = mongodb::options::FindOneOptions::default();
+            opt.projection = Some(doc! {"viewed_musics": doc! {"$slice": -size}});
+            opt
+        };
+        let user = coll
+            .find_one(doc! {"_id": user.id().unwrap()}, opt)
+            .await?
+            .unwrap();
+        Ok(user.viewed_musics().to_vec())
     }
 
     pub async fn get_liked_musics(&self, user: &User, size: i64) -> Result<Vec<DeezerId>> {
         let coll = self._database.collection::<User>("User");
-        let mut doc = coll
-            .aggregate(
-                vec![
-                    doc! {"$match": {"_id": user.id().unwrap()}},
-                    doc! {"$addFields": {"last_liked_musics": {"$lastN": {"n": size, "input": "$liked_musics"}}}},
-                    doc! {"$project": {"last_liked_musics": 1, "_id": 0}},
-                ],
-                None,
-            )
-            .await?;
-
-        let doc: Document = doc.try_next().await?.unwrap();
-        let hist = doc.get_array("last_liked_musics").unwrap();
-        let hist = hist
-            .iter()
-            .map(|x| x.as_i64().unwrap() as DeezerId)
-            .collect::<Vec<DeezerId>>();
-
-        Ok(hist)
+        let opt = {
+            let mut opt = mongodb::options::FindOneOptions::default();
+            opt.projection = Some(doc! {"liked_musics": doc! {"$slice": -size}});
+            opt
+        };
+        let user = coll
+            .find_one(doc! {"_id": user.id().unwrap()}, opt)
+            .await?
+            .unwrap();
+        Ok(user.liked_musics().to_vec())
     }
 
     pub async fn set_prefered_format(
