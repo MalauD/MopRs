@@ -9,7 +9,7 @@ use crate::{
 };
 
 #[derive(Serialize, Deserialize)]
-pub struct MusicMeilisearch {
+struct MusicMeilisearch {
     pub id: DeezerId,
     pub title: String,
     pub artist_name: String,
@@ -26,6 +26,25 @@ impl From<Music> for MusicMeilisearch {
             artist_name: music.artist_name,
             image_url: music.image_url,
             rank: music.rank,
+        }
+    }
+}
+
+impl Into<Music> for MusicMeilisearch {
+    fn into(self) -> Music {
+        Music {
+            id: self.id,
+            title: self.title,
+            artist_name: self.artist_name,
+            published_date: chrono::Utc::now().into(),
+            track_number: None,
+            disc_number: None,
+            file_path: None,
+            image_url: self.image_url,
+            views: 0,
+            likes: 0,
+            rank: self.rank,
+            last_view: chrono::Utc::now().into(),
         }
     }
 }
@@ -62,7 +81,7 @@ impl MeilisearchClient {
         &self,
         query: String,
         page: PaginationOptions,
-    ) -> Result<Vec<DeezerId>, Error> {
+    ) -> Result<Vec<Music>, Error> {
         let index = self.client.index("musics");
         let response = index
             .search()
@@ -71,6 +90,6 @@ impl MeilisearchClient {
             .with_offset(page.get_page() * page.get_max_results())
             .execute::<MusicMeilisearch>()
             .await?;
-        Ok(response.hits.into_iter().map(|m| m.result.id).collect())
+        Ok(response.hits.into_iter().map(|m| m.result.into()).collect())
     }
 }

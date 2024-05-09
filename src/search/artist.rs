@@ -1,3 +1,4 @@
+use chrono::DateTime;
 use serde::{Deserialize, Serialize};
 
 use meilisearch_sdk::{errors::Error, task_info::TaskInfo};
@@ -25,6 +26,20 @@ impl From<Artist> for ArtistMeilisearch {
     }
 }
 
+impl Into<Artist> for ArtistMeilisearch {
+    fn into(self) -> Artist {
+        Artist {
+            id: self.id,
+            name: self.name,
+            picture: self.picture,
+            albums: None,
+            top_tracks: None,
+            related_artists: None,
+            last_update: chrono::Utc::now(),
+        }
+    }
+}
+
 impl MeilisearchClient {
     pub async fn init_artists_index(&self) -> Result<(), Error> {
         let index = self.client.index("artists");
@@ -34,10 +49,8 @@ impl MeilisearchClient {
 
     pub async fn index_artists(&self, artists: Vec<Artist>) -> Result<TaskInfo, Error> {
         let index = self.client.index("artists");
-        let artists: Vec<ArtistMeilisearch> = artists
-            .into_iter()
-            .map(ArtistMeilisearch::from)
-            .collect();
+        let artists: Vec<ArtistMeilisearch> =
+            artists.into_iter().map(ArtistMeilisearch::from).collect();
         let t = index.add_documents(&artists, Some("id")).await?;
         Ok(t)
     }
@@ -46,7 +59,7 @@ impl MeilisearchClient {
         &self,
         query: String,
         page: PaginationOptions,
-    ) -> Result<Vec<DeezerId>, Error> {
+    ) -> Result<Vec<Artist>, Error> {
         let index = self.client.index("artists");
         let response = index
             .search()
@@ -55,7 +68,6 @@ impl MeilisearchClient {
             .with_offset(page.get_page() * page.get_max_results())
             .execute::<ArtistMeilisearch>()
             .await?;
-        let ids: Vec<DeezerId> = response.hits.into_iter().map(|m| m.result.id).collect();
-        Ok(ids)
+        Ok(response.hits.into_iter().map(|m| m.result.into()).collect())
     }
 }

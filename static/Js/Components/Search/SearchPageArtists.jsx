@@ -22,7 +22,15 @@ class SearchPageArtists extends React.Component {
         };
     }
 
-    SearchArtists = () => {
+    componentDidMount() {
+        this.SearchArtists();
+    }
+
+    componentDidUpdate() {
+        this.SearchArtists();
+    }
+
+    SearchArtists = (withIndexing = false) => {
         const { location } = this.props;
 
         const { IsFetchingArtists, PrevSearch } = this.state;
@@ -32,13 +40,23 @@ class SearchPageArtists extends React.Component {
         if (values.q !== PrevSearch && !IsFetchingArtists) {
             this.setState({ IsFetchingArtists: true });
             Axios.get(`/api/search/artist/${values.q}?maxResults=14&page=0`).then((res) => {
-                this.setState({
-                    Artists: res.data,
+                this.setState((prevState) => ({
+                    Artists: withIndexing
+                        ? [
+                              ...prevState.Artists,
+                              ...res.data.filter((item) => {
+                                  const found = prevState.Artists.find(
+                                      (prevItem) => prevItem._id === item._id
+                                  );
+                                  return !found;
+                              }),
+                          ]
+                        : res.data,
                     IsFetchingArtists: false,
                     PrevSearch: values.q,
                     CurrentPage: 0,
                     PrevPageEmpty: res.data.length === 0,
-                });
+                }));
             });
         }
     };

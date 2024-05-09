@@ -42,7 +42,7 @@ pub struct Album {
     pub id: DeezerId,
     pub name: String,
     pub cover: String,
-    is_complete: bool,
+    pub is_complete: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub musics: Option<Vec<DeezerId>>,
 }

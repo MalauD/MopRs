@@ -28,10 +28,10 @@ pub async fn search_music(
     let dz = get_dz_client();
 
     if let Some(true) = search_opt.no_index {
-        let ids = search
+        let musics = search
             .search_musics(req.into_inner(), pagination.into_inner())
             .await?;
-        return Ok(HttpResponse::Ok().json(db.get_musics(&ids).await?.unwrap_or_default()));
+        return Ok(HttpResponse::Ok().json(musics));
     }
 
     if pagination.get_page() == 0 {
@@ -39,10 +39,10 @@ pub async fn search_music(
         let _ = index_search_musics_result(&res, scraper.get_ref(), IndexType::Music).await;
         //musics.group_by()
     }
-    let search_res = search
+    let musics = search
         .search_musics(req.into_inner(), pagination.into_inner())
         .await?;
-    Ok(HttpResponse::Ok().json(db.get_musics(&search_res).await?.unwrap_or_default()))
+    Ok(HttpResponse::Ok().json(musics))
 }
 
 pub async fn search_album(
@@ -61,8 +61,7 @@ pub async fn search_album(
     let search_res = search
         .search_albums(req.into_inner(), pagination.into_inner())
         .await?;
-    let searched_albums = db.get_albums(&search_res).await?;
-    Ok(HttpResponse::Ok().json(searched_albums.unwrap_or_default()))
+    Ok(HttpResponse::Ok().json(search_res))
 }
 
 pub async fn search_artist(
@@ -82,8 +81,7 @@ pub async fn search_artist(
     let search_res = search
         .search_artists(req.into_inner(), pagination.into_inner())
         .await?;
-    let searched_artists = db.get_artists(&search_res).await?;
-    Ok(HttpResponse::Ok().json(searched_artists.unwrap()))
+    Ok(HttpResponse::Ok().json(search_res))
 }
 
 pub async fn search_playlist(

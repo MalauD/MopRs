@@ -22,7 +22,15 @@ class SearchPageAlbums extends React.Component {
         };
     }
 
-    SearchAlbums = () => {
+    componentDidMount() {
+        this.SearchAlbums();
+    }
+
+    componentDidUpdate() {
+        this.SearchAlbums();
+    }
+
+    SearchAlbums = (withIndexing = false) => {
         const { location } = this.props;
 
         const { IsFetchingAlbums, PrevSearch } = this.state;
@@ -31,13 +39,23 @@ class SearchPageAlbums extends React.Component {
 
         if (values.q !== PrevSearch && !IsFetchingAlbums) {
             Axios.get(`/api/search/album/${values.q}?page=0&maxResults=14`).then((res) => {
-                this.setState({
-                    Albums: res.data,
+                this.setState((prevState) => ({
+                    Albums: withIndexing
+                        ? [
+                              ...prevState.Albums,
+                              ...res.data.filter((item) => {
+                                  const found = prevState.Albums.find(
+                                      (prevItem) => prevItem._id === item._id
+                                  );
+                                  return !found;
+                              }),
+                          ]
+                        : res.data,
                     IsFetchingAlbums: false,
                     PrevSearch: values.q,
                     CurrentPage: 0,
                     PrevPageEmpty: res.data.length === 0,
-                });
+                }));
             });
         }
     };

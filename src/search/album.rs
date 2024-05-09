@@ -25,6 +25,18 @@ impl From<Album> for AlbumMeilisearch {
     }
 }
 
+impl Into<Album> for AlbumMeilisearch {
+    fn into(self) -> Album {
+        Album {
+            id: self.id,
+            name: self.name,
+            cover: self.cover,
+            is_complete: false,
+            musics: None,
+        }
+    }
+}
+
 impl MeilisearchClient {
     pub async fn init_albums_index(&self) -> Result<(), Error> {
         let index = self.client.index("albums");
@@ -34,10 +46,8 @@ impl MeilisearchClient {
 
     pub async fn index_albums(&self, albums: Vec<Album>) -> Result<TaskInfo, Error> {
         let index = self.client.index("albums");
-        let albums: Vec<AlbumMeilisearch> = albums
-            .into_iter()
-            .map(AlbumMeilisearch::from)
-            .collect();
+        let albums: Vec<AlbumMeilisearch> =
+            albums.into_iter().map(AlbumMeilisearch::from).collect();
         let t = index.add_documents(&albums, Some("id")).await?;
         Ok(t)
     }
@@ -46,7 +56,7 @@ impl MeilisearchClient {
         &self,
         query: String,
         page: PaginationOptions,
-    ) -> Result<Vec<DeezerId>, Error> {
+    ) -> Result<Vec<Album>, Error> {
         let index = self.client.index("albums");
         let response = index
             .search()
@@ -55,7 +65,6 @@ impl MeilisearchClient {
             .with_offset(page.get_page() * page.get_max_results())
             .execute::<AlbumMeilisearch>()
             .await?;
-        let ids: Vec<DeezerId> = response.hits.into_iter().map(|m| m.result.id).collect();
-        Ok(ids)
+        Ok(response.hits.into_iter().map(|m| m.result.into()).collect())
     }
 }
