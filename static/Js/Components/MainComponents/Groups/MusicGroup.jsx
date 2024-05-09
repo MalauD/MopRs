@@ -42,6 +42,8 @@ class MusicGroupConnected extends React.Component {
         DisplayActionsOnSort: PropTypes.bool,
         OnMusicElementClick: PropTypes.func,
         HighlightedMusics: PropTypes.arrayOf(PropTypes.number),
+        OnPlayAllOverride: PropTypes.func,
+        OnAddAllOverride: PropTypes.func,
     };
 
     static defaultProps = {
@@ -55,6 +57,8 @@ class MusicGroupConnected extends React.Component {
         DisplayActionsOnSort: false,
         OnMusicElementClick: undefined,
         HighlightedMusics: [],
+        OnPlayAllOverride: undefined,
+        OnAddAllOverride: undefined,
     };
 
     constructor(props) {
@@ -65,13 +69,25 @@ class MusicGroupConnected extends React.Component {
     }
 
     onPlayAll = () => {
-        const { ClearPlaylist, AddMusics, Musics } = this.props;
+        const { ClearPlaylist, AddMusics, Musics, OnPlayAllOverride } = this.props;
+
+        if (OnPlayAllOverride) {
+            OnPlayAllOverride();
+            return;
+        }
+
         ClearPlaylist();
         AddMusics(Musics);
     };
 
     onAddAll = () => {
-        const { AddMusics, Musics } = this.props;
+        const { AddMusics, Musics, OnAddAllOverride } = this.props;
+
+        if (OnAddAllOverride) {
+            OnAddAllOverride();
+            return;
+        }
+
         AddMusics(Musics);
     };
 

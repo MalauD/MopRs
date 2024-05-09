@@ -1,12 +1,28 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import Axios from 'axios';
+import { connect } from 'react-redux';
 import AlbumGroup from './Groups/AlbumGroup';
 import ArtistGroup from './Groups/ArtistGroup';
 import MusicGroup from './Groups/MusicGroup';
+import {
+    ClearPlaylist as ClearPlaylistRedux,
+    AddMultipleMusics as AddMultipleMusicsRedux,
+} from '../../Actions/Action';
 
-class Artist extends React.Component {
+const mapDispatchToProps = (dispatch) => ({
+    ClearPlaylist: () => {
+        dispatch(ClearPlaylistRedux());
+    },
+    AddMusics: (Musics) => {
+        dispatch(AddMultipleMusicsRedux(Musics));
+    },
+});
+
+class ArtistConnected extends React.Component {
     static propTypes = {
+        ClearPlaylist: PropTypes.func.isRequired,
+        AddMusics: PropTypes.func.isRequired,
         match: PropTypes.shape({
             params: PropTypes.shape({
                 id: PropTypes.string.isRequired,
@@ -61,6 +77,19 @@ class Artist extends React.Component {
         });
     };
 
+    OnPlayAllTopTracks = () => {
+        const { TopTracks } = this.state;
+        const { AddMusics, ClearPlaylist } = this.props;
+        ClearPlaylist();
+        AddMusics(TopTracks);
+    };
+
+    OnAddAllTopTracks = () => {
+        const { TopTracks } = this.state;
+        const { AddMusics } = this.props;
+        AddMusics(TopTracks);
+    };
+
     render() {
         const {
             ArtistName,
@@ -92,6 +121,8 @@ class Artist extends React.Component {
                         this.setState({ displayedTopTracks: displayedTopTracks + 8 });
                     }}
                     isLoading={isFetching}
+                    OnPlayAllOverride={this.OnPlayAllTopTracks}
+                    OnAddAllOverride={this.OnAddAllTopTracks}
                 />
                 <AlbumGroup
                     Albums={AlbumsId.slice(0, displayedAlbums)}
@@ -115,5 +146,7 @@ class Artist extends React.Component {
         );
     }
 }
+
+const Artist = connect(null, mapDispatchToProps)(ArtistConnected);
 
 export default Artist;
