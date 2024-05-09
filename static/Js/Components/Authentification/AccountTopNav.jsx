@@ -109,7 +109,7 @@ class AccountTopNavConnected extends React.Component {
                     {ShowPlaylistImporterModal && (
                         <PlaylistImporterModal OnClose={this.OnPlaylistModalClose} />
                     )}
-                    <NavDropdown title={username} id="basic-nav-dropdown">
+                    <NavDropdown title={username} alignRight id="basic-nav-dropdown">
                         <NavDropdown.Item onClick={this.OnFavorites}>Favorites</NavDropdown.Item>
                         <NavDropdown.Item onClick={this.OnHistory}>History</NavDropdown.Item>
                         <NavDropdown.Item onClick={this.OnPlaylists}>Playlists</NavDropdown.Item>
