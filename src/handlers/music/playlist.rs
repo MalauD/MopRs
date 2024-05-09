@@ -27,7 +27,7 @@ pub async fn get_playlist(req: web::Path<String>, user: User) -> MusicResponse {
     }
 
     let musics = db.get_musics(playlist.musics.as_ref().unwrap()).await?;
-    let user = db.get_user(&playlist.creator()).await.unwrap();
+    let user = db.get_user_public(&playlist.creator()).await.unwrap();
     let mut playlist_pop = PopulatedPlaylist::from_playlist(playlist, user.unwrap());
     playlist_pop.musics = musics;
     Ok(HttpResponse::Ok().json(playlist_pop))

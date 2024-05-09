@@ -17,8 +17,8 @@ pub async fn get_user_playlists(
     let db = get_mongo(None).await;
     let user_id = &ObjectId::parse_str(&*req).unwrap();
     let playlists = db.get_user_playlists(user_id, &pagination).await.unwrap();
-    
-    let creator = db.get_user(user_id).await.unwrap().unwrap();
+
+    let creator = db.get_user_public(user_id).await.unwrap().unwrap();
 
     let mut pop_playlists: Vec<PopulatedPlaylist> = Vec::with_capacity(playlists.len());
     for playlist in playlists.iter().cloned() {

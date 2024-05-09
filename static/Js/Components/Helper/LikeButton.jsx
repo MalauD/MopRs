@@ -11,6 +11,9 @@ const mapDispatchToProps = (dispatch) => ({
 
 const mapStateToProps = (state) => {
     const { UserAccountReducer } = state;
+    if (!UserAccountReducer.Account) {
+        return { LikedMusics: [] };
+    }
     return { LikedMusics: UserAccountReducer.Account.liked_musics };
 };
 
@@ -31,6 +34,14 @@ class LikeButtonConnected extends React.Component {
         this.state = {
             IsLiked: props.LikedMusics.indexOf(props.MusicId) !== -1,
         };
+    }
+
+    UNSAFE_componentWillReceiveProps(nextProps) {
+        // Update IsLiked state if LikedMusics array changes or MusicId changes
+        const { MusicId, LikedMusics } = nextProps;
+        this.setState({
+            IsLiked: LikedMusics.indexOf(MusicId) !== -1,
+        });
     }
 
     onButtonClick = () => {

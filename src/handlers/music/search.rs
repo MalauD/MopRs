@@ -102,7 +102,7 @@ pub async fn search_playlist(
             //Something else might be faster
             let musics = db.get_musics(playlist.musics.as_ref().unwrap()).await?;
             //TODO add correct user..
-            let mut playlist_pop = PopulatedPlaylist::from_playlist(playlist, user.clone());
+            let mut playlist_pop = PopulatedPlaylist::from_playlist(playlist, user.clone().into());
             playlist_pop.musics = musics;
             pop_playlists.push(playlist_pop);
         }

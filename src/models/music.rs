@@ -11,7 +11,7 @@ use crate::deezer::{
     SearchMusicsResultItem, SearchMusicsResultItemArtist,
 };
 
-use super::User;
+use super::{PublicUser, User};
 
 pub type DeezerId = i64;
 
@@ -322,14 +322,14 @@ pub struct PopulatedPlaylist {
     #[serde(rename = "_id", serialize_with = "serialize_object_id_as_hex_string")]
     pub id: ObjectId,
     name: String,
-    creator: User,
+    creator: PublicUser,
     public: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub musics: Option<Vec<Music>>,
 }
 
 impl PopulatedPlaylist {
-    pub fn from_playlist(pl: Playlist, creator: User) -> Self {
+    pub fn from_playlist(pl: Playlist, creator: PublicUser) -> Self {
         Self {
             id: pl.id,
             name: pl.name,

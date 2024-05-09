@@ -1,7 +1,7 @@
 use crate::{
     db::MongoClient,
     deezer::DeezerMusicFormats,
-    models::{DeezerId, User, UserReq},
+    models::{DeezerId, PublicUser, User, UserReq},
 };
 use bson::oid::ObjectId;
 use mongodb::{bson::doc, error::Result};
@@ -16,6 +16,16 @@ impl MongoClient {
     pub async fn get_user(&self, user: &ObjectId) -> Result<Option<User>> {
         let coll = self._database.collection::<User>("User");
         coll.find_one(doc! {"_id": user}, None).await
+    }
+
+    pub async fn get_user_public(&self, user: &ObjectId) -> Result<Option<PublicUser>> {
+        let coll = self._database.collection::<PublicUser>("User");
+        let opt = {
+            let mut opt = mongodb::options::FindOneOptions::default();
+            opt.projection = Some(doc! { "viewed_musics": 0});
+            opt
+        };
+        coll.find_one(doc! {"_id": user}, opt).await
     }
 
     pub async fn save_user(&self, user: User) -> Result<ObjectId> {

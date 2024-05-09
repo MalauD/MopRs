@@ -1,6 +1,9 @@
 use actix_web::{web, HttpResponse};
 
-use crate::{db::get_mongo, models::{User, DeezerId}};
+use crate::{
+    db::get_mongo,
+    models::{DeezerId, User},
+};
 
 use super::MusicResponse;
 
