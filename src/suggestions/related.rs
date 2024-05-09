@@ -6,6 +6,7 @@ use rand::thread_rng;
 pub async fn get_related_to(
     base_music_ids: &Vec<DeezerId>,
     exclude: Option<&Vec<DeezerId>>,
+    related_artist_music_ratio: f32,
     limit: i32,
 ) -> Vec<DeezerId> {
     let db = get_mongo(None).await;
@@ -36,7 +37,7 @@ pub async fn get_related_to(
         related_musics_ext.extend(artist.top_tracks.unwrap_or_default());
     }
     related_musics_ext.shuffle(&mut thread_rng());
-    related_musics_ext.truncate(related_musics.len());
+    related_musics_ext.truncate(related_musics.len() * related_artist_music_ratio as usize);
 
     related_musics.extend(related_musics_ext);
     related_musics.sort();

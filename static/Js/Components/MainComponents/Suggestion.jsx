@@ -18,7 +18,7 @@ function Suggestion() {
 
     const addSuggestion = () => {
         if (suggestions.length > 100) return;
-        GetSuggestion((page + 1) * PAGE_SIZE * MEMORY_MULTIPLIER, 0.3, 0.1, PAGE_SIZE)
+        GetSuggestion((page + 1) * PAGE_SIZE * MEMORY_MULTIPLIER, 0.1, 0.1, PAGE_SIZE)
             .then((ApiResult) => {
                 setSuggestions([...suggestions, ...ApiResult]);
                 setPage(page + 1);
@@ -29,7 +29,7 @@ function Suggestion() {
     const getSuggestion = () => {
         setIsFetching(true);
         setPage(0);
-        GetSuggestion(PAGE_SIZE * MEMORY_MULTIPLIER, 0.3, 0.1, PAGE_SIZE)
+        GetSuggestion(PAGE_SIZE * MEMORY_MULTIPLIER, 0.1, 0.1, PAGE_SIZE)
             .then((ApiResult) => {
                 setSuggestions(ApiResult);
                 setIsFetching(false);

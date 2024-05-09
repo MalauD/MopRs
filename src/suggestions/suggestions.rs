@@ -22,7 +22,13 @@ pub async fn get_suggestions_for(
         .unwrap_or_default();
     base_ids.append(&mut hist);
 
-    let mut related = get_related_to(&base_ids, None, (novelty * limit as f32) as i32).await;
+    let mut related = get_related_to(
+        &base_ids,
+        None,
+        novelty / 5.,
+        (novelty * limit as f32) as i32,
+    )
+    .await;
 
     // Mix base_ids and related*
     base_ids.shuffle(&mut thread_rng());

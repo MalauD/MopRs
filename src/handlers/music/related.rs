@@ -26,7 +26,7 @@ pub struct RelMusicsReq {
 
 pub async fn get_related_musics(_user: User, pl: web::Json<RelMusicsReq>) -> MusicResponse {
     let db = get_mongo(None).await;
-    let rel = get_related_to(&pl.music_ids, Some(&pl.exclude), pl.limit).await;
+    let rel = get_related_to(&pl.music_ids, Some(&pl.exclude), 0.2, pl.limit).await;
     let pop_rel = db.get_musics(&rel).await?.unwrap_or_default();
     Ok(HttpResponse::Ok().json(&json!({ "RelatedMusics": pop_rel })))
 }
