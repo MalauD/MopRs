@@ -8,6 +8,7 @@ use actix_web::{
     web::{self, Data},
     App, HttpRequest, HttpResponse, HttpServer, Result,
 };
+use actix_web_prom::PrometheusMetricsBuilder;
 use dotenv::dotenv;
 use log::info;
 use routes::config_music;
@@ -103,12 +104,18 @@ async fn main() -> std::io::Result<()> {
     let c = db.get_musics_count().await.unwrap();
     info!(target:"mop-rs::mongo","{} musics in database", c);
 
+    let prometheus = PrometheusMetricsBuilder::new("api")
+        .endpoint("/metrics")
+        .build()
+        .unwrap();
+
     let addr = ArtistScraperActor {}.start();
     let downloader_addr = DownloaderActor {}.start();
 
     HttpServer::new(move || {
         App::new()
             .wrap(middleware::Compress::default())
+            .wrap(prometheus.clone())
             .app_data(Data::new(config.clone()))
             .app_data(Data::new(addr.clone()))
             .app_data(Data::new(downloader_addr.clone()))

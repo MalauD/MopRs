@@ -268,6 +268,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "actix-web-prom"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "76743e67d4e7efa9fc2ac7123de0dd7b2ca592668e19334f1d81a3b077afc6ac"
+dependencies = [
+ "actix-web",
+ "futures-core",
+ "log",
+ "pin-project-lite",
+ "prometheus",
+ "regex",
+ "strfmt",
+]
+
+[[package]]
 name = "actix_derive"
 version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2057,6 +2072,7 @@ dependencies = [
  "actix-rt",
  "actix-session",
  "actix-web",
+ "actix-web-prom",
  "block-modes",
  "blowfish",
  "bson",
@@ -2418,6 +2434,20 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "75cb1540fadbd5b8fbccc4dddad2734eba435053f725621c070711a14bb5f4b8"
 dependencies = [
  "unicode-ident",
+]
+
+[[package]]
+name = "prometheus"
+version = "0.13.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3d33c28a30771f7f96db69893f78b857f7450d7e0237e9c8fc6427a81bae7ed1"
+dependencies = [
+ "cfg-if",
+ "fnv",
+ "lazy_static",
+ "memchr",
+ "parking_lot",
+ "thiserror",
 ]
 
 [[package]]
@@ -3113,6 +3143,12 @@ dependencies = [
  "pin-project 0.4.30",
  "pin-utils",
 ]
+
+[[package]]
+name = "strfmt"
+version = "0.2.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7a8348af2d9fc3258c8733b8d9d8db2e56f54b2363a4b5b81585c7875ed65e65"
 
 [[package]]
 name = "stringprep"
