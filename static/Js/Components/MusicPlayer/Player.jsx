@@ -118,9 +118,25 @@ class PlayerConnected extends React.Component {
             this.HandleNext();
         });
         document.onkeydown = (e) => {
-            if (e.key === ' ' && e.target.tagName.toUpperCase() !== 'INPUT') {
-                e.preventDefault();
-                this.HandlePlay();
+            if (e.target.tagName.toUpperCase() !== 'INPUT') {
+                switch (e.key) {
+                    case ' ':
+                        e.preventDefault();
+                        this.HandlePlay();
+                        break;
+
+                    case 'ArrowRight':
+                        e.preventDefault();
+                        this.HandleAdvanceBy(10);
+                        break;
+                    case 'ArrowLeft':
+                        e.preventDefault();
+                        this.HandleAdvanceBy(-10);
+                        break;
+
+                    default:
+                        break;
+                }
             }
         };
         this.OnUpdate();
@@ -174,6 +190,10 @@ class PlayerConnected extends React.Component {
     HandleSliderChange = (PosX) => {
         this.player.currentTime = PosX;
         this.forceUpdate();
+    };
+
+    HandleAdvanceBy = (Seconds) => {
+        this.player.currentTime += Seconds;
     };
 
     OnUpdate = () => {
