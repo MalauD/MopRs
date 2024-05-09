@@ -11,7 +11,7 @@ use crate::deezer::{
     SearchMusicsResultItem, SearchMusicsResultItemArtist,
 };
 
-use super::{PublicUser, User};
+use super::PublicUser;
 
 pub type DeezerId = i64;
 

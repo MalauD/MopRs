@@ -1,4 +1,3 @@
-use chrono::DateTime;
 use serde::{Deserialize, Serialize};
 
 use meilisearch_sdk::{errors::Error, task_info::TaskInfo};
