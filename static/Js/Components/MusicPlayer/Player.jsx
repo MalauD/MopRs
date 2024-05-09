@@ -10,6 +10,7 @@ import {
     AddMultipleMusics as AddMultipleMusicsRedux,
 } from '../../Actions/Action';
 import PlayerSlider from './PlayerSlider';
+import LikeButton from '../Helper/LikeButton';
 
 /* eslint react/no-unused-class-component-methods: 0 */
 
@@ -297,8 +298,15 @@ class PlayerConnected extends React.Component {
                                 <h6>{PlayingMusic.title}</h6>
                                 <p>{PlayingMusic.artist_name}</p>
                             </Col>
-                            <ButtonIcon
+
+                            <LikeButton
                                 buttonClass="my-auto mx-2 ml-auto p-0"
+                                MusicId={PlayingMusic._id}
+                                iconFontSize="1.75rem"
+                            />
+
+                            <ButtonIcon
+                                buttonClass="my-auto mx-2 p-0"
                                 iconFontSize="1.75rem"
                                 onClick={this.HandleBack}
                                 style={{ transform: 'scale(-1)' }}
@@ -336,7 +344,7 @@ class PlayerConnected extends React.Component {
 
                             <Button
                                 variant=""
-                                className="my-auto ml-1 mt-1 d-none d-lg-block"
+                                className="my-2 mt-1 d-none d-lg-block"
                                 onClick={this.HandleOpenPlaylist}
                             >
                                 {NextMusic ? `Next: ${NextMusic.title}` : 'Queue'}

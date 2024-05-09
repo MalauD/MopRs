@@ -19,6 +19,11 @@ class LikeButtonConnected extends React.Component {
         MusicId: PropTypes.number.isRequired,
         LikedMusics: PropTypes.arrayOf(PropTypes.number).isRequired,
         LikeMusic: PropTypes.func.isRequired,
+        buttonClass: PropTypes.string,
+    };
+
+    static defaultProps = {
+        buttonClass: 'float-right d-none d-lg-block Accessory LikeButton',
     };
 
     constructor(props) {
@@ -44,13 +49,15 @@ class LikeButtonConnected extends React.Component {
 
     render() {
         const { IsLiked } = this.state;
+        const { buttonClass } = this.props;
 
         return (
             <ButtonIcon
                 onClick={this.onButtonClick}
                 dataEva={IsLiked ? 'heart' : 'heart-outline'}
                 evaOptions={{ fill: '#CC506C', width: '30px', height: '30px' }}
-                buttonClass="float-right d-none d-lg-block Accessory LikeButton"
+                buttonClass={buttonClass}
+                {...this.props}
             />
         );
     }
