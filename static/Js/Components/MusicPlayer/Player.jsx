@@ -267,7 +267,7 @@ class PlayerConnected extends React.Component {
                                 className="PlayerImage my-auto"
                                 rounded
                                 height="75em"
-                                src={PlayingMusic.image_url}
+                                src={PlayingMusic.image_url || '/Ressources/noMusic.jpg'}
                             />
 
                             <Col
