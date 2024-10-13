@@ -82,6 +82,7 @@ pub struct DeezerDownloader {
     token: String,
     license_token: String,
     http_client: Client,
+    connected: bool,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -200,7 +201,12 @@ impl DeezerDownloader {
                 .unwrap(),
             token: String::new(),
             license_token: String::new(),
+            connected: false,
         }
+    }
+
+    pub fn is_connected(&self) -> bool {
+        self.connected
     }
 
     pub async fn authenticate(&mut self) -> Result<()> {
@@ -228,7 +234,7 @@ impl DeezerDownloader {
             .as_str()
             .ok_or(DeezerDownloaderError::InvalidArlToken)?
             .to_string();
-
+        self.connected = true;
         Ok(())
     }
 

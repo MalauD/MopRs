@@ -10,7 +10,7 @@ use actix_web::{
 };
 use actix_web_prom::PrometheusMetricsBuilder;
 use dotenv::dotenv;
-use log::info;
+use log::{info, warn};
 use routes::config_music;
 
 use crate::{
@@ -60,9 +60,13 @@ async fn main() -> std::io::Result<()> {
     };
 
     let mut d = get_dz_downloader(Some(config.arl.clone())).write().unwrap();
-    d.authenticate().await.unwrap();
+    if let Err(e) = d.authenticate().await {
+        warn!("Failed to authenticate to Deezer: {}", e);
+    } else {
+        info!(target:"mop-rs::deezer_downloader","Deezer downloader initialized");
+    }
+
     drop(d);
-    info!(target:"mop-rs::deezer_downloader","Deezer downloader initialized");
 
     let redis_config = config.clone();
     let redis_connection_string = if let Some(redis_pasword) = redis_config.redis_password {

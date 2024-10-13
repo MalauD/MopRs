@@ -51,6 +51,12 @@ pub async fn get_music_audio(
 
     let res = s3.get_music(id, &formats, start_at).await;
     if res.is_err() {
+        if !downloader.is_connected() {
+            return Err(actix_web::error::ErrorUnauthorized(
+                "Deezer downloader not authenticated",
+            ));
+        }
+
         let (stream, format, song_length, range) =
             if let Ok(d) = downloader.stream_music(id, &formats, start_at).await {
                 d
@@ -150,6 +156,11 @@ pub async fn get_music_tagged(
 
     let res = s3.get_music(id, &formats, None).await;
     let (mut t, format) = if res.is_err() {
+        if !downloader.is_connected() {
+            return Err(actix_web::error::ErrorUnauthorized(
+                "Deezer downloader not authenticated",
+            ));
+        }
         let (track, format) = if let Ok(d) = downloader.download_music(id, &formats).await {
             d
         } else {
