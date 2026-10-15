@@ -66,12 +66,16 @@ pub async fn index_search_musics_result(
     let _ = db.bulk_insert_albums(&album_data).await;
     let _ = db.bulk_insert_artists(&artists).await;
 
-    for val in &musics {
-        let _ = db.append_to_album(&val.1.id, &val.0).await;
-    }
-    for val in &albums {
-        let _ = db.append_to_artist(&val.1.id, &val.0).await;
-    }
+    let album_relations: Vec<(DeezerId, DeezerId)> = musics
+        .iter()
+        .map(|(album_id, music)| (music.id, *album_id))
+        .collect();
+    let artist_relations: Vec<(DeezerId, DeezerId)> = albums
+        .iter()
+        .map(|(artist_id, album)| (album.id, *artist_id))
+        .collect();
+    let _ = db.bulk_append_to_albums(&album_relations).await;
+    let _ = db.bulk_append_to_artists(&artist_relations).await;
 
     match wait_for_search_index {
         IndexType::Music => {
@@ -118,11 +122,15 @@ pub async fn index_artist_top_tracks(
     let albums_data: Vec<Album> = albums.iter().map(|(_, album)| album.clone()).collect();
     let _ = db.bulk_insert_albums(&albums_data).await;
     let _ = search.index_albums(&albums_data).await;
-    for val in &musics {
-        let _ = db.append_to_album(&val.1.id, &val.0).await;
-    }
-    for val in &albums {
-        let _ = db.append_to_artist(&val.1.id, &val.0).await;
-    }
+    let album_relations: Vec<(DeezerId, DeezerId)> = musics
+        .iter()
+        .map(|(album_id, music)| (music.id, *album_id))
+        .collect();
+    let artist_relations: Vec<(DeezerId, DeezerId)> = albums
+        .iter()
+        .map(|(artist_id, album)| (album.id, *artist_id))
+        .collect();
+    let _ = db.bulk_append_to_albums(&album_relations).await;
+    let _ = db.bulk_append_to_artists(&artist_relations).await;
     Ok(musics.into_iter().map(|x| x.1).collect())
 }

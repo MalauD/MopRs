@@ -1,5 +1,7 @@
+use std::collections::HashMap;
+
 use mongodb::{
-    bson::doc,
+    bson::{doc, Bson},
     error::Result,
     options::{IndexOptions, InsertManyOptions},
     IndexModel,
@@ -43,14 +45,37 @@ impl MongoClient {
         Ok(())
     }
 
-    pub async fn append_to_album(&self, music_id: &DeezerId, album_id: &DeezerId) -> Result<()> {
-        let coll = self._database.collection::<Album>("Album");
-        coll.update_one(
-            doc! {"_id": album_id },
-            doc! {"$addToSet": {"musics": music_id}},
-            None,
-        )
-        .await?;
+    pub async fn bulk_append_to_albums(&self, relations: &[(DeezerId, DeezerId)]) -> Result<()> {
+        if relations.is_empty() {
+            return Ok(());
+        }
+
+        let mut grouped_relations: HashMap<DeezerId, Vec<DeezerId>> = HashMap::new();
+        for (music_id, album_id) in relations {
+            grouped_relations
+                .entry(*album_id)
+                .or_default()
+                .push(*music_id);
+        }
+
+        let updates: Vec<Bson> = grouped_relations
+            .into_iter()
+            .map(|(album_id, music_ids)| {
+                Bson::Document(doc! {
+                    "q": {"_id": album_id},
+                    "u": {"$addToSet": {"musics": {"$each": music_ids}}},
+                    "multi": false,
+                    "upsert": false,
+                })
+            })
+            .collect();
+
+        self._database
+            .run_command(
+                doc! {"update": "Album", "updates": updates, "ordered": false},
+                None,
+            )
+            .await?;
         Ok(())
     }
 

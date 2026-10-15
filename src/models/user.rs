@@ -189,3 +189,9 @@ impl From<User> for PublicUser {
         }
     }
 }
+
+impl PublicUser {
+    pub fn id(&self) -> Option<ObjectId> {
+        self.id
+    }
+}

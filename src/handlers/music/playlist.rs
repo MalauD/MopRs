@@ -8,7 +8,7 @@ use crate::{
     actors::ArtistScraperActor,
     db::MongoClient,
     deezer::DeezerClient,
-    models::{DeezerId, PopulatedPlaylist, User},
+    models::{DeezerId, User},
     search::MeilisearchClient,
 };
 
@@ -33,23 +33,13 @@ pub async fn get_playlist(
     let Some(request_user_id) = current_user_id(&user) else {
         return Ok(HttpResponse::Unauthorized().finish());
     };
-    let Some(playlist) = db.get_playlist(&playlist_id).await? else {
+    let Some(playlist) = db.get_populated_playlist(&playlist_id).await? else {
         return Ok(HttpResponse::NotFound().finish());
     };
     if !playlist.is_authorized_read(&request_user_id) {
         return Ok(HttpResponse::Unauthorized().finish());
     }
-
-    let musics = match playlist.musics.as_ref() {
-        Some(musics) => db.get_musics(musics).await?,
-        None => None,
-    };
-    let Some(user) = db.get_user_public(&playlist.creator()).await? else {
-        return Ok(HttpResponse::NotFound().finish());
-    };
-    let mut playlist_pop = PopulatedPlaylist::from_playlist(playlist, user);
-    playlist_pop.musics = musics;
-    Ok(HttpResponse::Ok().json(playlist_pop))
+    Ok(HttpResponse::Ok().json(playlist))
 }
 #[derive(Deserialize)]
 pub struct AddRemoveMusicBody {

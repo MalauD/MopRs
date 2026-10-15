@@ -1,4 +1,4 @@
-use bson::{doc, oid::ObjectId};
+use bson::{doc, oid::ObjectId, Bson};
 use futures::StreamExt;
 use mongodb::{
     error::{Error, Result},
@@ -8,7 +8,7 @@ use mongodb::{
 
 use crate::{
     db::{MongoClient, PaginationOptions},
-    models::{DeezerId, Playlist, User},
+    models::{DeezerId, Playlist, PopulatedPlaylist, User},
 };
 
 impl MongoClient {
@@ -36,6 +36,52 @@ impl MongoClient {
         coll.find_one(doc! {"_id": playlist_id}, None).await
     }
 
+    pub async fn get_populated_playlist(
+        &self,
+        playlist_id: &ObjectId,
+    ) -> Result<Option<PopulatedPlaylist>> {
+        let coll = self._database.collection::<Playlist>("Playlist");
+        let pipeline = vec![
+            doc! {"$match": {"_id": playlist_id}},
+            doc! {
+                "$lookup": {
+                    "from": "Music",
+                    "localField": "musics",
+                    "foreignField": "_id",
+                    "as": "populated_musics"
+                }
+            },
+            doc! {
+                "$lookup": {
+                    "from": "User",
+                    "localField": "creator",
+                    "foreignField": "_id",
+                    "as": "creator_doc"
+                }
+            },
+            doc! {"$unwind": "$creator_doc"},
+            doc! {
+                "$set": {
+                    "creator": "$creator_doc",
+                    "musics": {
+                        "$cond": [
+                            {"$eq": ["$musics", Bson::Null]},
+                            Bson::Null,
+                            "$populated_musics"
+                        ]
+                    }
+                }
+            },
+            doc! {"$project": {"creator_doc": 0, "populated_musics": 0}},
+        ];
+
+        let mut cursor = coll.aggregate(pipeline, None).await?;
+        match cursor.next().await.transpose()? {
+            Some(document) => Ok(Some(bson::from_document(document)?)),
+            None => Ok(None),
+        }
+    }
+
     pub async fn get_user_playlists(
         &self,
         user: &ObjectId,
@@ -43,22 +89,17 @@ impl MongoClient {
     ) -> Result<Vec<Playlist>> {
         let coll = self._database.collection::<Playlist>("Playlist");
 
-        let _ = FindOptions::builder()
+        let find_options = FindOptions::builder()
             .limit(pagination.get_max_results() as i64)
             .skip(Some(
                 (pagination.get_page() * pagination.get_max_results()) as u64,
             ))
             .build();
 
-        let mut cursor = coll.find(doc! {"creator": user}, None).await?;
+        let cursor = coll.find(doc! {"creator": user}, find_options).await?;
+        let docs: Vec<Result<Playlist>> = cursor.collect().await;
 
-        let mut result = Vec::<Playlist>::with_capacity(pagination.get_max_results().max(20));
-        while let Some(value) = cursor.next().await {
-            if let Ok(res) = value {
-                result.push(res);
-            }
-        }
-        Ok(result)
+        Ok(docs.into_iter().flatten().collect())
     }
 
     pub async fn remove_playlist(&self, playlist_id: &ObjectId) -> Result<()> {

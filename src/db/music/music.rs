@@ -49,12 +49,11 @@ impl MongoClient {
 
     pub async fn get_musics(&self, music_ids: &[DeezerId]) -> Result<Option<Vec<Music>>> {
         let coll = self._database.collection::<Music>("Music");
-        let mut cursor = coll.find(doc! {"_id": {"$in": music_ids}}, None).await?;
+        let cursor = coll.find(doc! {"_id": {"$in": music_ids}}, None).await?;
+        let docs: Vec<Result<Music>> = cursor.collect().await;
         let mut result_hash = HashMap::with_capacity(music_ids.len());
-        while let Some(value) = cursor.next().await {
-            if let Ok(res) = value {
-                result_hash.entry(res.id).or_insert(res);
-            }
+        for res in docs.into_iter().flatten() {
+            result_hash.entry(res.id).or_insert(res);
         }
         let mut final_arranged: Vec<Music> = Vec::with_capacity(music_ids.len());
         for e in music_ids {

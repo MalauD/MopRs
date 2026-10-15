@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use chrono::{Duration, Utc};
 use mongodb::{
-    bson::doc,
+    bson::{doc, Bson},
     error::Result,
     options::{FindOptions, IndexOptions, InsertManyOptions},
     IndexModel,
@@ -11,7 +11,7 @@ use tokio_stream::StreamExt;
 
 use crate::{
     db::{MongoClient, PaginationOptions},
-    models::{Artist, Playlist, DeezerId},
+    models::{Artist, DeezerId, Playlist},
 };
 
 impl MongoClient {
@@ -46,14 +46,37 @@ impl MongoClient {
         Ok(())
     }
 
-    pub async fn append_to_artist(&self, album_id: &DeezerId, artist_id: &DeezerId) -> Result<()> {
-        let coll = self._database.collection::<Artist>("Artist");
-        coll.update_one(
-            doc! {"_id": artist_id },
-            doc! {"$addToSet": {"albums": album_id}},
-            None,
-        )
-        .await?;
+    pub async fn bulk_append_to_artists(&self, relations: &[(DeezerId, DeezerId)]) -> Result<()> {
+        if relations.is_empty() {
+            return Ok(());
+        }
+
+        let mut grouped_relations: HashMap<DeezerId, Vec<DeezerId>> = HashMap::new();
+        for (album_id, artist_id) in relations {
+            grouped_relations
+                .entry(*artist_id)
+                .or_default()
+                .push(*album_id);
+        }
+
+        let updates: Vec<Bson> = grouped_relations
+            .into_iter()
+            .map(|(artist_id, album_ids)| {
+                Bson::Document(doc! {
+                    "q": {"_id": artist_id},
+                    "u": {"$addToSet": {"albums": {"$each": album_ids}}},
+                    "multi": false,
+                    "upsert": false,
+                })
+            })
+            .collect();
+
+        self._database
+            .run_command(
+                doc! {"update": "Artist", "updates": updates, "ordered": false},
+                None,
+            )
+            .await?;
         Ok(())
     }
 
@@ -88,12 +111,11 @@ impl MongoClient {
 
     pub async fn get_artists(&self, artist_ids: &[DeezerId]) -> Result<Option<Vec<Artist>>> {
         let coll = self._database.collection::<Artist>("Artist");
-        let mut cursor = coll.find(doc! {"_id": {"$in": artist_ids}}, None).await?;
+        let cursor = coll.find(doc! {"_id": {"$in": artist_ids}}, None).await?;
+        let docs: Vec<Result<Artist>> = cursor.collect().await;
         let mut result_hash = HashMap::with_capacity(artist_ids.len());
-        while let Some(value) = cursor.next().await {
-            if let Ok(res) = value {
-                result_hash.entry(res.id).or_insert(res);
-            }
+        for res in docs.into_iter().flatten() {
+            result_hash.entry(res.id).or_insert(res);
         }
         let mut final_arranged: Vec<Artist> = Vec::with_capacity(artist_ids.len());
         for e in artist_ids {

@@ -303,11 +303,6 @@ impl Playlist {
         self.creator == *user
     }
 
-    /// Get a reference to the playlist's creator.
-    pub fn creator(&self) -> ObjectId {
-        self.creator
-    }
-
     pub fn name(&self) -> &str {
         self.name.as_ref()
     }
@@ -337,5 +332,9 @@ impl PopulatedPlaylist {
             public: pl.public,
             musics: None,
         }
+    }
+
+    pub fn is_authorized_read(&self, user: &ObjectId) -> bool {
+        self.public || self.creator.id() == Some(*user)
     }
 }
