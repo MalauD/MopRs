@@ -35,7 +35,7 @@ impl MongoClient {
         Ok(())
     }
 
-    pub async fn bulk_insert_musics(&self, musics: Vec<Music>) -> Result<()> {
+    pub async fn bulk_insert_musics(&self, musics: &[Music]) -> Result<()> {
         let coll = self._database.collection::<Music>("Music");
 
         let _ = coll

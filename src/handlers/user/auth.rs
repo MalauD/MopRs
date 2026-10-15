@@ -15,9 +15,13 @@ pub async fn login(
     user: web::Json<UserReq>,
     db: web::Data<MongoClient>,
 ) -> UserResponse {
+    let user = user.into_inner();
+
     if let Some(user_mod) = db.get_user_req(&user).await? {
-        user_mod.login(&user)?;
         let user_id = user_mod.id().ok_or(UserError::AuthenticationError)?;
+        web::block(move || user_mod.login(&user))
+            .await
+            .map_err(|_| UserError::AuthenticationError)??;
         Identity::login(&request.extensions(), user_id.to_string())
             .map_err(|_| UserError::AuthenticationError)?;
 
@@ -32,7 +36,10 @@ pub async fn register(
     user: web::Json<UserReq>,
     db: web::Data<MongoClient>,
 ) -> UserResponse {
-    let user_mod = User::new(&user.0);
+    let user = user.into_inner();
+    let user_mod = web::block(move || User::new(&user))
+        .await
+        .map_err(|_| UserError::AuthenticationError)?;
 
     if db.has_user_by_name(&user_mod).await? {
         return Ok(HttpResponse::Ok().json(json!({"success": false})));

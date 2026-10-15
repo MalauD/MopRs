@@ -37,8 +37,8 @@ pub async fn get_artist(
             .unique_by(|x| x.id)
             .collect_vec();
         let albums_id = albums.clone().into_iter().map(|x| x.id).collect_vec();
-        let _ = db.bulk_insert_albums(albums.clone()).await;
-        let _ = search.index_albums(albums).await?;
+        let _ = db.bulk_insert_albums(&albums).await;
+        let _ = search.index_albums(&albums).await?;
         let _ = db.append_multiple_to_an_artist(albums_id, &req).await;
         //musics.group_by()
 
@@ -54,7 +54,7 @@ pub async fn get_artist(
             .collect_vec();
 
         let _ = db.bulk_insert_artists(&rel_artists).await;
-        let _ = search.index_artists(rel_artists.clone()).await?;
+        let _ = search.index_artists(&rel_artists).await?;
 
         let _ = db
             .set_related_artists(

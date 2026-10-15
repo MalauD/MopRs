@@ -69,10 +69,10 @@ impl MeilisearchClient {
         Ok(())
     }
 
-    pub async fn index_musics(&self, musics: Vec<Music>) -> Result<TaskInfo, Error> {
+    pub async fn index_musics(&self, musics: &[Music]) -> Result<TaskInfo, Error> {
         let index = self.client.index("musics");
         let musics: Vec<MusicMeilisearch> =
-            musics.into_iter().map(MusicMeilisearch::from).collect();
+            musics.iter().cloned().map(MusicMeilisearch::from).collect();
         let t = index.add_documents(&musics, Some("id")).await?;
         Ok(t)
     }

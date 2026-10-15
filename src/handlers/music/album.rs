@@ -30,8 +30,8 @@ pub async fn get_album(
         .unique_by(|x| x.id)
         .collect_vec();
     let music_ids = musics.clone().into_iter().map(|x| x.id).collect_vec();
-    let _ = db.bulk_insert_musics(musics.clone()).await;
-    let _ = search.index_musics(musics).await;
+    let _ = db.bulk_insert_musics(&musics).await;
+    let _ = search.index_musics(&musics).await;
     let _ = db.set_album_musics(music_ids, &req).await;
     //musics.group_by()
     let Some(compl_album) = db.get_album(&req).await? else {

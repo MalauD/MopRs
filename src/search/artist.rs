@@ -46,10 +46,13 @@ impl MeilisearchClient {
         Ok(())
     }
 
-    pub async fn index_artists(&self, artists: Vec<Artist>) -> Result<TaskInfo, Error> {
+    pub async fn index_artists(&self, artists: &[Artist]) -> Result<TaskInfo, Error> {
         let index = self.client.index("artists");
-        let artists: Vec<ArtistMeilisearch> =
-            artists.into_iter().map(ArtistMeilisearch::from).collect();
+        let artists: Vec<ArtistMeilisearch> = artists
+            .iter()
+            .cloned()
+            .map(ArtistMeilisearch::from)
+            .collect();
         let t = index.add_documents(&artists, Some("id")).await?;
         Ok(t)
     }

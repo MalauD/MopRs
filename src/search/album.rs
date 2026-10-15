@@ -44,10 +44,10 @@ impl MeilisearchClient {
         Ok(())
     }
 
-    pub async fn index_albums(&self, albums: Vec<Album>) -> Result<TaskInfo, Error> {
+    pub async fn index_albums(&self, albums: &[Album]) -> Result<TaskInfo, Error> {
         let index = self.client.index("albums");
         let albums: Vec<AlbumMeilisearch> =
-            albums.into_iter().map(AlbumMeilisearch::from).collect();
+            albums.iter().cloned().map(AlbumMeilisearch::from).collect();
         let t = index.add_documents(&albums, Some("id")).await?;
         Ok(t)
     }

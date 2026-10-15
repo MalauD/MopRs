@@ -70,7 +70,7 @@ impl ArtistScraperActor {
                 .unique_by(|x| x.id)
                 .collect_vec();
             let _ = db.bulk_insert_artists(&rel_artists).await;
-            let _ = search.index_artists(rel_artists.clone()).await;
+            let _ = search.index_artists(&rel_artists).await;
             let _ = db
                 .set_related_artists(
                     &artist.id,
