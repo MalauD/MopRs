@@ -1,4 +1,5 @@
 use rand::{seq::SliceRandom, thread_rng};
+use std::collections::HashSet;
 
 use crate::{
     db::MongoClient,
@@ -15,28 +16,30 @@ pub async fn get_suggestions_for(
     novelty: f32,
     limit: i32,
 ) -> Vec<DeezerId> {
-    let mut base_ids = db.get_liked_musics(&user, memory).await.unwrap_or_default();
-    let mut hist = db
-        .get_history(&user, (memory as f32 * like_hist_ratio) as i64)
-        .await
-        .unwrap_or_default();
-    base_ids.append(&mut hist);
+    let mut base_pool: HashSet<DeezerId> = HashSet::new();
 
-    let mut related = get_related_to(
-        db,
-        &base_ids,
-        None,
-        novelty / 5.,
-        (novelty * limit as f32) as i32,
-    )
-    .await;
+    if let Ok(likes) = db.get_liked_musics(&user, memory).await {
+        base_pool.extend(likes);
+    }
 
-    // Mix base_ids and related*
-    base_ids.shuffle(&mut thread_rng());
-    base_ids.truncate(limit as usize);
-    base_ids.append(&mut related);
-    base_ids.dedup();
-    base_ids.shuffle(&mut thread_rng());
-    base_ids.truncate(limit as usize);
-    base_ids
+    let hist_limit = (memory as f32 * like_hist_ratio) as i64;
+    if let Ok(hist) = db.get_history(&user, hist_limit).await {
+        base_pool.extend(hist);
+    }
+
+    let base_ids: Vec<DeezerId> = base_pool.into_iter().collect();
+    let related_limit = (novelty * limit as f32) as i32;
+
+    let related = get_related_to(db, &base_ids, None, novelty / 5.0, related_limit).await;
+
+    let mut final_pool: HashSet<DeezerId> = base_ids.into_iter().collect();
+    final_pool.extend(related);
+
+    let final_pool_vec: Vec<DeezerId> = final_pool.into_iter().collect();
+
+    let mut rng = thread_rng();
+    final_pool_vec
+        .choose_multiple(&mut rng, limit as usize)
+        .cloned()
+        .collect()
 }

@@ -1,8 +1,9 @@
 use crate::db::MongoClient;
-use crate::models::DeezerId;
+use crate::models::{Artist, DeezerId};
 use log::warn;
 use rand::seq::SliceRandom;
 use rand::thread_rng;
+use std::collections::HashSet;
 
 pub async fn get_related_to(
     db: &MongoClient,
@@ -11,80 +12,80 @@ pub async fn get_related_to(
     related_artist_music_ratio: f32,
     limit: i32,
 ) -> Vec<DeezerId> {
-    let base_musics = match db.get_musics(base_music_ids).await {
-        Ok(Some(musics)) => musics,
-        Ok(None) => return Vec::new(),
-        Err(error) => {
-            warn!(
-                "Failed to load base musics for related suggestions: {}",
-                error
-            );
-            return Vec::new();
-        }
-    };
-    let base_musics_artists = db
-        .get_artists_by_name(
-            &base_musics
-                .iter()
-                .map(|m| m.artist_name.clone())
-                .collect::<Vec<_>>(),
-        )
-        .await;
-    let base_musics_artists = match base_musics_artists {
-        Ok(Some(artists)) => artists,
-        Ok(None) => return Vec::new(),
-        Err(error) => {
-            warn!(
-                "Failed to load base artists for related suggestions: {}",
-                error
-            );
-            return Vec::new();
-        }
-    };
-
-    let related_artists = db
-        .get_artists(
-            &base_musics_artists
-                .iter()
-                .flat_map(|a| a.related_artists.clone().unwrap_or_default())
-                .collect::<Vec<_>>(),
-        )
-        .await;
-    let related_artists = match related_artists {
-        Ok(Some(artists)) => artists,
-        Ok(None) => Vec::new(),
-        Err(error) => {
-            warn!("Failed to load related artists for suggestions: {}", error);
-            Vec::new()
-        }
-    };
-
-    let mut related_musics = Vec::new();
-    for artist in base_musics_artists {
-        related_musics.extend(artist.top_tracks.unwrap_or_default());
+    let base_artists = fetch_base_artists(db, base_music_ids).await;
+    if base_artists.is_empty() {
+        return Vec::new();
     }
-    let mut related_musics_ext = Vec::new();
-    for artist in related_artists {
-        related_musics_ext.extend(artist.top_tracks.unwrap_or_default());
-    }
-    related_musics_ext.shuffle(&mut thread_rng());
-    related_musics_ext.truncate(related_musics.len() * related_artist_music_ratio as usize);
 
-    related_musics.extend(related_musics_ext);
-    related_musics.sort();
-    if let Some(exclude) = exclude {
-        remove_from_sorted_vec(&mut related_musics, exclude);
+    let related_artists = fetch_related_artists(db, &base_artists).await;
+
+    let mut direct_top_tracks = extract_top_tracks(&base_artists);
+    let extended_top_tracks = extract_top_tracks(&related_artists);
+
+    let extended_limit = (direct_top_tracks.len() as f32 * related_artist_music_ratio) as usize;
+
+    let mut rng = thread_rng();
+    let sampled_extended: Vec<DeezerId> = extended_top_tracks
+        .into_iter()
+        .collect::<Vec<_>>()
+        .choose_multiple(&mut rng, extended_limit)
+        .cloned()
+        .collect();
+
+    direct_top_tracks.extend(sampled_extended);
+
+    if let Some(exclude_ids) = exclude {
+        let exclude_set: HashSet<&DeezerId> = exclude_ids.iter().collect();
+        direct_top_tracks.retain(|id| !exclude_set.contains(id));
     }
-    related_musics.dedup();
-    related_musics.shuffle(&mut thread_rng());
-    related_musics.truncate(limit as usize);
-    related_musics
+
+    let direct_top_tracks_vec: Vec<DeezerId> = direct_top_tracks.into_iter().collect();
+    direct_top_tracks_vec
+        .choose_multiple(&mut rng, limit as usize)
+        .cloned()
+        .collect()
 }
 
-fn remove_from_sorted_vec(sorted_vec: &mut Vec<DeezerId>, vec: &[DeezerId]) {
-    for i in vec {
-        if let Ok(index) = sorted_vec.binary_search(i) {
-            sorted_vec.remove(index);
+async fn fetch_base_artists(db: &MongoClient, music_ids: &[DeezerId]) -> Vec<Artist> {
+    let musics = match db.get_musics(music_ids).await {
+        Ok(Some(m)) => m,
+        _ => {
+            warn!("Failed to load base musics for related suggestions");
+            return Vec::new();
+        }
+    };
+
+    let artist_names: Vec<String> = musics.into_iter().map(|m| m.artist_name).collect();
+
+    match db.get_artists_by_name(&artist_names).await {
+        Ok(Some(artists)) => artists,
+        _ => {
+            warn!("Failed to load base artists for related suggestions");
+            Vec::new()
         }
     }
+}
+
+async fn fetch_related_artists(db: &MongoClient, base_artists: &[Artist]) -> Vec<Artist> {
+    let related_ids: Vec<DeezerId> = base_artists
+        .iter()
+        .filter_map(|a| a.related_artists.clone())
+        .flatten()
+        .collect();
+
+    match db.get_artists(&related_ids).await {
+        Ok(Some(artists)) => artists,
+        _ => {
+            warn!("Failed to load related artists for suggestions");
+            Vec::new()
+        }
+    }
+}
+
+fn extract_top_tracks(artists: &[Artist]) -> HashSet<DeezerId> {
+    artists
+        .iter()
+        .filter_map(|a| a.top_tracks.clone())
+        .flatten()
+        .collect()
 }
