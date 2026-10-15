@@ -14,6 +14,10 @@ static SALT_COMPONENT: [u8; 16] = [
 ];
 const PBKDF2_ITER: u32 = 100_000;
 
+fn pbkdf2_iterations() -> NonZeroU32 {
+    NonZeroU32::new(PBKDF2_ITER).expect("PBKDF2_ITER must be non-zero")
+}
+
 #[derive(Deserialize)]
 pub struct UserReq {
     username: String,
@@ -58,10 +62,9 @@ where
 impl User {
     pub fn login(&self, user: &UserReq) -> Result<(), UserError> {
         let salt = Self::salt(&user.username);
-        let iter = NonZeroU32::new(PBKDF2_ITER).unwrap();
         pbkdf2::verify(
             PBKDF2_ALG,
-            iter,
+            pbkdf2_iterations(),
             &salt,
             user.password.as_bytes(),
             &self.credential,
@@ -80,9 +83,14 @@ impl User {
 
     pub fn new(req: &UserReq) -> Self {
         let salt = Self::salt(&req.username);
-        let iter = NonZeroU32::new(PBKDF2_ITER).unwrap();
         let mut cred = [0u8; CREDENTIAL_LEN];
-        pbkdf2::derive(PBKDF2_ALG, iter, &salt, req.password.as_bytes(), &mut cred);
+        pbkdf2::derive(
+            PBKDF2_ALG,
+            pbkdf2_iterations(),
+            &salt,
+            req.password.as_bytes(),
+            &mut cred,
+        );
         Self {
             id: None,
             username: req.username.clone(),

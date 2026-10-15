@@ -4,13 +4,12 @@ use blowfish::Blowfish;
 use futures::TryStreamExt;
 use itertools::Itertools;
 use log::debug;
-use once_cell::sync::OnceCell;
 use pin_project::pin_project;
 use reqwest::{cookie::Jar, Client, Url};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use serde_with::{serde_as, DisplayFromStr};
-use std::sync::{Arc, Mutex, RwLock};
+use std::sync::Arc;
 use thiserror::Error;
 
 use crate::{models::DeezerId, tools::MusicError};
@@ -23,6 +22,14 @@ pub enum DeezerDownloaderError {
     InvalidArlToken,
     #[error("Session expired")]
     SessionExpired,
+    #[error("Unexpected response from Deezer: {0}")]
+    InvalidResponse(&'static str),
+    #[error("Failed to initialize Deezer client: {0}")]
+    ClientInit(&'static str),
+    #[error("Failed to initialize Deezer audio cipher")]
+    CipherInit,
+    #[error("Failed to decrypt Deezer audio chunk")]
+    DecryptionFailed,
 }
 
 #[serde_as]
@@ -146,63 +153,57 @@ impl DeezerMusicFormats {
 }
 
 impl DeezerUnofficialMusic {
-    pub fn get_bf_key(&self) -> String {
+    pub fn get_bf_key(&self) -> Result<String> {
         let secret = "g4el58wc0zvf9na1";
         let md5_music_id = hex::encode(md5::compute(self.id.to_string().as_bytes()).0);
         let mut blowfish_key = String::new();
         for i in 0..16 {
-            blowfish_key.push_str(
-                &String::from_utf16(&[md5_music_id.chars().nth(i).unwrap() as u16
-                    ^ md5_music_id.chars().nth(i + 16).unwrap() as u16
-                    ^ secret.chars().nth(i).unwrap() as u16])
-                .unwrap(),
-            );
+            let left = md5_music_id
+                .as_bytes()
+                .get(i)
+                .copied()
+                .ok_or(DeezerDownloaderError::InvalidResponse("md5 key prefix"))?;
+            let right = md5_music_id
+                .as_bytes()
+                .get(i + 16)
+                .copied()
+                .ok_or(DeezerDownloaderError::InvalidResponse("md5 key suffix"))?;
+            let secret_char = secret
+                .as_bytes()
+                .get(i)
+                .copied()
+                .ok_or(DeezerDownloaderError::InvalidResponse("secret key"))?;
+            let codepoint = u16::from(left ^ right ^ secret_char);
+            let value = String::from_utf16(&[codepoint])
+                .map_err(|_| DeezerDownloaderError::InvalidResponse("blowfish key encoding"))?;
+            blowfish_key.push_str(&value);
         }
-        blowfish_key
+        Ok(blowfish_key)
     }
-}
-
-static DOWNLOADER: OnceCell<RwLock<DeezerDownloader>> = OnceCell::new();
-static DOWNLOADER_INITIALIZED: OnceCell<Mutex<bool>> = OnceCell::new();
-
-pub fn get_dz_downloader(arl: Option<String>) -> &'static RwLock<DeezerDownloader> {
-    if let Some(c) = DOWNLOADER.get() {
-        return c;
-    }
-
-    let initializing_mutex = DOWNLOADER_INITIALIZED.get_or_init(|| Mutex::new(false));
-
-    let mut initialized = initializing_mutex.lock().unwrap();
-
-    if !*initialized {
-        let client = DeezerDownloader::new(arl.unwrap());
-        if DOWNLOADER.set(RwLock::new(client)).is_ok() {
-            *initialized = true;
-        }
-    }
-
-    drop(initialized);
-    DOWNLOADER.get().unwrap()
 }
 
 impl DeezerDownloader {
-    pub fn new(arl: String) -> Self {
+    pub fn new(arl: String) -> Result<Self> {
         let cookie_jar = Arc::new(Jar::default());
+        let deezer_url = Url::parse("http://www.deezer.com")
+            .map_err(|_| DeezerDownloaderError::ClientInit("invalid deezer base URL"))?;
         cookie_jar.add_cookie_str(
             &format!("arl={}; Domain=www.deezer.com; Path=/", arl),
-            &Url::parse("http://www.deezer.com").unwrap(),
+            &deezer_url,
         );
 
-        Self {
-            http_client: Client::builder()
+        let http_client = Client::builder()
                 .cookie_provider(cookie_jar)
                 .gzip(true)
                 .build()
-                .unwrap(),
+                .map_err(|_| DeezerDownloaderError::ClientInit("failed to build reqwest client"))?;
+
+        Ok(Self {
+            http_client,
             token: String::new(),
             license_token: String::new(),
             connected: false,
-        }
+        })
     }
 
     pub fn is_connected(&self) -> bool {
@@ -282,7 +283,7 @@ impl DeezerDownloader {
                 .ok_or(DeezerDownloaderError::SessionExpired)?
                 .clone(),
         )
-        .unwrap())
+        .map_err(|_| DeezerDownloaderError::InvalidResponse("song metadata"))?)
     }
 
     async fn get_music_download_url(
@@ -320,7 +321,8 @@ impl DeezerDownloader {
             .await?;
         let v = &response["data"][0]["media"][0];
 
-        Ok(serde_json::from_value(v.clone()).unwrap())
+        serde_json::from_value(v.clone())
+            .map_err(|_| DeezerDownloaderError::InvalidResponse("download URL response"))
     }
 
     async fn download_media(
@@ -338,16 +340,21 @@ impl DeezerDownloader {
 
         let chunks = response.chunks(2048);
         let mut decrypted_file: Vec<u8> = Vec::with_capacity(chunks.len());
-        let bf_key = music.get_bf_key();
+        let bf_key = music.get_bf_key()?;
         type BfCBC = Cbc<Blowfish, NoPadding>;
 
-        let cipher = BfCBC::new_from_slices(bf_key.as_bytes(), &[0, 1, 2, 3, 4, 5, 6, 7]).unwrap();
+        let cipher = BfCBC::new_from_slices(bf_key.as_bytes(), &[0, 1, 2, 3, 4, 5, 6, 7])
+            .map_err(|_| DeezerDownloaderError::CipherInit)?;
 
         for (iter, ch) in chunks.enumerate() {
             if iter % 3 > 0 || ch.len() != 2048 {
                 decrypted_file.extend_from_slice(ch);
             } else {
-                decrypted_file.append(&mut cipher.clone().decrypt_vec(ch).unwrap());
+                let mut decrypted = cipher
+                    .clone()
+                    .decrypt_vec(ch)
+                    .map_err(|_| DeezerDownloaderError::DecryptionFailed)?;
+                decrypted_file.append(&mut decrypted);
             }
         }
 
@@ -359,10 +366,10 @@ impl DeezerDownloader {
         music: &DeezerUnofficialMusic,
         media: &DeezerUnofficialMedia,
         start: usize,
-    ) -> (
+    ) -> Result<(
         impl futures::stream::Stream<Item = core::result::Result<bytes::Bytes, MusicError>>,
         ByteRangeSpec,
-    ) {
+    )> {
         let dl_start = start / (3 * 2048);
         let dl_start = dl_start * (3 * 2048);
         let response = self
@@ -370,15 +377,18 @@ impl DeezerDownloader {
             .get(media.sources[0].url.clone())
             .header("range", format!("bytes={}-", dl_start))
             .send()
-            .await
-            .unwrap();
-        let size = response.content_length().unwrap() as usize;
+            .await?;
+        let size = response
+            .content_length()
+            .ok_or(DeezerDownloaderError::InvalidResponse(
+                "missing content length",
+            ))? as usize;
         let response = response.bytes_stream();
 
-        (
-            DeezerStreamDecrypt::new(music.get_bf_key(), response),
+        Ok((
+            DeezerStreamDecrypt::new(music.get_bf_key()?, response)?,
             ByteRangeSpec::FromTo(dl_start as u64, (dl_start + size - 1) as u64),
-        )
+        ))
     }
 
     pub async fn download_music(
@@ -412,7 +422,7 @@ impl DeezerDownloader {
             .await?;
         let (stream, stream_range) = self
             .stream_media(&music, &media, start.unwrap_or(0) as usize)
-            .await;
+            .await?;
         Ok((
             stream,
             media.format,
@@ -434,13 +444,14 @@ pub struct DeezerStreamDecrypt<Inner: futures::stream::Stream<Item = reqwest::Re
 impl<Inner: futures::stream::Stream<Item = reqwest::Result<bytes::Bytes>>>
     DeezerStreamDecrypt<Inner>
 {
-    pub fn new(bf_key: String, input: Inner) -> Self {
-        let bf_cipher = Cbc::new_from_slices(bf_key.as_bytes(), &[0, 1, 2, 3, 4, 5, 6, 7]).unwrap();
-        Self {
+    pub fn new(bf_key: String, input: Inner) -> Result<Self> {
+        let bf_cipher = Cbc::new_from_slices(bf_key.as_bytes(), &[0, 1, 2, 3, 4, 5, 6, 7])
+            .map_err(|_| DeezerDownloaderError::CipherInit)?;
+        Ok(Self {
             bf_cipher,
             input: stream_flatten_iters::TryStreamExt::try_flatten_iters(input).try_chunks(2048),
             iter: 0,
-        }
+        })
     }
 }
 
@@ -462,8 +473,14 @@ impl<Inner: futures::stream::Stream<Item = reqwest::Result<bytes::Bytes>>> futur
                 } else {
                     *this.iter += 1;
                     let cipher = this.bf_cipher.clone();
-                    let decrypted = cipher.decrypt_vec(&chunk).unwrap();
-                    std::task::Poll::Ready(Some(Ok(bytes::Bytes::copy_from_slice(&decrypted))))
+                    match cipher.decrypt_vec(&chunk) {
+                        Ok(decrypted) => std::task::Poll::Ready(Some(Ok(
+                            bytes::Bytes::copy_from_slice(&decrypted),
+                        ))),
+                        Err(_) => std::task::Poll::Ready(Some(Err(MusicError::from(
+                            DeezerDownloaderError::DecryptionFailed,
+                        )))),
+                    }
                 }
             }
             std::task::Poll::Ready(Some(Err(e))) => {

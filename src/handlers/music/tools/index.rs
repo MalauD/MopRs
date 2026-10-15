@@ -6,24 +6,25 @@ use crate::{
     db::MongoClient,
     deezer,
     models::{Album, Artist, DeezerId, Music},
-    search::get_meilisearch,
+    search::MeilisearchClient,
 };
 
 pub enum IndexType {
     Music,
+    #[allow(dead_code)]
     Album,
+    #[allow(dead_code)]
     Artist,
     None,
 }
 
 pub async fn index_search_musics_result(
     db: &MongoClient,
+    search: &MeilisearchClient,
     res: &deezer::SearchMusicsResult,
     artist_scraper_addr: &Addr<ArtistScraperActor>,
     wait_for_search_index: IndexType,
 ) -> Result<Vec<Music>, String> {
-    let search = get_meilisearch(None).await;
-
     let artists: Vec<Artist> = res
         .data
         .clone()
@@ -48,9 +49,18 @@ pub async fn index_search_musics_result(
     let music_data: Vec<Music> = musics.clone().into_iter().map(|x| x.1).collect();
     let album_data: Vec<Album> = albums.clone().into_iter().map(|x| x.1).collect();
 
-    let task_music_search = search.index_musics(music_data.clone()).await.unwrap();
-    let task_album_search = search.index_albums(album_data.clone()).await.unwrap();
-    let task_artist_search = search.index_artists(artists.clone()).await.unwrap();
+    let task_music_search = search
+        .index_musics(music_data.clone())
+        .await
+        .map_err(|error| error.to_string())?;
+    let task_album_search = search
+        .index_albums(album_data.clone())
+        .await
+        .map_err(|error| error.to_string())?;
+    let task_artist_search = search
+        .index_artists(artists.clone())
+        .await
+        .map_err(|error| error.to_string())?;
 
     let _ = db.bulk_insert_musics(music_data).await;
     let _ = db.bulk_insert_albums(album_data).await;
@@ -85,11 +95,10 @@ pub async fn index_search_musics_result(
 
 pub async fn index_artist_top_tracks(
     db: &MongoClient,
+    search: &MeilisearchClient,
     res: &deezer::ArtistTopTracksResult,
     artist_id: &DeezerId,
 ) -> Result<Vec<Music>, String> {
-    let search = get_meilisearch(None).await;
-
     let albums: Vec<(DeezerId, Album)> = res
         .data
         .clone()

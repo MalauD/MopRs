@@ -27,8 +27,7 @@ impl MongoClient {
         self._database
             .collection::<Album>("Album")
             .create_index(index, None)
-            .await
-            .unwrap();
+            .await?;
         Ok(())
     }
 

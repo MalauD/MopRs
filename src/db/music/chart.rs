@@ -7,7 +7,12 @@ impl MongoClient {
     pub async fn get_chart_today(&self) -> Result<Option<Chart>> {
         let coll = self._database.collection::<Chart>("Chart");
         let today = Utc::now();
-        let res =coll.find_one(doc!{"published_date": {"$gt": today.beginning_of_day(), "$lt": today.end_of_day()}}, None).await.unwrap();
+        let res = coll
+            .find_one(
+                doc! {"published_date": {"$gt": today.beginning_of_day(), "$lt": today.end_of_day()}},
+                None,
+            )
+            .await?;
         Ok(res)
     }
 

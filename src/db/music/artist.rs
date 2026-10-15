@@ -30,8 +30,7 @@ impl MongoClient {
         self._database
             .collection::<Artist>("Artist")
             .create_index(index, None)
-            .await
-            .unwrap();
+            .await?;
         Ok(())
     }
 
@@ -98,7 +97,9 @@ impl MongoClient {
         }
         let mut final_arranged: Vec<Artist> = Vec::with_capacity(artist_ids.len());
         for e in artist_ids {
-            final_arranged.push(result_hash[e].clone());
+            if let Some(artist) = result_hash.get(e) {
+                final_arranged.push(artist.clone());
+            }
         }
         Ok(Some(final_arranged))
     }

@@ -1,20 +1,24 @@
 use crate::{
     db::MongoClient,
-    deezer::get_dz_client,
+    deezer::DeezerClient,
     models::{DeezerId, Music, PopulatedAlbum},
-    search::get_meilisearch,
+    search::MeilisearchClient,
 };
 use actix_web::{web, HttpResponse};
 use itertools::Itertools;
 
 use super::MusicResponse;
 
-pub async fn get_album(req: web::Path<DeezerId>, db: web::Data<MongoClient>) -> MusicResponse {
-    let dz = get_dz_client();
-    let search = get_meilisearch(None).await;
-
+pub async fn get_album(
+    req: web::Path<DeezerId>,
+    db: web::Data<MongoClient>,
+    dz: web::Data<DeezerClient>,
+    search: web::Data<MeilisearchClient>,
+) -> MusicResponse {
     let res = dz.get_album_musics(*req).await?;
-    let album = db.get_album(&req).await?.unwrap();
+    let Some(album) = db.get_album(&req).await? else {
+        return Ok(HttpResponse::NotFound().finish());
+    };
     let musics: Vec<Music> = res
         .data
         .clone()
@@ -30,11 +34,13 @@ pub async fn get_album(req: web::Path<DeezerId>, db: web::Data<MongoClient>) -> 
     let _ = search.index_musics(musics).await;
     let _ = db.set_album_musics(music_ids, &req).await;
     //musics.group_by()
-    let compl_album = db.get_album(&req).await?.unwrap();
-    let musics_of_album = db
-        .get_musics(compl_album.musics.as_ref().unwrap())
-        .await?
-        .unwrap();
+    let Some(compl_album) = db.get_album(&req).await? else {
+        return Ok(HttpResponse::NotFound().finish());
+    };
+    let musics_of_album = match compl_album.musics.as_ref() {
+        Some(musics) => db.get_musics(musics).await?.unwrap_or_default(),
+        None => Vec::new(),
+    };
     let mut pop_album = PopulatedAlbum::from(compl_album);
     pop_album.musics = Some(musics_of_album);
     Ok(HttpResponse::Ok().json(pop_album))

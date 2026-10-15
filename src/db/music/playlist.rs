@@ -1,7 +1,7 @@
 use bson::{doc, oid::ObjectId};
 use futures::StreamExt;
 use mongodb::{
-    error::Result,
+    error::{Error, Result},
     options::{FindOptions, IndexOptions},
     IndexModel,
 };
@@ -27,8 +27,7 @@ impl MongoClient {
         self._database
             .collection::<Playlist>("Playlist")
             .create_index(index, None)
-            .await
-            .unwrap();
+            .await?;
         Ok(())
     }
 
@@ -77,13 +76,10 @@ impl MongoClient {
     ) -> Result<ObjectId> {
         let coll = self._database.collection::<Playlist>("Playlist");
         let id = ObjectId::new();
-        let pl = Playlist::new(
-            id,
-            name,
-            creator.id().unwrap(),
-            public,
-            Some(musics.to_vec()),
-        );
+        let creator_id = creator
+            .id()
+            .ok_or_else(|| Error::custom("playlist creator is missing an object id"))?;
+        let pl = Playlist::new(id, name, creator_id, public, Some(musics.to_vec()));
         let _ = coll.insert_one(pl, None).await?;
         Ok(id)
     }

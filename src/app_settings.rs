@@ -1,3 +1,4 @@
+use log::warn;
 use serde::Deserialize;
 use serde_with::{serde_as, DurationMilliSeconds, DurationSeconds};
 use std::{convert::TryFrom, time::Duration};
@@ -76,18 +77,48 @@ pub struct AppSettings {
 
 impl AppSettings {
     pub fn get_session_duration(&self) -> actix_web::cookie::time::Duration {
-        actix_web::cookie::time::Duration::try_from(self.session_duration).unwrap()
+        actix_web::cookie::time::Duration::try_from(self.session_duration).unwrap_or_else(|error| {
+            warn!(
+                "Invalid session duration {:?}, falling back to default: {}",
+                self.session_duration, error
+            );
+            actix_web::cookie::time::Duration::try_from(default_session_duration())
+                .expect("default session duration must be valid")
+        })
     }
 
     pub fn get_artist_update_interval(&self) -> chrono::Duration {
-        chrono::Duration::from_std(self.artist_update_interval).unwrap()
+        chrono::Duration::from_std(self.artist_update_interval).unwrap_or_else(|error| {
+            warn!(
+                "Invalid artist update interval {:?}, falling back to default: {}",
+                self.artist_update_interval, error
+            );
+            chrono::Duration::from_std(default_artists_update_interval())
+                .expect("default artist update interval must be valid")
+        })
     }
 
     pub fn get_artist_scrape_update_interval(&self) -> chrono::Duration {
-        chrono::Duration::from_std(self.artist_scrape_update_interval).unwrap()
+        chrono::Duration::from_std(self.artist_scrape_update_interval).unwrap_or_else(|error| {
+            warn!(
+                "Invalid artist scrape update interval {:?}, falling back to default: {}",
+                self.artist_scrape_update_interval, error
+            );
+            chrono::Duration::from_std(default_artist_scrape_update_interval())
+                .expect("default artist scrape update interval must be valid")
+        })
     }
 
     pub fn get_artist_periodic_scrape_update_interval(&self) -> chrono::Duration {
-        chrono::Duration::from_std(self.artist_periodic_scrape_update_interval).unwrap()
+        chrono::Duration::from_std(self.artist_periodic_scrape_update_interval).unwrap_or_else(
+            |error| {
+                warn!(
+                "Invalid periodic artist scrape update interval {:?}, falling back to default: {}",
+                self.artist_periodic_scrape_update_interval, error
+            );
+                chrono::Duration::from_std(default_artist_periodic_scrape_update_interval())
+                    .expect("default periodic scrape update interval must be valid")
+            },
+        )
     }
 }

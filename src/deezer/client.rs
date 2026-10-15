@@ -1,6 +1,4 @@
-use once_cell::sync::OnceCell;
 use reqwest::{Client, Result};
-use std::sync::Mutex;
 
 use crate::{deezer::SearchMusicsResult, models::DeezerId};
 
@@ -13,35 +11,12 @@ pub struct DeezerClient {
     base_url: String,
 }
 
-static DEEZER: OnceCell<DeezerClient> = OnceCell::new();
-static DEEZER_INITIALIZED: OnceCell<Mutex<bool>> = OnceCell::new();
-
-pub fn get_dz_client() -> &'static DeezerClient {
-    if let Some(c) = DEEZER.get() {
-        return c;
-    }
-
-    let initializing_mutex = DEEZER_INITIALIZED.get_or_init(|| Mutex::new(false));
-
-    let mut initialized = initializing_mutex.lock().unwrap();
-
-    if !*initialized {
-        let client = DeezerClient::new("https://api.deezer.com/".to_string());
-        if DEEZER.set(client).is_ok() {
-            *initialized = true;
-        }
-    }
-
-    drop(initialized);
-    DEEZER.get().unwrap()
-}
-
 impl DeezerClient {
-    pub fn new(base_url: String) -> Self {
-        Self {
-            http_client: Client::builder().gzip(true).build().unwrap(),
+    pub fn new(base_url: String) -> Result<Self> {
+        Ok(Self {
+            http_client: Client::builder().gzip(true).build()?,
             base_url,
-        }
+        })
     }
 
     pub async fn search_music(&self, search: String) -> Result<SearchMusicsResult> {

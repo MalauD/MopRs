@@ -21,8 +21,12 @@ impl S3Client {
             endpoint: s3_config.s3_url.clone(),
         };
 
-        let credentials = Credentials::from_env_specific(None, None, None, None)
-            .map_err(|e| io::Error::new(io::ErrorKind::Other, format!("Failed to load S3 credentials: {e}")))?;
+        let credentials = Credentials::from_env_specific(None, None, None, None).map_err(|e| {
+            io::Error::new(
+                io::ErrorKind::Other,
+                format!("Failed to load S3 credentials: {e}"),
+            )
+        })?;
 
         let bucket = match Bucket::create_with_path_style(
             &s3_config.s3_bucket,
@@ -37,10 +41,18 @@ impl S3Client {
                 &s3_config.s3_bucket,
                 region,
                 Credentials::from_env_specific(None, None, None, None).map_err(|e| {
-                    io::Error::new(io::ErrorKind::Other, format!("Failed to load S3 credentials: {e}"))
+                    io::Error::new(
+                        io::ErrorKind::Other,
+                        format!("Failed to load S3 credentials: {e}"),
+                    )
                 })?,
             )
-            .map_err(|e| io::Error::new(io::ErrorKind::Other, format!("Failed to open S3 bucket: {e}")))?
+            .map_err(|e| {
+                io::Error::new(
+                    io::ErrorKind::Other,
+                    format!("Failed to open S3 bucket: {e}"),
+                )
+            })?
             .with_path_style(),
             Err(e) => {
                 return Err(io::Error::new(
@@ -65,7 +77,9 @@ impl S3Client {
         start: Option<u64>,
     ) -> Result<(Vec<u8>, DeezerMusicFormats, u64), S3Error> {
         let bucket = self.get_bucket();
-        let (res, _) = bucket.list_page(id.to_string(), None, None, None, None).await?;
+        let (res, _) = bucket
+            .list_page(id.to_string(), None, None, None, None)
+            .await?;
         let mut best_allowed_format = Option::None;
         let mut best_allowed_format_obj_size = 0;
         let mut best_allowed_format_obj_key = String::new();
@@ -84,16 +98,14 @@ impl S3Client {
             if !allowed_formats.contains(&format) {
                 continue;
             }
-            if best_allowed_format.is_none() || best_allowed_format.unwrap() < format {
+            if best_allowed_format.map_or(true, |best| best < format) {
                 best_allowed_format = Some(format);
                 best_allowed_format_obj_key = r.key;
                 best_allowed_format_obj_size = r.size;
             }
         }
 
-        if best_allowed_format.is_none() {
-            return Err(S3Error::HttpFail);
-        }
+        let best_allowed_format = best_allowed_format.ok_or(S3Error::HttpFail)?;
 
         let res = bucket
             .get_object_range(best_allowed_format_obj_key, start.unwrap_or(0), None)
@@ -101,7 +113,7 @@ impl S3Client {
 
         Ok((
             res.bytes().to_vec(),
-            best_allowed_format.unwrap(),
+            best_allowed_format,
             best_allowed_format_obj_size,
         ))
     }
@@ -132,21 +144,19 @@ impl S3Client {
             if !allowed_formats.contains(&format) {
                 continue;
             }
-            if best_allowed_format.is_none() || best_allowed_format.unwrap() < format {
+            if best_allowed_format.map_or(true, |best| best < format) {
                 best_allowed_format = Some(format);
                 best_allowed_format_obj_key = r.key;
             }
         }
 
-        if best_allowed_format.is_none() {
-            return Err(S3Error::HttpFail);
-        }
+        let best_allowed_format = best_allowed_format.ok_or(S3Error::HttpFail)?;
 
         let res = self
             .bucket
             .get_object_stream(best_allowed_format_obj_key)
             .await?;
-        Ok((res, best_allowed_format.unwrap()))
+        Ok((res, best_allowed_format))
     }
 
     pub async fn upload_music(

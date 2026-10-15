@@ -2,9 +2,9 @@ use crate::{
     actors::{ArtistScraperActor, ArtistScraperMessage},
     app_settings::AppSettings,
     db::MongoClient,
-    deezer::get_dz_client,
+    deezer::DeezerClient,
     models::{Album, Artist, DeezerId, PopulatedArtist},
-    search::get_meilisearch,
+    search::MeilisearchClient,
 };
 use actix::Addr;
 use actix_web::{web, HttpResponse};
@@ -15,14 +15,16 @@ use super::{index_artist_top_tracks, MusicResponse};
 pub async fn get_artist(
     req: web::Path<DeezerId>,
     db: web::Data<MongoClient>,
+    dz: web::Data<DeezerClient>,
+    search: web::Data<MeilisearchClient>,
     config: web::Data<AppSettings>,
     scraper: web::Data<Addr<ArtistScraperActor>>,
 ) -> MusicResponse {
-    let dz = get_dz_client();
-    let search = get_meilisearch(None).await;
     let config = config.get_ref();
 
-    let mut compl_artist = db.get_artist(&req).await?.unwrap();
+    let Some(mut compl_artist) = db.get_artist(&req).await? else {
+        return Ok(HttpResponse::NotFound().finish());
+    };
     let mut pop_artist = PopulatedArtist::from(compl_artist.clone());
 
     if compl_artist.should_update(config.get_artist_update_interval()) {
@@ -61,9 +63,17 @@ pub async fn get_artist(
             )
             .await;
 
-        let tracks = index_artist_top_tracks(db.get_ref(), &top_tracks, &req)
-            .await
-            .unwrap();
+        let tracks = match index_artist_top_tracks(
+            db.get_ref(),
+            search.get_ref(),
+            &top_tracks,
+            &req,
+        )
+        .await
+        {
+            Ok(tracks) => tracks,
+            Err(_) => return Ok(HttpResponse::InternalServerError().finish()),
+        };
         db.set_top_tracks(
             &req,
             &tracks.clone().into_iter().map(|x| x.id).collect_vec(),
@@ -73,21 +83,21 @@ pub async fn get_artist(
         compl_artist.related_artists = Some(rel_artists.into_iter().map(|x| x.id).collect_vec());
     };
 
-    let albums_of_artist = db
-        .get_albums(compl_artist.albums.as_ref().unwrap())
-        .await?
-        .unwrap();
+    let albums_of_artist = match compl_artist.albums.as_ref() {
+        Some(album_ids) => db.get_albums(album_ids).await?.unwrap_or_default(),
+        None => Vec::new(),
+    };
 
     pop_artist.albums = Some(albums_of_artist);
 
     let top_tracks = db
         .get_musics(&compl_artist.top_tracks.unwrap_or_default())
         .await?
-        .unwrap();
+        .unwrap_or_default();
     let related = db
         .get_artists(&compl_artist.related_artists.unwrap_or_default())
         .await?
-        .unwrap();
+        .unwrap_or_default();
 
     for rel in related.clone() {
         scraper.do_send(ArtistScraperMessage(rel));

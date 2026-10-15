@@ -4,8 +4,9 @@ use actix_web::{web, HttpResponse};
 use crate::{
     actors::ArtistScraperActor,
     db::{MongoClient, PaginationOptions},
-    deezer::{get_dz_client, SearchMusicsResult},
+    deezer::{DeezerClient, SearchMusicsResult},
     models::{Chart, DeezerId},
+    search::MeilisearchClient,
 };
 
 use super::{index_search_musics_result, IndexType, MusicResponse};
@@ -13,10 +14,10 @@ use super::{index_search_musics_result, IndexType, MusicResponse};
 pub async fn trending_musics(
     pagination: web::Query<PaginationOptions>,
     db: web::Data<MongoClient>,
+    dz: web::Data<DeezerClient>,
+    search: web::Data<MeilisearchClient>,
     scraper: web::Data<Addr<ArtistScraperActor>>,
 ) -> MusicResponse {
-    let dz = get_dz_client();
-
     let charts = db.get_chart_today().await?;
     let charts = match charts {
         Some(c) => c,
@@ -24,6 +25,7 @@ pub async fn trending_musics(
             let chart = dz.get_most_popular().await?;
             let _ = index_search_musics_result(
                 db.get_ref(),
+                search.get_ref(),
                 &SearchMusicsResult {
                     data: chart.clone().tracks.data,
                     next: None,

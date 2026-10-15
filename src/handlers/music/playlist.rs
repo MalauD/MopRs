@@ -7,14 +7,19 @@ use serde_json::json;
 use crate::{
     actors::ArtistScraperActor,
     db::MongoClient,
-    deezer::get_dz_client,
+    deezer::DeezerClient,
     models::{DeezerId, PopulatedPlaylist, User},
+    search::MeilisearchClient,
 };
 
 use super::{index_search_musics_result, IndexType, MusicResponse};
 
 fn parse_playlist_id(req: &web::Path<String>) -> Option<ObjectId> {
     ObjectId::parse_str(&**req).ok()
+}
+
+fn current_user_id(user: &User) -> Option<ObjectId> {
+    user.id()
 }
 
 pub async fn get_playlist(
@@ -25,19 +30,23 @@ pub async fn get_playlist(
     let Some(playlist_id) = parse_playlist_id(&req) else {
         return Ok(HttpResponse::BadRequest().finish());
     };
-    let playlist = db
-        .get_playlist(&playlist_id)
-        .await?;
-    if playlist.is_none() {
+    let Some(request_user_id) = current_user_id(&user) else {
+        return Ok(HttpResponse::Unauthorized().finish());
+    };
+    let Some(playlist) = db.get_playlist(&playlist_id).await? else {
         return Ok(HttpResponse::NotFound().finish());
-    }
-    let playlist = playlist.unwrap();
-    if !playlist.is_authorized_read(&user.id().unwrap()) {
+    };
+    if !playlist.is_authorized_read(&request_user_id) {
         return Ok(HttpResponse::Unauthorized().finish());
     }
 
-    let musics = db.get_musics(playlist.musics.as_ref().unwrap()).await?;
-    let user = db.get_user_public(&playlist.creator()).await?.unwrap();
+    let musics = match playlist.musics.as_ref() {
+        Some(musics) => db.get_musics(musics).await?,
+        None => None,
+    };
+    let Some(user) = db.get_user_public(&playlist.creator()).await? else {
+        return Ok(HttpResponse::NotFound().finish());
+    };
     let mut playlist_pop = PopulatedPlaylist::from_playlist(playlist, user);
     playlist_pop.musics = musics;
     Ok(HttpResponse::Ok().json(playlist_pop))
@@ -57,17 +66,16 @@ pub async fn add_music_playlist(
     let Some(playlist_id) = parse_playlist_id(&req) else {
         return Ok(HttpResponse::BadRequest().finish());
     };
-    let playlist = db
-        .get_playlist(&playlist_id)
-        .await?;
-    if playlist.is_none() {
+    let Some(request_user_id) = current_user_id(&user) else {
+        return Ok(HttpResponse::Unauthorized().finish());
+    };
+    let Some(playlist) = db.get_playlist(&playlist_id).await? else {
         return Ok(HttpResponse::NotFound().finish());
-    }
-    let playlist = playlist.unwrap();
-    if !playlist.is_authorized_write(&user.id().unwrap()) {
+    };
+    if !playlist.is_authorized_write(&request_user_id) {
         return Ok(HttpResponse::Unauthorized().finish());
     }
-    let _ = db.add_musics_playlist(playlist.id, &pl.musics).await;
+    db.add_musics_playlist(playlist.id, &pl.musics).await?;
     Ok(HttpResponse::Ok().finish())
 }
 
@@ -80,17 +88,16 @@ pub async fn edit_music_playlist(
     let Some(playlist_id) = parse_playlist_id(&req) else {
         return Ok(HttpResponse::BadRequest().finish());
     };
-    let playlist = db
-        .get_playlist(&playlist_id)
-        .await?;
-    if playlist.is_none() {
+    let Some(request_user_id) = current_user_id(&user) else {
+        return Ok(HttpResponse::Unauthorized().finish());
+    };
+    let Some(playlist) = db.get_playlist(&playlist_id).await? else {
         return Ok(HttpResponse::NotFound().finish());
-    }
-    let playlist = playlist.unwrap();
-    if !playlist.is_authorized_write(&user.id().unwrap()) {
+    };
+    if !playlist.is_authorized_write(&request_user_id) {
         return Ok(HttpResponse::Unauthorized().finish());
     }
-    let _ = db.edit_musics_playlist(playlist.id, &pl.musics).await;
+    db.edit_musics_playlist(playlist.id, &pl.musics).await?;
     Ok(HttpResponse::Ok().finish())
 }
 
@@ -111,23 +118,21 @@ pub async fn edit_playlist(
     let Some(playlist_id) = parse_playlist_id(&req) else {
         return Ok(HttpResponse::BadRequest().finish());
     };
-    let playlist = db
-        .get_playlist(&playlist_id)
-        .await?;
-    if playlist.is_none() {
+    let Some(request_user_id) = current_user_id(&user) else {
+        return Ok(HttpResponse::Unauthorized().finish());
+    };
+    let Some(playlist) = db.get_playlist(&playlist_id).await? else {
         return Ok(HttpResponse::NotFound().finish());
-    }
-    let playlist = playlist.unwrap();
-    if !playlist.is_authorized_write(&user.id().unwrap()) {
+    };
+    if !playlist.is_authorized_write(&request_user_id) {
         return Ok(HttpResponse::Unauthorized().finish());
     }
-    let _ = db
-        .edit_playlist(
-            playlist.id,
-            pl.name.clone().unwrap_or(playlist.name().to_owned()),
-            pl.is_public.unwrap_or(playlist.public()),
-        )
-        .await;
+    db.edit_playlist(
+        playlist.id,
+        pl.name.clone().unwrap_or(playlist.name().to_owned()),
+        pl.is_public.unwrap_or(playlist.public()),
+    )
+    .await?;
     Ok(HttpResponse::Ok().finish())
 }
 
@@ -146,17 +151,16 @@ pub async fn remove_music_playlist(
     let Some(playlist_id) = parse_playlist_id(&req) else {
         return Ok(HttpResponse::BadRequest().finish());
     };
-    let playlist = db
-        .get_playlist(&playlist_id)
-        .await?;
-    if playlist.is_none() {
+    let Some(request_user_id) = current_user_id(&user) else {
+        return Ok(HttpResponse::Unauthorized().finish());
+    };
+    let Some(playlist) = db.get_playlist(&playlist_id).await? else {
         return Ok(HttpResponse::NotFound().finish());
-    }
-    let playlist = playlist.unwrap();
-    if !playlist.is_authorized_write(&user.id().unwrap()) {
+    };
+    if !playlist.is_authorized_write(&request_user_id) {
         return Ok(HttpResponse::Unauthorized().finish());
     }
-    let _ = db.remove_music_playlist(playlist.id, pl.at_index).await;
+    db.remove_music_playlist(playlist.id, pl.at_index).await?;
     Ok(HttpResponse::Ok().finish())
 }
 
@@ -195,19 +199,24 @@ pub async fn create_playlist_deezer(
     user: User,
     pl: web::Json<CreatePlaylistDeezerBody>,
     db: web::Data<MongoClient>,
+    dz: web::Data<DeezerClient>,
+    search: web::Data<MeilisearchClient>,
     scraper: web::Data<Addr<ArtistScraperActor>>,
 ) -> MusicResponse {
-    let dz = get_dz_client();
-
     let music_dz_ids = dz.get_playlist_musics(&pl.deezer_id).await?;
 
-    let musics: Vec<DeezerId> =
-        index_search_musics_result(db.get_ref(), &music_dz_ids, scraper.get_ref(), IndexType::None)
-            .await
-            .unwrap()
-            .into_iter()
-            .map(|m| m.id)
-            .collect();
+    let musics: Vec<DeezerId> = match index_search_musics_result(
+        db.get_ref(),
+        search.get_ref(),
+        &music_dz_ids,
+        scraper.get_ref(),
+        IndexType::None,
+    )
+    .await
+    {
+        Ok(musics) => musics.into_iter().map(|m| m.id).collect(),
+        Err(_) => return Ok(HttpResponse::InternalServerError().finish()),
+    };
 
     let id = db
         .create_playlist(pl.name.clone(), &musics, pl.is_public, &user)
@@ -223,14 +232,13 @@ pub async fn delete_playlist(
     let Some(playlist_id) = parse_playlist_id(&req) else {
         return Ok(HttpResponse::BadRequest().finish());
     };
-    let playlist = db
-        .get_playlist(&playlist_id)
-        .await?;
-    if playlist.is_none() {
+    let Some(request_user_id) = current_user_id(&user) else {
+        return Ok(HttpResponse::Unauthorized().finish());
+    };
+    let Some(playlist) = db.get_playlist(&playlist_id).await? else {
         return Ok(HttpResponse::NotFound().finish());
-    }
-    let playlist = playlist.unwrap();
-    if !playlist.is_authorized_write(&user.id().unwrap()) {
+    };
+    if !playlist.is_authorized_write(&request_user_id) {
         return Ok(HttpResponse::Unauthorized().finish());
     }
     db.remove_playlist(&playlist.id).await?;

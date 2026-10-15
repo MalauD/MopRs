@@ -1,5 +1,6 @@
 use crate::db::MongoClient;
 use crate::models::DeezerId;
+use log::warn;
 use rand::seq::SliceRandom;
 use rand::thread_rng;
 
@@ -10,7 +11,17 @@ pub async fn get_related_to(
     related_artist_music_ratio: f32,
     limit: i32,
 ) -> Vec<DeezerId> {
-    let base_musics = db.get_musics(base_music_ids).await.unwrap().unwrap();
+    let base_musics = match db.get_musics(base_music_ids).await {
+        Ok(Some(musics)) => musics,
+        Ok(None) => return Vec::new(),
+        Err(error) => {
+            warn!(
+                "Failed to load base musics for related suggestions: {}",
+                error
+            );
+            return Vec::new();
+        }
+    };
     let base_musics_artists = db
         .get_artists_by_name(
             &base_musics
@@ -18,9 +29,18 @@ pub async fn get_related_to(
                 .map(|m| m.artist_name.clone())
                 .collect::<Vec<_>>(),
         )
-        .await
-        .unwrap()
-        .unwrap();
+        .await;
+    let base_musics_artists = match base_musics_artists {
+        Ok(Some(artists)) => artists,
+        Ok(None) => return Vec::new(),
+        Err(error) => {
+            warn!(
+                "Failed to load base artists for related suggestions: {}",
+                error
+            );
+            return Vec::new();
+        }
+    };
 
     let related_artists = db
         .get_artists(
@@ -29,9 +49,15 @@ pub async fn get_related_to(
                 .flat_map(|a| a.related_artists.clone().unwrap_or_default())
                 .collect::<Vec<_>>(),
         )
-        .await
-        .unwrap_or_default()
-        .unwrap();
+        .await;
+    let related_artists = match related_artists {
+        Ok(Some(artists)) => artists,
+        Ok(None) => Vec::new(),
+        Err(error) => {
+            warn!("Failed to load related artists for suggestions: {}", error);
+            Vec::new()
+        }
+    };
 
     let mut related_musics = Vec::new();
     for artist in base_musics_artists {

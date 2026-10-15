@@ -1,39 +1,66 @@
-use crate::deezer::get_dz_client;
 use crate::handlers::index_artist_top_tracks;
-use crate::search::get_meilisearch;
 use crate::tools::MusicError;
-use crate::{app_settings::AppSettings, db::MongoClient, models::Artist};
+use crate::{
+    app_settings::AppSettings, db::MongoClient, deezer::DeezerClient, models::Artist,
+    search::MeilisearchClient,
+};
 use actix::clock::sleep;
 use actix::{Actor, AsyncContext, Context, Handler, Message, WrapFuture};
 use actix_web::web::Data;
 use chrono::Duration;
 use itertools::Itertools;
-use log::info;
+use log::{info, warn};
 
 pub struct ArtistScraperActor {
     db: Data<MongoClient>,
+    search: Data<MeilisearchClient>,
+    deezer: Data<DeezerClient>,
     config: AppSettings,
 }
 
 impl ArtistScraperActor {
-    pub fn new(db: Data<MongoClient>, config: AppSettings) -> Self {
-        Self { db, config }
+    pub fn new(
+        db: Data<MongoClient>,
+        search: Data<MeilisearchClient>,
+        deezer: Data<DeezerClient>,
+        config: AppSettings,
+    ) -> Self {
+        Self {
+            db,
+            search,
+            deezer,
+            config,
+        }
     }
 
     async fn scrape_artist(
         db: &MongoClient,
+        search: &MeilisearchClient,
+        dz: &DeezerClient,
         artist: Artist,
         interval: Duration,
         cooldown: std::time::Duration,
     ) {
         if artist.should_update(interval) {
             info!("Scraping artist: {}", artist.name);
-            let mut compl_artist = artist.clone();
-            let search = get_meilisearch(None).await;
-            let dz = get_dz_client();
 
-            let related = dz.get_related_artists(&artist.id).await.unwrap();
-            let top_tracks = dz.get_artist_top_tracks(&artist.id).await.unwrap();
+            let related = match dz.get_related_artists(&artist.id).await {
+                Ok(related) => related,
+                Err(error) => {
+                    warn!(
+                        "Failed to fetch related artists for {}: {}",
+                        artist.id, error
+                    );
+                    return;
+                }
+            };
+            let top_tracks = match dz.get_artist_top_tracks(&artist.id).await {
+                Ok(top_tracks) => top_tracks,
+                Err(error) => {
+                    warn!("Failed to fetch top tracks for {}: {}", artist.id, error);
+                    return;
+                }
+            };
 
             let rel_artists: Vec<Artist> = related
                 .data
@@ -51,18 +78,23 @@ impl ArtistScraperActor {
                 )
                 .await;
 
-            let tracks = index_artist_top_tracks(db, &top_tracks, &artist.id)
+            let tracks = match index_artist_top_tracks(db, search, &top_tracks, &artist.id).await {
+                Ok(tracks) => tracks,
+                Err(error) => {
+                    warn!("Failed to index top tracks for {}: {}", artist.id, error);
+                    return;
+                }
+            };
+            if let Err(error) = db
+                .set_top_tracks(
+                    &artist.id,
+                    &tracks.iter().map(|track| track.id).collect_vec(),
+                )
                 .await
-                .unwrap();
-            db.set_top_tracks(
-                &artist.id,
-                &tracks.iter().map(|track| track.id).collect_vec(),
-            )
-            .await
-            .unwrap();
-            compl_artist.top_tracks = Some(tracks.into_iter().map(|x| x.id).collect_vec());
-            compl_artist.related_artists =
-                Some(rel_artists.into_iter().map(|x| x.id).collect_vec());
+            {
+                warn!("Failed to persist top tracks for {}: {}", artist.id, error);
+                return;
+            }
             sleep(cooldown).await;
         }
     }
@@ -77,12 +109,20 @@ impl Actor for ArtistScraperActor {
         ctx.run_interval(scrape_check_interval, |act, ctx| {
             info!("Starting periodic artist scraping");
             let db = act.db.clone();
+            let search = act.search.clone();
+            let deezer = act.deezer.clone();
             let config = act.config.clone();
             let fut = Box::pin(async move {
-                let artists = db
+                let artists = match db
                     .get_outdated_artist(config.get_artist_periodic_scrape_update_interval())
                     .await
-                    .unwrap();
+                {
+                    Ok(artists) => artists,
+                    Err(error) => {
+                        warn!("Failed to list outdated artists: {}", error);
+                        return;
+                    }
+                };
                 info!(
                     "Periodic artist scraping: {} artists to scrape",
                     artists.len()
@@ -90,6 +130,8 @@ impl Actor for ArtistScraperActor {
                 for artist in artists {
                     ArtistScraperActor::scrape_artist(
                         db.get_ref(),
+                        search.get_ref(),
+                        deezer.get_ref(),
                         artist,
                         config.get_artist_scrape_update_interval(),
                         config.artist_scrape_cooldown,
@@ -114,11 +156,15 @@ impl Handler<ArtistScraperMessage> for ArtistScraperActor {
     fn handle(&mut self, msg: ArtistScraperMessage, ctx: &mut Self::Context) -> Self::Result {
         let ArtistScraperMessage(artist) = msg;
         let db = self.db.clone();
+        let search = self.search.clone();
+        let deezer = self.deezer.clone();
         let config = self.config.clone();
 
         let fut = Box::pin(async move {
             ArtistScraperActor::scrape_artist(
                 db.get_ref(),
+                search.get_ref(),
+                deezer.get_ref(),
                 artist,
                 config.get_artist_scrape_update_interval(),
                 config.artist_scrape_cooldown,

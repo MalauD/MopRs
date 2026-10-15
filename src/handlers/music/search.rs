@@ -1,9 +1,9 @@
 use crate::{
     actors::ArtistScraperActor,
     db::{MongoClient, PaginationOptions},
-    deezer::get_dz_client,
+    deezer::DeezerClient,
     models::{PopulatedPlaylist, User},
-    search::get_meilisearch,
+    search::MeilisearchClient,
 };
 use actix::Addr;
 use actix_web::{web, HttpResponse};
@@ -22,11 +22,10 @@ pub async fn search_music(
     pagination: web::Query<PaginationOptions>,
     search_opt: web::Query<SearchOption>,
     db: web::Data<MongoClient>,
+    dz: web::Data<DeezerClient>,
+    search: web::Data<MeilisearchClient>,
     scraper: web::Data<Addr<ArtistScraperActor>>,
 ) -> MusicResponse {
-    let search = get_meilisearch(None).await;
-    let dz = get_dz_client();
-
     if let Some(true) = search_opt.no_index {
         let musics = search
             .search_musics(req.into_inner(), pagination.into_inner())
@@ -36,8 +35,14 @@ pub async fn search_music(
 
     if pagination.get_page() == 0 {
         let res = dz.search_music(req.clone()).await?;
-        let _ = index_search_musics_result(db.get_ref(), &res, scraper.get_ref(), IndexType::Music)
-            .await;
+        let _ = index_search_musics_result(
+            db.get_ref(),
+            search.get_ref(),
+            &res,
+            scraper.get_ref(),
+            IndexType::Music,
+        )
+        .await;
         //musics.group_by()
     }
     let musics = search
@@ -49,9 +54,8 @@ pub async fn search_music(
 pub async fn search_album(
     req: web::Path<String>,
     pagination: web::Query<PaginationOptions>,
+    search: web::Data<MeilisearchClient>,
 ) -> MusicResponse {
-    let search = get_meilisearch(None).await;
-    let _dz = get_dz_client();
     /*
     if pagination.get_page() == 0 {}
         let res = dz.search_music(req.clone()).await?;
@@ -67,10 +71,8 @@ pub async fn search_album(
 pub async fn search_artist(
     req: web::Path<String>,
     pagination: web::Query<PaginationOptions>,
+    search: web::Data<MeilisearchClient>,
 ) -> MusicResponse {
-    let search = get_meilisearch(None).await;
-    let _dz = get_dz_client();
-
     /*
     if pagination.get_page() == 0 {
         let res = dz.search_music(req.clone()).await?;
@@ -93,12 +95,18 @@ pub async fn search_playlist(
         .search_playlist(req.into_inner(), &pagination)
         .await?
         .unwrap_or_default();
+    let Some(request_user_id) = user.id() else {
+        return Ok(HttpResponse::Unauthorized().finish());
+    };
 
     let mut pop_playlists: Vec<PopulatedPlaylist> = Vec::with_capacity(playlists.len());
     for playlist in playlists.iter().cloned() {
-        if playlist.is_authorized_read(&user.clone().id().unwrap()) {
+        if playlist.is_authorized_read(&request_user_id) {
             //Something else might be faster
-            let musics = db.get_musics(playlist.musics.as_ref().unwrap()).await?;
+            let musics = match playlist.musics.as_ref() {
+                Some(musics) => db.get_musics(musics).await?,
+                None => None,
+            };
             //TODO add correct user..
             let mut playlist_pop = PopulatedPlaylist::from_playlist(playlist, user.clone().into());
             playlist_pop.musics = musics;

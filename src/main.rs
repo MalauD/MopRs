@@ -19,10 +19,11 @@ use crate::{
     actors::{ArtistScraperActor, DownloaderActor},
     app_settings::AppSettings,
     db::MongoClient,
-    deezer::get_dz_downloader,
+    deezer::{DeezerClient, DeezerDownloader},
     s3::S3Client,
-    search::{get_meilisearch, MeilisearchConfig},
+    search::{MeilisearchClient, MeilisearchConfig},
 };
+use tokio::sync::RwLock;
 
 mod actors;
 mod app_settings;
@@ -49,7 +50,12 @@ fn build_redis_connection_string(config: &AppSettings) -> io::Result<String> {
         "redis://{}:{}/",
         config.redis_service_host, config.redis_service_port,
     ))
-    .map_err(|e| io::Error::new(io::ErrorKind::InvalidInput, format!("Invalid Redis URL: {e}")))?;
+    .map_err(|e| {
+        io::Error::new(
+            io::ErrorKind::InvalidInput,
+            format!("Invalid Redis URL: {e}"),
+        )
+    })?;
 
     if let Some(username) = &config.redis_username {
         url.set_username(username).map_err(|_| {
@@ -80,7 +86,12 @@ async fn main() -> std::io::Result<()> {
     info!(target:"mop-rs::main","Starting MopRs");
     const PORT: i32 = 8080;
 
-    let config: AppSettings = envy::from_env().unwrap();
+    let config: AppSettings = envy::from_env().map_err(|e| {
+        io::Error::new(
+            io::ErrorKind::InvalidInput,
+            format!("Failed to load application settings from environment: {e}"),
+        )
+    })?;
     let app_config = Data::new(config.clone());
 
     let secret_key = if let Some(key) = config.session_key.clone() {
@@ -89,7 +100,15 @@ async fn main() -> std::io::Result<()> {
         Key::generate()
     };
 
-    let mut d = get_dz_downloader(Some(config.arl.clone())).write().unwrap();
+    let downloader = Data::new(RwLock::new(
+        DeezerDownloader::new(config.arl.clone()).map_err(|e| {
+            io::Error::new(
+                io::ErrorKind::Other,
+                format!("Failed to initialize Deezer downloader: {e}"),
+            )
+        })?,
+    ));
+    let mut d = downloader.write().await;
     if let Err(e) = d.authenticate().await {
         warn!("Failed to authenticate to Deezer: {}", e);
     } else {
@@ -102,40 +121,79 @@ async fn main() -> std::io::Result<()> {
 
     let redis_store = RedisSessionStore::new(redis_connection_string)
         .await
-        .unwrap();
+        .map_err(|e| {
+            io::Error::new(
+                io::ErrorKind::Other,
+                format!("Failed to connect to Redis: {e}"),
+            )
+        })?;
 
     info!(target:"mop-rs::redis","Connected to redis");
 
-    let _ = get_meilisearch(Some(MeilisearchConfig::new(
-        config.meilisearch_host.clone(),
-        config.meilisearch_api_key.clone(),
-    )))
-    .await;
-
-    let db = Data::new(
-        MongoClient::connect(&config.mongo_url)
-            .await
-            .map_err(|e| io::Error::new(io::ErrorKind::Other, format!("Failed to connect to MongoDB: {e}")))?,
+    let search = Data::new(
+        MeilisearchClient::connect(MeilisearchConfig::new(
+            config.meilisearch_host.clone(),
+            config.meilisearch_api_key.clone(),
+        ))
+        .await
+        .map_err(|e| {
+            io::Error::new(
+                io::ErrorKind::Other,
+                format!("Failed to initialize Meilisearch: {e}"),
+            )
+        })?,
     );
+
+    let deezer_client = Data::new(
+        DeezerClient::new("https://api.deezer.com/".to_string()).map_err(|e| {
+            io::Error::new(
+                io::ErrorKind::Other,
+                format!("Failed to initialize Deezer client: {e}"),
+            )
+        })?,
+    );
+
+    let db = Data::new(MongoClient::connect(&config.mongo_url).await.map_err(|e| {
+        io::Error::new(
+            io::ErrorKind::Other,
+            format!("Failed to connect to MongoDB: {e}"),
+        )
+    })?);
     db.initialize_indexes().await;
 
-    let s3 = Data::new(S3Client::connect(&s3::S3Config {
-        s3_url: config.s3_url.clone(),
-        s3_region: config.s3_region.clone(),
-        s3_bucket: config.s3_bucket.clone(),
-    })
-    .await?);
+    let s3 = Data::new(
+        S3Client::connect(&s3::S3Config {
+            s3_url: config.s3_url.clone(),
+            s3_region: config.s3_region.clone(),
+            s3_bucket: config.s3_bucket.clone(),
+        })
+        .await?,
+    );
 
-    let c = db.get_musics_count().await.unwrap();
+    let c = db.get_musics_count().await.map_err(|e| {
+        io::Error::new(io::ErrorKind::Other, format!("Failed to count musics: {e}"))
+    })?;
     info!(target:"mop-rs::mongo","{} musics in database", c);
 
     let prometheus = PrometheusMetricsBuilder::new("api")
         .endpoint("/metrics")
         .build()
-        .unwrap();
+        .map_err(|e| {
+            io::Error::new(
+                io::ErrorKind::Other,
+                format!("Failed to initialize Prometheus metrics: {e}"),
+            )
+        })?;
 
-    let addr = ArtistScraperActor::new(db.clone(), config.clone()).start();
-    let downloader_addr = DownloaderActor::new(s3.clone(), config.clone()).start();
+    let addr = ArtistScraperActor::new(
+        db.clone(),
+        search.clone(),
+        deezer_client.clone(),
+        config.clone(),
+    )
+    .start();
+    let downloader_addr =
+        DownloaderActor::new(s3.clone(), downloader.clone(), config.clone()).start();
     let session_ttl = config.get_session_duration();
 
     HttpServer::new(move || {
@@ -144,6 +202,9 @@ async fn main() -> std::io::Result<()> {
             .wrap(prometheus.clone())
             .app_data(app_config.clone())
             .app_data(db.clone())
+            .app_data(search.clone())
+            .app_data(deezer_client.clone())
+            .app_data(downloader.clone())
             .app_data(s3.clone())
             .app_data(Data::new(addr.clone()))
             .app_data(Data::new(downloader_addr.clone()))

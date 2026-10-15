@@ -1,7 +1,7 @@
 use crate::{
     actors::{DownloadSongMessage, DownloaderActor},
     db::MongoClient,
-    deezer::{get_dz_client, get_dz_downloader, DeezerMusicFormats},
+    deezer::{DeezerClient, DeezerDownloader, DeezerMusicFormats},
     models::{DeezerId, User},
     s3::S3Client,
     tools::MusicError,
@@ -19,6 +19,7 @@ use id3::{
 use log::debug;
 use serde::Deserialize;
 use std::{convert::TryInto, iter::FromIterator, str::FromStr};
+use tokio::sync::RwLock;
 
 #[derive(Debug, Deserialize)]
 pub struct MusicFormat {
@@ -31,12 +32,12 @@ pub async fn get_music_audio(
     httpreq: HttpRequest,
     query: web::Query<MusicFormat>,
     db: web::Data<MongoClient>,
+    downloader: web::Data<RwLock<DeezerDownloader>>,
     s3: web::Data<S3Client>,
     downloader_actor: web::Data<Addr<DownloaderActor>>,
 ) -> actix_web::Result<HttpResponse> {
-    let downloader = get_dz_downloader(None)
-        .read()
-        .map_err(actix_web::error::ErrorInternalServerError)?;
+    let downloader_lock = downloader;
+    let downloader = downloader_lock.read().await;
     let id = req.into_inner();
 
     let formats = query
@@ -70,9 +71,7 @@ pub async fn get_music_audio(
             } else {
                 drop(downloader);
                 debug!(target : "mop-rs::cdn", "Reauthenticating Deezer downloader");
-                let mut downloader = get_dz_downloader(None)
-                    .write()
-                    .map_err(actix_web::error::ErrorInternalServerError)?;
+                let mut downloader = downloader_lock.write().await;
                 downloader
                     .authenticate()
                     .await
@@ -163,11 +162,12 @@ pub async fn get_music_tagged(
     user: User,
     query: web::Query<MusicFormat>,
     db: web::Data<MongoClient>,
+    dz: web::Data<DeezerClient>,
+    downloader: web::Data<RwLock<DeezerDownloader>>,
     s3: web::Data<S3Client>,
 ) -> actix_web::Result<HttpResponse> {
-    let downloader = get_dz_downloader(None)
-        .read()
-        .map_err(actix_web::error::ErrorInternalServerError)?;
+    let downloader_lock = downloader;
+    let downloader = downloader_lock.read().await;
     let id = req.into_inner();
 
     let formats = query
@@ -186,9 +186,7 @@ pub async fn get_music_tagged(
             d
         } else {
             drop(downloader);
-            let mut downloader = get_dz_downloader(None)
-                .write()
-                .map_err(actix_web::error::ErrorInternalServerError)?;
+            let mut downloader = downloader_lock.write().await;
             downloader
                 .authenticate()
                 .await
@@ -248,7 +246,6 @@ pub async fn get_music_tagged(
         tags.set_disc(disc);
     }
     if let Some(cover_url) = db_music.image_url.clone() {
-        let dz = get_dz_client();
         let data = dz
             .get_cover(&cover_url)
             .await

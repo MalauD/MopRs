@@ -31,8 +31,7 @@ impl MongoClient {
         self._database
             .collection::<Music>("Music")
             .create_index(index, None)
-            .await
-            .unwrap();
+            .await?;
         Ok(())
     }
 
