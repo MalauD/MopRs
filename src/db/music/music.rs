@@ -48,7 +48,7 @@ impl MongoClient {
         Ok(())
     }
 
-    pub async fn get_musics(&self, music_ids: &Vec<DeezerId>) -> Result<Option<Vec<Music>>> {
+    pub async fn get_musics(&self, music_ids: &[DeezerId]) -> Result<Option<Vec<Music>>> {
         let coll = self._database.collection::<Music>("Music");
         let mut cursor = coll.find(doc! {"_id": {"$in": music_ids}}, None).await?;
         let mut result_hash = HashMap::with_capacity(music_ids.len());

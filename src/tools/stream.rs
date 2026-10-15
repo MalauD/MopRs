@@ -11,9 +11,6 @@ pub struct PayloadStream {
     pub payload: web::Payload,
 }
 
-unsafe impl Send for PayloadStream {}
-unsafe impl Sync for PayloadStream {}
-
 impl Stream for PayloadStream {
     type Item = Result<web::Bytes, io::Error>;
 
@@ -64,9 +61,7 @@ where
     fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
         match Pin::new(&mut self.stream).poll_next(cx) {
             Poll::Pending => Poll::Pending,
-            Poll::Ready(Some(Ok(res))) => {
-                Poll::Ready(Some(Ok(unsafe { std::mem::transmute(res) })))
-            }
+            Poll::Ready(Some(Ok(res))) => Poll::Ready(Some(Ok(web::Bytes::from(res)))),
             Poll::Ready(Some(Err(e))) => Poll::Ready(Some(Err(io::Error::new(
                 io::ErrorKind::Other,
                 format!("{:?}", e),

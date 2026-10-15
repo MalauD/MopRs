@@ -6,17 +6,27 @@ use serde_json::json;
 
 use crate::{
     actors::ArtistScraperActor,
-    db::get_mongo,
+    db::MongoClient,
     deezer::get_dz_client,
     models::{DeezerId, PopulatedPlaylist, User},
 };
 
 use super::{index_search_musics_result, IndexType, MusicResponse};
 
-pub async fn get_playlist(req: web::Path<String>, user: User) -> MusicResponse {
-    let db = get_mongo(None).await;
+fn parse_playlist_id(req: &web::Path<String>) -> Option<ObjectId> {
+    ObjectId::parse_str(&**req).ok()
+}
+
+pub async fn get_playlist(
+    req: web::Path<String>,
+    user: User,
+    db: web::Data<MongoClient>,
+) -> MusicResponse {
+    let Some(playlist_id) = parse_playlist_id(&req) else {
+        return Ok(HttpResponse::BadRequest().finish());
+    };
     let playlist = db
-        .get_playlist(&ObjectId::parse_str(&*req).unwrap())
+        .get_playlist(&playlist_id)
         .await?;
     if playlist.is_none() {
         return Ok(HttpResponse::NotFound().finish());
@@ -27,8 +37,8 @@ pub async fn get_playlist(req: web::Path<String>, user: User) -> MusicResponse {
     }
 
     let musics = db.get_musics(playlist.musics.as_ref().unwrap()).await?;
-    let user = db.get_user_public(&playlist.creator()).await.unwrap();
-    let mut playlist_pop = PopulatedPlaylist::from_playlist(playlist, user.unwrap());
+    let user = db.get_user_public(&playlist.creator()).await?.unwrap();
+    let mut playlist_pop = PopulatedPlaylist::from_playlist(playlist, user);
     playlist_pop.musics = musics;
     Ok(HttpResponse::Ok().json(playlist_pop))
 }
@@ -42,10 +52,13 @@ pub async fn add_music_playlist(
     user: User,
     pl: web::Json<AddRemoveMusicBody>,
     req: web::Path<String>,
+    db: web::Data<MongoClient>,
 ) -> MusicResponse {
-    let db = get_mongo(None).await;
+    let Some(playlist_id) = parse_playlist_id(&req) else {
+        return Ok(HttpResponse::BadRequest().finish());
+    };
     let playlist = db
-        .get_playlist(&ObjectId::parse_str(&*req).unwrap())
+        .get_playlist(&playlist_id)
         .await?;
     if playlist.is_none() {
         return Ok(HttpResponse::NotFound().finish());
@@ -62,10 +75,13 @@ pub async fn edit_music_playlist(
     user: User,
     pl: web::Json<AddRemoveMusicBody>,
     req: web::Path<String>,
+    db: web::Data<MongoClient>,
 ) -> MusicResponse {
-    let db = get_mongo(None).await;
+    let Some(playlist_id) = parse_playlist_id(&req) else {
+        return Ok(HttpResponse::BadRequest().finish());
+    };
     let playlist = db
-        .get_playlist(&ObjectId::parse_str(&*req).unwrap())
+        .get_playlist(&playlist_id)
         .await?;
     if playlist.is_none() {
         return Ok(HttpResponse::NotFound().finish());
@@ -90,10 +106,13 @@ pub async fn edit_playlist(
     user: User,
     req: web::Path<String>,
     pl: web::Json<EditPlaylistBody>,
+    db: web::Data<MongoClient>,
 ) -> MusicResponse {
-    let db = get_mongo(None).await;
+    let Some(playlist_id) = parse_playlist_id(&req) else {
+        return Ok(HttpResponse::BadRequest().finish());
+    };
     let playlist = db
-        .get_playlist(&ObjectId::parse_str(&*req).unwrap())
+        .get_playlist(&playlist_id)
         .await?;
     if playlist.is_none() {
         return Ok(HttpResponse::NotFound().finish());
@@ -122,10 +141,13 @@ pub async fn remove_music_playlist(
     user: User,
     pl: web::Json<RemovePlaylistBody>,
     req: web::Path<String>,
+    db: web::Data<MongoClient>,
 ) -> MusicResponse {
-    let db = get_mongo(None).await;
+    let Some(playlist_id) = parse_playlist_id(&req) else {
+        return Ok(HttpResponse::BadRequest().finish());
+    };
     let playlist = db
-        .get_playlist(&ObjectId::parse_str(&*req).unwrap())
+        .get_playlist(&playlist_id)
         .await?;
     if playlist.is_none() {
         return Ok(HttpResponse::NotFound().finish());
@@ -148,8 +170,11 @@ pub struct CreatePlaylistBody {
     pub is_public: bool,
 }
 
-pub async fn create_playlist(user: User, pl: web::Json<CreatePlaylistBody>) -> MusicResponse {
-    let db = get_mongo(None).await;
+pub async fn create_playlist(
+    user: User,
+    pl: web::Json<CreatePlaylistBody>,
+    db: web::Data<MongoClient>,
+) -> MusicResponse {
     let id = db
         .create_playlist(pl.name.clone(), &pl.musics, pl.is_public, &user)
         .await?;
@@ -169,15 +194,15 @@ pub struct CreatePlaylistDeezerBody {
 pub async fn create_playlist_deezer(
     user: User,
     pl: web::Json<CreatePlaylistDeezerBody>,
+    db: web::Data<MongoClient>,
     scraper: web::Data<Addr<ArtistScraperActor>>,
 ) -> MusicResponse {
-    let db = get_mongo(None).await;
     let dz = get_dz_client();
 
     let music_dz_ids = dz.get_playlist_musics(&pl.deezer_id).await?;
 
     let musics: Vec<DeezerId> =
-        index_search_musics_result(&music_dz_ids, scraper.get_ref(), IndexType::None)
+        index_search_musics_result(db.get_ref(), &music_dz_ids, scraper.get_ref(), IndexType::None)
             .await
             .unwrap()
             .into_iter()
@@ -190,10 +215,16 @@ pub async fn create_playlist_deezer(
     Ok(HttpResponse::Ok().json(&json!({ "CreatedPlaylistId": id.to_hex() })))
 }
 
-pub async fn delete_playlist(req: web::Path<String>, user: User) -> MusicResponse {
-    let db = get_mongo(None).await;
+pub async fn delete_playlist(
+    req: web::Path<String>,
+    user: User,
+    db: web::Data<MongoClient>,
+) -> MusicResponse {
+    let Some(playlist_id) = parse_playlist_id(&req) else {
+        return Ok(HttpResponse::BadRequest().finish());
+    };
     let playlist = db
-        .get_playlist(&ObjectId::parse_str(&*req).unwrap())
+        .get_playlist(&playlist_id)
         .await?;
     if playlist.is_none() {
         return Ok(HttpResponse::NotFound().finish());

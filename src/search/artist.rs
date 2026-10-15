@@ -25,12 +25,12 @@ impl From<Artist> for ArtistMeilisearch {
     }
 }
 
-impl Into<Artist> for ArtistMeilisearch {
-    fn into(self) -> Artist {
+impl From<ArtistMeilisearch> for Artist {
+    fn from(artist: ArtistMeilisearch) -> Artist {
         Artist {
-            id: self.id,
-            name: self.name,
-            picture: self.picture,
+            id: artist.id,
+            name: artist.name,
+            picture: artist.picture,
             albums: None,
             top_tracks: None,
             related_artists: None,

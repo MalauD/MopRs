@@ -288,7 +288,7 @@ impl DeezerDownloader {
     async fn get_music_download_url(
         &self,
         music: &DeezerUnofficialMusic,
-        allowed_formats: &Vec<DeezerMusicFormats>,
+        allowed_formats: &[DeezerMusicFormats],
     ) -> Result<DeezerUnofficialMedia> {
         let url = "https://media.deezer.com/v1/get_url";
         let format_sorted: Vec<&DeezerMusicFormats> =
@@ -384,7 +384,7 @@ impl DeezerDownloader {
     pub async fn download_music(
         &self,
         id: DeezerId,
-        allowed_formats: &Vec<DeezerMusicFormats>,
+        allowed_formats: &[DeezerMusicFormats],
     ) -> Result<(Vec<u8>, DeezerMusicFormats)> {
         let music = self.get_music_by_id(id).await?;
         let media = self
@@ -398,7 +398,7 @@ impl DeezerDownloader {
     pub async fn stream_music(
         &self,
         id: DeezerId,
-        allowed_formats: &Vec<DeezerMusicFormats>,
+        allowed_formats: &[DeezerMusicFormats],
         start: Option<u64>,
     ) -> Result<(
         impl futures::stream::Stream<Item = core::result::Result<bytes::Bytes, MusicError>>,

@@ -3,7 +3,7 @@ use itertools::Itertools;
 
 use crate::{
     actors::{ArtistScraperActor, ArtistScraperMessage},
-    db::get_mongo,
+    db::MongoClient,
     deezer,
     models::{Album, Artist, DeezerId, Music},
     search::get_meilisearch,
@@ -17,11 +17,11 @@ pub enum IndexType {
 }
 
 pub async fn index_search_musics_result(
+    db: &MongoClient,
     res: &deezer::SearchMusicsResult,
     artist_scraper_addr: &Addr<ArtistScraperActor>,
     wait_for_search_index: IndexType,
 ) -> Result<Vec<Music>, String> {
-    let db = get_mongo(None).await;
     let search = get_meilisearch(None).await;
 
     let artists: Vec<Artist> = res
@@ -56,16 +56,12 @@ pub async fn index_search_musics_result(
     let _ = db.bulk_insert_albums(album_data).await;
     let _ = db.bulk_insert_artists(&artists).await;
 
-    let musics_s = musics.clone();
-    let lazy_update = async move {
-        for val in musics_s.clone().iter() {
-            let _ = db.append_to_album(&val.1.id, &val.0).await;
-        }
-        for val in albums.clone().iter() {
-            let _ = db.append_to_artist(&val.1.id, &val.0).await;
-        }
-    };
-    actix_rt::spawn(lazy_update);
+    for val in &musics {
+        let _ = db.append_to_album(&val.1.id, &val.0).await;
+    }
+    for val in &albums {
+        let _ = db.append_to_artist(&val.1.id, &val.0).await;
+    }
 
     match wait_for_search_index {
         IndexType::Music => {
@@ -88,10 +84,10 @@ pub async fn index_search_musics_result(
 }
 
 pub async fn index_artist_top_tracks(
+    db: &MongoClient,
     res: &deezer::ArtistTopTracksResult,
     artist_id: &DeezerId,
 ) -> Result<Vec<Music>, String> {
-    let db = get_mongo(None).await;
     let search = get_meilisearch(None).await;
 
     let albums: Vec<(DeezerId, Album)> = res
@@ -113,15 +109,11 @@ pub async fn index_artist_top_tracks(
     let albums_data: Vec<Album> = albums.clone().into_iter().map(|x| x.1).collect();
     let _ = db.bulk_insert_albums(albums_data.clone()).await;
     let _ = search.index_albums(albums_data).await;
-    let musics_s = musics.clone();
-    let lazy_update = async move {
-        for val in musics_s.clone().iter() {
-            let _ = db.append_to_album(&val.1.id, &val.0).await;
-        }
-        for val in albums.clone().iter() {
-            let _ = db.append_to_artist(&val.1.id, &val.0).await;
-        }
-    };
-    actix_rt::spawn(lazy_update);
+    for val in &musics {
+        let _ = db.append_to_album(&val.1.id, &val.0).await;
+    }
+    for val in &albums {
+        let _ = db.append_to_artist(&val.1.id, &val.0).await;
+    }
     Ok(musics.into_iter().map(|x| x.1).collect())
 }

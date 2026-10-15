@@ -25,12 +25,12 @@ impl From<Album> for AlbumMeilisearch {
     }
 }
 
-impl Into<Album> for AlbumMeilisearch {
-    fn into(self) -> Album {
+impl From<AlbumMeilisearch> for Album {
+    fn from(album: AlbumMeilisearch) -> Album {
         Album {
-            id: self.id,
-            name: self.name,
-            cover: self.cover,
+            id: album.id,
+            name: album.name,
+            cover: album.cover,
             is_complete: false,
             musics: None,
         }

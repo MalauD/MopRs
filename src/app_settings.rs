@@ -1,8 +1,6 @@
-use once_cell::sync::OnceCell;
 use serde::Deserialize;
 use serde_with::{serde_as, DurationMilliSeconds, DurationSeconds};
 use std::{convert::TryFrom, time::Duration};
-use tokio::sync::Mutex;
 
 fn default_session_duration() -> Duration {
     Duration::from_secs(3600 * 24 * 7)
@@ -92,27 +90,4 @@ impl AppSettings {
     pub fn get_artist_periodic_scrape_update_interval(&self) -> chrono::Duration {
         chrono::Duration::from_std(self.artist_periodic_scrape_update_interval).unwrap()
     }
-}
-
-static APP_SETTINGS: OnceCell<AppSettings> = OnceCell::new();
-static APP_SETTINGS_INITIALIZED: OnceCell<Mutex<bool>> = OnceCell::new();
-
-pub async fn get_settings(base_settings: Option<AppSettings>) -> &'static AppSettings {
-    if let Some(c) = APP_SETTINGS.get() {
-        return c;
-    }
-    let initializing_mutex =
-        APP_SETTINGS_INITIALIZED.get_or_init(|| tokio::sync::Mutex::new(false));
-
-    let mut initialized = initializing_mutex.lock().await;
-
-    if !*initialized && APP_SETTINGS.set(base_settings.unwrap()).is_ok() {
-        *initialized = true;
-    }
-    drop(initialized);
-    APP_SETTINGS.get().unwrap()
-}
-
-pub fn get_settings_sync() -> &'static AppSettings {
-    APP_SETTINGS.get().unwrap()
 }

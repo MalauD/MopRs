@@ -1,16 +1,24 @@
-use crate::app_settings::get_settings_sync;
+use crate::{app_settings::AppSettings, s3::S3Client};
 use crate::deezer::{get_dz_downloader, DeezerMusicFormats};
 use crate::models::DeezerId;
-use crate::s3::get_s3;
 use crate::tools::MusicError;
 use actix::{Actor, AsyncContext, Context, Handler, Message, WrapFuture};
+use actix_web::web::Data;
 use log::{debug, info};
 use std::time::Duration;
 
-pub struct DownloaderActor;
+pub struct DownloaderActor {
+    s3: Data<S3Client>,
+    config: AppSettings,
+}
 
 impl DownloaderActor {
+    pub fn new(s3: Data<S3Client>, config: AppSettings) -> Self {
+        Self { s3, config }
+    }
+
     async fn download_song(
+        s3: Data<S3Client>,
         id: DeezerId,
         allowed_formats: Vec<DeezerMusicFormats>,
         pre_download_wait: Duration,
@@ -24,7 +32,6 @@ impl DownloaderActor {
                 .await
                 .unwrap();
             debug!(target : "mop-rs::DownloaderActor", "Downloaded music {} from Deezer (format {:?})", id, format);
-            let s3 = get_s3(None).await;
             s3.upload_music(id, format, &song).await.unwrap();
             info!(target : "mop-rs::DownloaderActor", "Uploaded music {} to S3 (format {:?})", id, format);
         });
@@ -59,12 +66,14 @@ impl Handler<DownloadSongMessage> for DownloaderActor {
     type Result = Result<(), MusicError>;
 
     fn handle(&mut self, msg: DownloadSongMessage, ctx: &mut Self::Context) -> Self::Result {
+        let s3 = self.s3.clone();
+        let predownload_wait_time = self.config.predownload_wait_time;
         let fut = Box::pin(async move {
-            let config = get_settings_sync();
             DownloaderActor::download_song(
+                s3,
                 msg.id,
                 msg.allowed_formats,
-                config.predownload_wait_time,
+                predownload_wait_time,
             )
             .await;
         });

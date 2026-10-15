@@ -12,13 +12,15 @@ use actix_web_prom::PrometheusMetricsBuilder;
 use dotenv::dotenv;
 use log::{info, warn};
 use routes::config_music;
+use std::io;
+use url::Url;
 
 use crate::{
     actors::{ArtistScraperActor, DownloaderActor},
-    app_settings::{get_settings, AppSettings},
-    db::get_mongo,
+    app_settings::AppSettings,
+    db::MongoClient,
     deezer::get_dz_downloader,
-    s3::get_s3,
+    s3::S3Client,
     search::{get_meilisearch, MeilisearchConfig},
 };
 
@@ -42,6 +44,34 @@ async fn health(_req: HttpRequest) -> Result<HttpResponse> {
     Ok(HttpResponse::Ok().body("It's alive!"))
 }
 
+fn build_redis_connection_string(config: &AppSettings) -> io::Result<String> {
+    let mut url = Url::parse(&format!(
+        "redis://{}:{}/",
+        config.redis_service_host, config.redis_service_port,
+    ))
+    .map_err(|e| io::Error::new(io::ErrorKind::InvalidInput, format!("Invalid Redis URL: {e}")))?;
+
+    if let Some(username) = &config.redis_username {
+        url.set_username(username).map_err(|_| {
+            io::Error::new(
+                io::ErrorKind::InvalidInput,
+                "Redis username contains unsupported characters",
+            )
+        })?;
+    }
+
+    if let Some(password) = &config.redis_password {
+        url.set_password(Some(password)).map_err(|_| {
+            io::Error::new(
+                io::ErrorKind::InvalidInput,
+                "Redis password contains unsupported characters",
+            )
+        })?;
+    }
+
+    Ok(url.into())
+}
+
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     dotenv().ok();
@@ -51,7 +81,7 @@ async fn main() -> std::io::Result<()> {
     const PORT: i32 = 8080;
 
     let config: AppSettings = envy::from_env().unwrap();
-    let _ = get_settings(Some(config.clone())).await;
+    let app_config = Data::new(config.clone());
 
     let secret_key = if let Some(key) = config.session_key.clone() {
         Key::from(key.as_bytes())
@@ -68,21 +98,7 @@ async fn main() -> std::io::Result<()> {
 
     drop(d);
 
-    let redis_config = config.clone();
-    let redis_connection_string = if let Some(redis_pasword) = redis_config.redis_password {
-        format!(
-            "redis://{}:{}@{}:{}",
-            redis_config.redis_username.unwrap_or("default".to_string()),
-            redis_pasword,
-            redis_config.redis_service_host,
-            redis_config.redis_service_port,
-        )
-    } else {
-        format!(
-            "redis://{}:{}",
-            redis_config.redis_service_host, redis_config.redis_service_port,
-        )
-    };
+    let redis_connection_string = build_redis_connection_string(&config)?;
 
     let redis_store = RedisSessionStore::new(redis_connection_string)
         .await
@@ -96,14 +112,19 @@ async fn main() -> std::io::Result<()> {
     )))
     .await;
 
-    let db = get_mongo(Some(config.mongo_url.clone())).await;
+    let db = Data::new(
+        MongoClient::connect(&config.mongo_url)
+            .await
+            .map_err(|e| io::Error::new(io::ErrorKind::Other, format!("Failed to connect to MongoDB: {e}")))?,
+    );
+    db.initialize_indexes().await;
 
-    let _ = get_s3(Some(s3::S3Config {
+    let s3 = Data::new(S3Client::connect(&s3::S3Config {
         s3_url: config.s3_url.clone(),
         s3_region: config.s3_region.clone(),
         s3_bucket: config.s3_bucket.clone(),
-    }))
-    .await;
+    })
+    .await?);
 
     let c = db.get_musics_count().await.unwrap();
     info!(target:"mop-rs::mongo","{} musics in database", c);
@@ -113,14 +134,17 @@ async fn main() -> std::io::Result<()> {
         .build()
         .unwrap();
 
-    let addr = ArtistScraperActor {}.start();
-    let downloader_addr = DownloaderActor {}.start();
+    let addr = ArtistScraperActor::new(db.clone(), config.clone()).start();
+    let downloader_addr = DownloaderActor::new(s3.clone(), config.clone()).start();
+    let session_ttl = config.get_session_duration();
 
     HttpServer::new(move || {
         App::new()
             .wrap(middleware::Compress::default())
             .wrap(prometheus.clone())
-            .app_data(Data::new(config.clone()))
+            .app_data(app_config.clone())
+            .app_data(db.clone())
+            .app_data(s3.clone())
             .app_data(Data::new(addr.clone()))
             .app_data(Data::new(downloader_addr.clone()))
             .wrap(IdentityMiddleware::default())
@@ -128,9 +152,7 @@ async fn main() -> std::io::Result<()> {
                 SessionMiddleware::builder(redis_store.clone(), secret_key.clone())
                     .cookie_secure(false)
                     .cookie_name("mop-id".to_string())
-                    .session_lifecycle(
-                        PersistentSession::default().session_ttl(config.get_session_duration()),
-                    )
+                    .session_lifecycle(PersistentSession::default().session_ttl(session_ttl))
                     .build(),
             )
             .route("/", web::get().to(index)) // Redirect all react routes to index

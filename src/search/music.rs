@@ -30,20 +30,20 @@ impl From<Music> for MusicMeilisearch {
     }
 }
 
-impl Into<Music> for MusicMeilisearch {
-    fn into(self) -> Music {
+impl From<MusicMeilisearch> for Music {
+    fn from(music: MusicMeilisearch) -> Music {
         Music {
-            id: self.id,
-            title: self.title,
-            artist_name: self.artist_name,
+            id: music.id,
+            title: music.title,
+            artist_name: music.artist_name,
             published_date: chrono::Utc::now().into(),
             track_number: None,
             disc_number: None,
             file_path: None,
-            image_url: self.image_url,
+            image_url: music.image_url,
             views: 0,
             likes: 0,
-            rank: self.rank,
+            rank: music.rank,
             last_view: chrono::Utc::now().into(),
         }
     }

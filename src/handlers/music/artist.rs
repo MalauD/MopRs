@@ -1,7 +1,7 @@
 use crate::{
     actors::{ArtistScraperActor, ArtistScraperMessage},
-    app_settings::get_settings_sync,
-    db::get_mongo,
+    app_settings::AppSettings,
+    db::MongoClient,
     deezer::get_dz_client,
     models::{Album, Artist, DeezerId, PopulatedArtist},
     search::get_meilisearch,
@@ -14,12 +14,13 @@ use super::{index_artist_top_tracks, MusicResponse};
 
 pub async fn get_artist(
     req: web::Path<DeezerId>,
+    db: web::Data<MongoClient>,
+    config: web::Data<AppSettings>,
     scraper: web::Data<Addr<ArtistScraperActor>>,
 ) -> MusicResponse {
-    let db = get_mongo(None).await;
     let dz = get_dz_client();
     let search = get_meilisearch(None).await;
-    let config = get_settings_sync();
+    let config = config.get_ref();
 
     let mut compl_artist = db.get_artist(&req).await?.unwrap();
     let mut pop_artist = PopulatedArtist::from(compl_artist.clone());
@@ -60,7 +61,9 @@ pub async fn get_artist(
             )
             .await;
 
-        let tracks = index_artist_top_tracks(&top_tracks, &req).await.unwrap();
+        let tracks = index_artist_top_tracks(db.get_ref(), &top_tracks, &req)
+            .await
+            .unwrap();
         db.set_top_tracks(
             &req,
             &tracks.clone().into_iter().map(|x| x.id).collect_vec(),

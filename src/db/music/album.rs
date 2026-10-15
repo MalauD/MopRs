@@ -75,7 +75,7 @@ impl MongoClient {
         coll.find_one(doc! {"_id": album_id}, None).await
     }
 
-    pub async fn get_albums(&self, album_ids: &Vec<DeezerId>) -> Result<Option<Vec<Album>>> {
+    pub async fn get_albums(&self, album_ids: &[DeezerId]) -> Result<Option<Vec<Album>>> {
         let coll = self._database.collection::<Album>("Album");
         let mut cursor = coll.find(doc! {"_id": {"$in": album_ids}}, None).await?;
         let mut result = Vec::<Album>::with_capacity(30);

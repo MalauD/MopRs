@@ -1,10 +1,9 @@
-use crate::{db::get_mongo, models::DeezerId};
+use crate::{db::MongoClient, models::DeezerId};
 use actix_web::{web, HttpResponse};
 
 use super::MusicResponse;
 
-pub async fn get_music(req: web::Path<DeezerId>) -> MusicResponse {
-    let db = get_mongo(None).await;
+pub async fn get_music(req: web::Path<DeezerId>, db: web::Data<MongoClient>) -> MusicResponse {
     let res = db.get_musics(&vec![*req]).await?;
 
     match res {

@@ -91,7 +91,7 @@ impl MongoClient {
     pub async fn add_musics_playlist(
         &self,
         playlist_id: ObjectId,
-        music: &Vec<DeezerId>,
+        music: &[DeezerId],
     ) -> Result<()> {
         let coll = self._database.collection::<Playlist>("Playlist");
         let _r = coll
@@ -126,7 +126,7 @@ impl MongoClient {
     pub async fn edit_musics_playlist(
         &self,
         playlist_id: ObjectId,
-        new_musics: &Vec<DeezerId>,
+        new_musics: &[DeezerId],
     ) -> Result<()> {
         let coll = self._database.collection::<Playlist>("Playlist");
         let _r = coll

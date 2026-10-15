@@ -1,6 +1,6 @@
 use crate::{
     actors::ArtistScraperActor,
-    db::{get_mongo, PaginationOptions},
+    db::{MongoClient, PaginationOptions},
     deezer::get_dz_client,
     models::{PopulatedPlaylist, User},
     search::get_meilisearch,
@@ -21,6 +21,7 @@ pub async fn search_music(
     req: web::Path<String>,
     pagination: web::Query<PaginationOptions>,
     search_opt: web::Query<SearchOption>,
+    db: web::Data<MongoClient>,
     scraper: web::Data<Addr<ArtistScraperActor>>,
 ) -> MusicResponse {
     let search = get_meilisearch(None).await;
@@ -35,7 +36,8 @@ pub async fn search_music(
 
     if pagination.get_page() == 0 {
         let res = dz.search_music(req.clone()).await?;
-        let _ = index_search_musics_result(&res, scraper.get_ref(), IndexType::Music).await;
+        let _ = index_search_musics_result(db.get_ref(), &res, scraper.get_ref(), IndexType::Music)
+            .await;
         //musics.group_by()
     }
     let musics = search
@@ -85,9 +87,8 @@ pub async fn search_playlist(
     req: web::Path<String>,
     user: User,
     pagination: web::Query<PaginationOptions>,
+    db: web::Data<MongoClient>,
 ) -> MusicResponse {
-    let db = get_mongo(None).await;
-
     let playlists = db
         .search_playlist(req.into_inner(), &pagination)
         .await?

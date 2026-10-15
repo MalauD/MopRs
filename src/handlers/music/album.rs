@@ -1,5 +1,5 @@
 use crate::{
-    db::get_mongo,
+    db::MongoClient,
     deezer::get_dz_client,
     models::{DeezerId, Music, PopulatedAlbum},
     search::get_meilisearch,
@@ -9,8 +9,7 @@ use itertools::Itertools;
 
 use super::MusicResponse;
 
-pub async fn get_album(req: web::Path<DeezerId>) -> MusicResponse {
-    let db = get_mongo(None).await;
+pub async fn get_album(req: web::Path<DeezerId>, db: web::Data<MongoClient>) -> MusicResponse {
     let dz = get_dz_client();
     let search = get_meilisearch(None).await;
 

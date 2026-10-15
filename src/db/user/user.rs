@@ -67,7 +67,7 @@ impl MongoClient {
     pub async fn set_current_playlist_musics(
         &self,
         user: &User,
-        musics_id: &Vec<DeezerId>,
+        musics_id: &[DeezerId],
     ) -> Result<()> {
         let coll = self._database.collection::<User>("User");
         coll.update_one(

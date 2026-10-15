@@ -1,4 +1,4 @@
-use crate::{db::get_mongo, deezer::DeezerMusicFormats, models::DeezerId, tools::UserError};
+use crate::{db::MongoClient, deezer::DeezerMusicFormats, models::DeezerId, tools::UserError};
 use actix_identity::Identity;
 use actix_web::{dev::Payload, error::ErrorUnauthorized, Error, FromRequest, HttpRequest};
 use futures::Future;
@@ -136,13 +136,16 @@ impl FromRequest for User {
 
     fn from_request(req: &HttpRequest, pl: &mut Payload) -> Self::Future {
         let fut = Identity::from_request(req, pl);
+        let db = req.app_data::<actix_web::web::Data<MongoClient>>().cloned();
         Box::pin(async move {
-            let db = get_mongo(None).await;
+            let db = db.ok_or_else(|| ErrorUnauthorized("unauthorized"))?;
             if let Ok(identity) = fut.await?.id() {
+                let user_id =
+                    ObjectId::parse_str(identity).map_err(|_| ErrorUnauthorized("unauthorized"))?;
                 if let Some(user) = db
-                    .get_user(&ObjectId::parse_str(identity).unwrap())
+                    .get_user(&user_id)
                     .await
-                    .unwrap()
+                    .map_err(|_| ErrorUnauthorized("unauthorized"))?
                 {
                     return Ok(user);
                 }
